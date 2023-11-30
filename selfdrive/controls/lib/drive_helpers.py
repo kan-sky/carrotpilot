@@ -1,0 +1,350 @@
+import math
+
+from cereal import car, log
+from openpilot.common.conversions import Conversions as CV
+from openpilot.common.numpy_fast import clip, interp
+from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.common.params import Params
+
+
+# WARNING: this value was determined based on the model's training distribution,
+#          model predictions above this speed can be unpredictable
+# V_CRUISE's are in kph
+V_CRUISE_MIN = 8
+V_CRUISE_MAX = 160 #145
+V_CRUISE_UNSET = 255
+V_CRUISE_INITIAL = 30 #40
+V_CRUISE_INITIAL_EXPERIMENTAL_MODE = 105
+IMPERIAL_INCREMENT = 1.6  # should be CV.MPH_TO_KPH, but this causes rounding errors
+
+MIN_DIST = 0.001
+MIN_SPEED = 1.0
+CONTROL_N = 17
+CAR_ROTATION_RADIUS = 0.0
+
+# EU guidelines
+MAX_LATERAL_JERK = 5.0
+
+MAX_VEL_ERR = 5.0
+
+ButtonEvent = car.CarState.ButtonEvent
+ButtonType = car.CarState.ButtonEvent.Type
+CRUISE_LONG_PRESS = 50
+CRUISE_NEAREST_FUNC = {
+  ButtonType.accelCruise: math.ceil,
+  ButtonType.decelCruise: math.floor,
+}
+CRUISE_INTERVAL_SIGN = {
+  ButtonType.accelCruise: +1,
+  ButtonType.decelCruise: -1,
+}
+
+class VCruiseHelper:
+  def __init__(self, CP):
+    self.CP = CP
+    self.v_cruise_kph = V_CRUISE_UNSET
+    self.v_cruise_cluster_kph = V_CRUISE_UNSET
+    self.v_cruise_kph_last = 0
+    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
+    self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
+
+    # ajouatom
+    self.brake_pressed_count = 0
+    self.gas_pressed_count = 0
+    self.softHoldActive = False
+    self.button_cnt = 0
+    self.long_pressed = False
+    self.button_prev = ButtonType.unknown
+    self.cruiseActivate = False
+
+  @property
+  def v_cruise_initialized(self):
+    return self.v_cruise_kph != V_CRUISE_UNSET
+
+  def update_v_cruise(self, CS, enabled, is_metric, reverse_cruise_increase, controls):
+    self.v_cruise_kph_last = self.v_cruise_kph
+
+    if CS.cruiseState.available:
+      if not self.CP.pcmCruise:
+        # if stock cruise is completely disabled, then we can use our own set speed logic
+        #self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_cruise_increase)        
+        self.v_cruise_kph = self.update_cruise_buttons_xxxpilot(CS, enabled, is_metric, self.v_cruise_kph, reverse_cruise_increase, controls)  ###ajouatom
+        self.v_cruise_cluster_kph = self.v_cruise_kph
+        #self.update_button_timers(CS, enabled)
+      else:
+        self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+        self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
+    else:
+      self.v_cruise_kph = V_CRUISE_UNSET
+      self.v_cruise_cluster_kph = V_CRUISE_UNSET
+
+  def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_cruise_increase):
+    # handle button presses. TODO: this should be in state_control, but a decelCruise press
+    # would have the effect of both enabling and changing speed is checked after the state transition
+    if not enabled:
+      return
+
+    long_press = reverse_cruise_increase
+    button_type = None
+
+    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
+
+    for b in CS.buttonEvents:
+      if b.type.raw in self.button_timers and not b.pressed:
+        if self.button_timers[b.type.raw] > CRUISE_LONG_PRESS:
+          return  # end long press
+        button_type = b.type.raw
+        break
+    else:
+      for k in self.button_timers.keys():
+        if self.button_timers[k] and self.button_timers[k] % CRUISE_LONG_PRESS == 0:
+          button_type = k
+          long_press = not reverse_cruise_increase
+          break
+
+    if button_type is None:
+      return
+
+    # Don't adjust speed when pressing resume to exit standstill
+    cruise_standstill = self.button_change_states[button_type]["standstill"] or CS.cruiseState.standstill
+    if button_type == ButtonType.accelCruise and cruise_standstill:
+      return
+
+    # Don't adjust speed if we've enabled since the button was depressed (some ports enable on rising edge)
+    if not self.button_change_states[button_type]["enabled"]:
+      return
+
+    v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+    if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
+      self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
+    else:
+      self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+
+    # If set is pressed while overriding, clip cruise speed to minimum of vEgo
+    if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
+      self.v_cruise_kph = max(self.v_cruise_kph, CS.vEgo * CV.MS_TO_KPH)
+
+    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
+
+  def update_button_timers(self, CS, enabled):
+    # increment timer for buttons still pressed
+    for k in self.button_timers:
+      if self.button_timers[k] > 0:
+        self.button_timers[k] += 1
+
+    for b in CS.buttonEvents:
+      if b.type.raw in self.button_timers:
+        # Start/end timer and store current state on change of button pressed
+        self.button_timers[b.type.raw] = 1 if b.pressed else 0
+        self.button_change_states[b.type.raw] = {"standstill": CS.cruiseState.standstill, "enabled": enabled}
+
+  def initialize_v_cruise(self, CS, experimental_mode: bool, conditional_experimental_mode) -> None:
+    # initializing is handled by the PCM
+    if self.CP.pcmCruise:
+      return
+
+    initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if experimental_mode and not conditional_experimental_mode else V_CRUISE_INITIAL
+
+    # 250kph or above probably means we never had a set speed
+    if any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) and self.v_cruise_kph_last < 250:
+      self.v_cruise_kph = self.v_cruise_kph_last
+    else:
+      self.v_cruise_kph = int(round(clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
+
+    self.v_cruise_cluster_kph = self.v_cruise_kph
+
+  def update_cruise_buttons_xxxpilot(self, CS, enabled, is_metric, v_cruise_kph, reverse_cruise_increase, controls):
+
+    self.cruiseButtonMode = 2
+    v_ego_kph_set = int(CS.vEgoCluster * CV.MS_TO_KPH + 0.5)
+
+    if v_cruise_kph > 200:
+      v_cruise_kph = V_CRUISE_INITIAL
+
+    brake_hold_set = False
+    if CS.brakePressed:
+      self.brake_pressed_count = 1 if self.brake_pressed_count < 0 else self.brake_pressed_count + 1
+    else:
+      brake_hold_set = True if self.brake_pressed_count > 60 and CS.vEgo < 0.1 else False
+      self.brake_pressed_count = -1 if self.brake_pressed_count > 0 else self.brake_pressed_count - 1
+
+    gas_tok = False
+    if CS.gasPressed:
+      self.gas_pressed_count = 1 if self.gas_pressed_count < 0 else self.gas_pressed_count + 1
+    else:
+      gas_tok = True if 0 < self.gas_pressed_count < 60 else False
+      self.gas_pressed_count = -1 if self.gas_pressed_count > 0 else self.gas_pressed_count - 1
+
+    button_kph = v_cruise_kph
+    buttonEvents = CS.buttonEvents
+    button_speed_up_diff = 1
+    button_speed_dn_diff = 10 if self.cruiseButtonMode in [3, 4] else 1
+
+    button_type = 0
+    if enabled:
+      if self.button_cnt > 0:
+        self.button_cnt += 1
+      for b in buttonEvents:
+        if b.pressed and self.button_cnt==0 and b.type in [ButtonType.accelCruise, ButtonType.decelCruise, ButtonType.gapAdjustCruise, ButtonType.cancel]:
+          self.button_cnt = 1
+          self.button_prev = b.type
+        elif not b.pressed and self.button_cnt > 0:
+          if b.type == ButtonType.cancel:
+            pass
+          elif not self.long_pressed and b.type == ButtonType.accelCruise:
+            button_kph += button_speed_up_diff if is_metric else button_speed_up_diff * CV.MPH_TO_KPH
+            button_type = ButtonType.accelCruise
+          elif not self.long_pressed and b.type == ButtonType.decelCruise:
+            button_kph -= button_speed_dn_diff if is_metric else button_speed_dn_diff * CV.MPH_TO_KPH
+            button_type = ButtonType.decelCruise
+          elif not self.long_pressed and b.type == ButtonType.gapAdjustCruise:
+            button_type = ButtonType.gapAdjustCruise
+
+          self.long_pressed = False
+          self.button_cnt = 0
+      if self.button_cnt > 40:
+        self.long_pressed = True
+        V_CRUISE_DELTA = 10
+        if self.button_prev == ButtonType.cancel:
+           self.button_cnt = 0
+        elif self.button_prev == ButtonType.accelCruise:
+          button_kph += V_CRUISE_DELTA - button_kph % V_CRUISE_DELTA
+          button_type = ButtonType.accelCruise
+          self.button_cnt %= 40
+        elif self.button_prev == ButtonType.decelCruise:
+          button_kph -= V_CRUISE_DELTA - -button_kph % V_CRUISE_DELTA
+          button_type = ButtonType.decelCruise
+          self.button_cnt %= 40
+        elif self.button_prev == ButtonType.gapAdjustCruise:
+          button_type = ButtonType.gapAdjustCruise
+          self.button_cnt = 0
+
+    button_kph = clip(button_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+    #return button_type, self.long_pressed, v_cruise_kph
+
+    if button_type != 0:
+      if self.long_pressed:
+        if button_type in [ButtonType.accelCruise, ButtonType.decelCruise]:
+          v_cruise_kph = button_kph
+      else:
+        if button_type == ButtonType.accelCruise:
+          if self.softHoldActive:
+            self.softHoldActive = False
+          else:
+            v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph, 30)
+        elif button_type == ButtonType.decelCruise:
+          if v_cruise_kph <= v_ego_kph_set:
+            v_cruise_kph = button_kph
+          elif v_cruise_kph > v_ego_kph_set:
+            v_cruise_kph = v_ego_kph_set
+
+    if self.brake_pressed_count > 0 or self.gas_pressed_count > 0:
+      self.softHoldActive = False
+      self.cruiseActivate = False
+
+    if gas_tok:
+      if enabled:
+        v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph, 30)
+      else:
+        self.cruiseActivate = True
+    elif self.gas_pressed_count == -1:
+      if not enabled and v_ego_kph_set > Params().get_int("AutoResumeFromGasSpeed") > 0:
+        self.cruiseActivate = True
+    elif self.brake_pressed_count == -1 and not brake_hold_set:
+      if not enabled and v_ego_kph_set < 70.0 and controls.experimental_mode and Params().get_bool("AutoResumeFromBrakeReleaseTrafficSign"):
+        self.cruiseActivate = True
+
+    if self.gas_pressed_count > 0 and v_ego_kph_set > v_cruise_kph:
+      v_cruise_kph = v_ego_kph_set
+    elif brake_hold_set and Params().get_int("SoftHoldMode"):
+      self.softHoldActive = True
+      self.cruiseActivate = True
+
+    v_cruise_kph = clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+    return v_cruise_kph
+
+  def v_cruise_speed_up(self, v_cruise_kph, roadSpeed):
+    if v_cruise_kph < roadSpeed:
+      v_cruise_kph = roadSpeed
+    else:
+      for speed in range (40, V_CRUISE_MAX, Params().get_int("CruiseSpeedUnit")):
+        if v_cruise_kph < speed:
+          v_cruise_kph = speed
+          break
+    return clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+
+
+def apply_deadzone(error, deadzone):
+  if error > deadzone:
+    error -= deadzone
+  elif error < - deadzone:
+    error += deadzone
+  else:
+    error = 0.
+  return error
+
+
+def apply_center_deadzone(error, deadzone):
+  if (error > - deadzone) and (error < deadzone):
+    error = 0.
+  return error
+
+
+def rate_limit(new_value, last_value, dw_step, up_step):
+  return clip(new_value, last_value + dw_step, last_value + up_step)
+
+
+def get_lag_adjusted_curvature(CP, v_ego, psis, curvatures, curvature_rates, distances, average_desired_curvature):
+  if len(psis) != CONTROL_N or len(distances) != CONTROL_N:
+    psis = [0.0]*CONTROL_N
+    curvatures = [0.0]*CONTROL_N
+    curvature_rates = [0.0]*CONTROL_N
+    distances = [0.0]*CONTROL_N
+  v_ego = max(MIN_SPEED, v_ego)
+
+  # TODO this needs more thought, use .2s extra for now to estimate other delays
+  delay = CP.steerActuatorDelay + .2
+
+  # MPC can plan to turn the wheel and turn back before t_delay. This means
+  # in high delay cases some corrections never even get commanded. So just use
+  # psi to calculate a simple linearization of desired curvature
+  current_curvature_desired = curvatures[0]
+  psi = interp(delay, ModelConstants.T_IDXS[:CONTROL_N], psis)
+  # Pfeiferj's #28118 PR - https://github.com/commaai/openpilot/pull/28118
+  distance = interp(delay, ModelConstants.T_IDXS[:CONTROL_N], distances)
+  distance = max(MIN_DIST, distance)
+  average_curvature_desired = psi / distance if average_desired_curvature else psi / (v_ego * delay)
+  desired_curvature = 2 * average_curvature_desired - current_curvature_desired
+
+  # This is the "desired rate of the setpoint" not an actual desired rate
+  desired_curvature_rate = curvature_rates[0]
+  max_curvature_rate = MAX_LATERAL_JERK / (v_ego**2) # inexact calculation, check https://github.com/commaai/openpilot/pull/24755
+  safe_desired_curvature_rate = clip(desired_curvature_rate,
+                                     -max_curvature_rate,
+                                     max_curvature_rate)
+  safe_desired_curvature = clip(desired_curvature,
+                                current_curvature_desired - max_curvature_rate * DT_MDL,
+                                current_curvature_desired + max_curvature_rate * DT_MDL)
+
+  return safe_desired_curvature, safe_desired_curvature_rate
+
+
+def get_friction(lateral_accel_error: float, lateral_accel_deadzone: float, friction_threshold: float,
+                 torque_params: car.CarParams.LateralTorqueTuning, friction_compensation: bool) -> float:
+  friction_interp = interp(
+    apply_center_deadzone(lateral_accel_error, lateral_accel_deadzone),
+    [-friction_threshold, friction_threshold],
+    [-torque_params.friction, torque_params.friction]
+  )
+  friction = float(friction_interp) if friction_compensation else 0.0
+  return friction
+
+
+def get_speed_error(modelV2: log.ModelDataV2, v_ego: float) -> float:
+  # ToDo: Try relative error, and absolute speed
+  if len(modelV2.temporalPose.trans):
+    vel_err = clip(modelV2.temporalPose.trans[0] - v_ego, -MAX_VEL_ERR, MAX_VEL_ERR)
+    return float(vel_err)
+  return 0.0
+
