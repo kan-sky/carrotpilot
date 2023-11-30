@@ -150,6 +150,7 @@ class CarController:
         can_sends.extend(self.create_button_messages(CC, CS, use_clu11=True))
       elif not CC.enabled and CC.cruiseControl.activate: ## ajouatom: send command to panda via Button spam(GAP_DIST), for auto engage
         can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.GAP_DIST, self.CP.carFingerprint))
+        print("SendActivateCanData#######")
 
       if self.CP.carFingerprint in (CAR.GENESIS_G90_2019, CAR.GENESIS_G90, CAR.K7):
         can_sends.append(hyundaican.create_mdps12(self.packer, self.frame, CS.mdps12))

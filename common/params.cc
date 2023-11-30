@@ -247,6 +247,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     { "AChangeCost", PERSISTENT },
     { "AChangeCostStart", PERSISTENT },
     { "CruiseSpeedUnit", PERSISTENT },
+    { "LiveTorqueCache", PERSISTENT },
+    { "CruiseEcoControl", PERSISTENT },
     { "LongitudinalTuningKpV", PERSISTENT },
     { "LongitudinalTuningKiV", PERSISTENT },
     { "LongitudinalTuningKf", PERSISTENT },

@@ -3,7 +3,7 @@ import math
 from cereal import car, log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.common.realtime import DT_MDL
+from openpilot.common.realtime import DT_MDL, DT_CTRL
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.common.params import Params
 
@@ -57,6 +57,10 @@ class VCruiseHelper:
     self.long_pressed = False
     self.button_prev = ButtonType.unknown
     self.cruiseActivate = False
+    self.params = Params()
+    self.v_cruise_kph_set = V_CRUISE_UNSET
+    self.cruiseSpeedTarget = 0
+    self.roadSpeed = 30
 
   @property
   def v_cruise_initialized(self):
@@ -68,8 +72,8 @@ class VCruiseHelper:
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
         # if stock cruise is completely disabled, then we can use our own set speed logic
-        #self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_cruise_increase)        
-        self.v_cruise_kph = self.update_cruise_buttons_xxxpilot(CS, enabled, is_metric, self.v_cruise_kph, reverse_cruise_increase, controls)  ###ajouatom
+        #self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_cruise_increase)
+        self._update_v_cruise_apilot(CS, controls)
         self.v_cruise_cluster_kph = self.v_cruise_kph
         #self.update_button_timers(CS, enabled)
       else:
@@ -78,6 +82,7 @@ class VCruiseHelper:
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
+      self.v_cruise_kph_set = V_CRUISE_UNSET
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_cruise_increase):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
@@ -148,16 +153,28 @@ class VCruiseHelper:
 
     # 250kph or above probably means we never had a set speed
     if any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) and self.v_cruise_kph_last < 250:
-      self.v_cruise_kph = self.v_cruise_kph_last
+      self.v_cruise_kph = self.v_cruise_kph_set = self.v_cruise_kph_last
     else:
-      self.v_cruise_kph = int(round(clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
+      self.v_cruise_kph = self.v_cruise_kph_set = int(round(clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
 
     self.v_cruise_cluster_kph = self.v_cruise_kph
 
-  def update_cruise_buttons_xxxpilot(self, CS, enabled, is_metric, v_cruise_kph, reverse_cruise_increase, controls):
+  def _update_v_cruise_apilot(self, CS, controls):
+    self.v_ego_kph_set = int(CS.vEgoCluster * CV.MS_TO_KPH + 0.5)
+    v_cruise_kph = self.v_cruise_kph_set    
+    v_cruise_kph = self._update_cruise_buttons(CS, v_cruise_kph, controls)
+    #v_cruise_kph = self.update_apilot_cmd(controls, v_cruise_kph)
+    v_cruise_kph_apply = self.cruise_control_speed(v_cruise_kph)
+    apn_limit_kph = self.update_speed_apilot(CS, controls, self.v_cruise_kph)
 
-    self.cruiseButtonMode = 2
-    v_ego_kph_set = int(CS.vEgoCluster * CV.MS_TO_KPH + 0.5)
+    v_cruise_kph_apply = min(v_cruise_kph_apply, apn_limit_kph)
+
+    self.v_cruise_kph_set = v_cruise_kph
+    self.v_cruise_kph = v_cruise_kph_apply
+
+  def _update_cruise_buttons(self, CS, v_cruise_kph, controls):
+
+    self.cruiseButtonMode = 2    
 
     if v_cruise_kph > 200:
       v_cruise_kph = V_CRUISE_INITIAL
@@ -182,7 +199,7 @@ class VCruiseHelper:
     button_speed_dn_diff = 10 if self.cruiseButtonMode in [3, 4] else 1
 
     button_type = 0
-    if enabled:
+    if controls.enabled:
       if self.button_cnt > 0:
         self.button_cnt += 1
       for b in buttonEvents:
@@ -193,10 +210,10 @@ class VCruiseHelper:
           if b.type == ButtonType.cancel:
             pass
           elif not self.long_pressed and b.type == ButtonType.accelCruise:
-            button_kph += button_speed_up_diff if is_metric else button_speed_up_diff * CV.MPH_TO_KPH
+            button_kph += button_speed_up_diff if controls.is_metric else button_speed_up_diff * CV.MPH_TO_KPH
             button_type = ButtonType.accelCruise
           elif not self.long_pressed and b.type == ButtonType.decelCruise:
-            button_kph -= button_speed_dn_diff if is_metric else button_speed_dn_diff * CV.MPH_TO_KPH
+            button_kph -= button_speed_dn_diff if controls.is_metric else button_speed_dn_diff * CV.MPH_TO_KPH
             button_type = ButtonType.decelCruise
           elif not self.long_pressed and b.type == ButtonType.gapAdjustCruise:
             button_type = ButtonType.gapAdjustCruise
@@ -232,47 +249,154 @@ class VCruiseHelper:
           if self.softHoldActive:
             self.softHoldActive = False
           else:
-            v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph, 30)
+            v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
         elif button_type == ButtonType.decelCruise:
-          if v_cruise_kph <= v_ego_kph_set:
+          if v_cruise_kph <= self.v_ego_kph_set:
             v_cruise_kph = button_kph
-          elif v_cruise_kph > v_ego_kph_set:
-            v_cruise_kph = v_ego_kph_set
+          elif v_cruise_kph > self.v_ego_kph_set:
+            v_cruise_kph = self.v_ego_kph_set
 
     if self.brake_pressed_count > 0 or self.gas_pressed_count > 0:
       self.softHoldActive = False
       self.cruiseActivate = False
 
     if gas_tok:
-      if enabled:
-        v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph, 30)
+      if controls.enabled:
+        v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
       else:
+        print("Cruise Activete from GasTok")
         self.cruiseActivate = True
-    elif self.gas_pressed_count == -1:
-      if not enabled and v_ego_kph_set > Params().get_int("AutoResumeFromGasSpeed") > 0:
+    elif self.gas_pressed_count < 0:
+      if not controls.enabled and self.v_ego_kph_set > Params().get_int("AutoResumeFromGasSpeed") > 0:
+        print("Cruise Activete from Speed")
         self.cruiseActivate = True
     elif self.brake_pressed_count == -1 and not brake_hold_set:
-      if not enabled and v_ego_kph_set < 70.0 and controls.experimental_mode and Params().get_bool("AutoResumeFromBrakeReleaseTrafficSign"):
+      if not controls.enabled and self.v_ego_kph_set < 70.0 and controls.experimental_mode and Params().get_bool("AutoResumeFromBrakeReleaseTrafficSign"):
+        print("Cruise Activete from TrafficSign")
         self.cruiseActivate = True
 
-    if self.gas_pressed_count > 0 and v_ego_kph_set > v_cruise_kph:
-      v_cruise_kph = v_ego_kph_set
+    if self.gas_pressed_count > 0 and self.v_ego_kph_set > v_cruise_kph:
+      v_cruise_kph = self.v_ego_kph_set
     elif brake_hold_set and Params().get_int("SoftHoldMode"):
+      print("Cruise Activete from SoftHold")
       self.softHoldActive = True
       self.cruiseActivate = True
 
     v_cruise_kph = clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
     return v_cruise_kph
 
-  def v_cruise_speed_up(self, v_cruise_kph, roadSpeed):
-    if v_cruise_kph < roadSpeed:
-      v_cruise_kph = roadSpeed
+  def v_cruise_speed_up(self, v_cruise_kph):
+    if v_cruise_kph < self.roadSpeed:
+      v_cruise_kph = self.roadSpeed
     else:
       for speed in range (40, V_CRUISE_MAX, Params().get_int("CruiseSpeedUnit")):
         if v_cruise_kph < speed:
           v_cruise_kph = speed
           break
     return clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+
+  def decelerate_for_speed_camera(self, safe_speed, safe_dist, prev_apply_speed, decel_rate, left_dist):
+    if left_dist <= safe_dist:
+      return safe_speed
+    temp = safe_speed*safe_speed + 2*(left_dist - safe_dist)/decel_rate
+    dV = (-safe_speed + math.sqrt(temp)) * decel_rate
+    apply_speed = min(250 , safe_speed + dV)
+    min_speed = prev_apply_speed - (decel_rate * 1.2) * 2 * DT_CTRL
+    apply_speed = max(apply_speed, min_speed)
+    return apply_speed
+
+  def update_speed_apilot(self, CS, controls, v_cruise_kph_prev):
+    v_ego = CS.vEgoCluster
+    msg = self.roadLimitSpeed = controls.sm['roadLimitSpeed']
+
+    self.roadSpeed = clip(30, msg.roadLimitSpeed, 150.0)
+    camType = int(msg.camType)
+    xSignType = msg.xSignType
+
+    isSpeedBump = False
+    isSectionLimit = False
+    safeSpeed = 0
+    leftDist = 0
+    speedLimitType = 0
+    safeDist = 0
+    
+    self.autoNaviSpeedBumpSpeed = float(self.params.get_int("AutoNaviSpeedBumpSpeed"))
+    self.autoNaviSpeedBumpTime = float(self.params.get_int("AutoNaviSpeedBumpTime"))
+    self.autoNaviSpeedCtrlEnd = float(self.params.get_int("AutoNaviSpeedCtrlEnd"))
+    self.autoNaviSpeedSafetyFactor = float(self.params.get_int("AutoNaviSpeedSafetyFactor")) * 0.01
+    self.autoNaviSpeedDecelRate = float(self.params.get_int("AutoNaviSpeedDecelRate")) * 0.01
+    self.autoNaviSpeedCtrl = 2
+    
+    if camType == 22 or xSignType == 22:
+      safeSpeed = self.autoNaviSpeedBumpSpeed
+      isSpeedBump = True
+
+    if msg.xSpdLimit > 0 and msg.xSpdDist > 0:
+      safeSpeed = msg.xSpdLimit if safeSpeed <= 0 else safeSpeed
+      leftDist = msg.xSpdDist
+      isSectionLimit = True if xSignType==165 or leftDist > 3000 or camType == 4 else False
+      isSectionLimit = False if leftDist < 50 else isSectionLimit
+      speedLimitType = 2 if not isSectionLimit else 3
+    elif msg.camLimitSpeed > 0 and msg.camLimitSpeedLeftDist>0:
+      safeSpeed = msg.camLimitSpeed
+      leftDist = msg.camLimitSpeedLeftDist
+      isSectionLimit = True if leftDist > 3000 or camType == 4 else False
+      isSectionLimit = False if leftDist < 50 else isSectionLimit
+      speedLimitType = 2 if not isSectionLimit else 3
+    elif CS.speedLimit > 0 and CS.speedLimitDistance > 0 and self.autoNaviSpeedCtrl >= 2:
+      safeSpeed = CS.speedLimit
+      leftDist = CS.speedLimitDistance
+      speedLimitType = 2 if leftDist > 1 else 3
+
+    if isSpeedBump:
+      speedLimitType = 1 
+      safeDist = self.autoNaviSpeedBumpTime * v_ego
+    elif safeSpeed>0 and leftDist>0:
+      safeDist = self.autoNaviSpeedCtrlEnd * v_ego
+
+    safeSpeed *= self.autoNaviSpeedSafetyFactor
+
+    log = ""
+    if isSectionLimit:
+      applySpeed = safeSpeed
+    elif leftDist > 0 and safeSpeed > 0 and safeDist > 0:
+      applySpeed = self.decelerate_for_speed_camera(safeSpeed/3.6, safeDist, v_cruise_kph_prev * CV.KPH_TO_MS, self.autoNaviSpeedDecelRate, leftDist) * CV.MS_TO_KPH
+    else:
+      applySpeed = 255
+
+    apTbtSpeed = apTbtDistance = 0
+    log = "{:.1f}<{:.1f}/{:.1f},{:.1f} B{} A{:.1f}/{:.1f} N{:.1f}/{:.1f} C{:.1f}/{:.1f} V{:.1f}/{:.1f} ".format(
+                  applySpeed, safeSpeed, leftDist, safeDist,
+                  1 if isSpeedBump else 0, 
+                  msg.xSpdLimit, msg.xSpdDist,
+                  msg.camLimitSpeed, msg.camLimitSpeedLeftDist,
+                  CS.speedLimit, CS.speedLimitDistance,
+                  apTbtSpeed, apTbtDistance)
+    if applySpeed < 200:
+      print(log)
+    #controls.debugText1 = log
+    return applySpeed #, roadSpeed, leftDist, speedLimitType
+
+  def cruise_control_speed(self, v_cruise_kph):
+    v_cruise_kph_apply = v_cruise_kph    
+    cruise_eco_control = self.params.get_int("CruiseEcoControl")
+    if cruise_eco_control > 0:
+      if self.cruiseSpeedTarget > 0:
+        if self.cruiseSpeedTarget < v_cruise_kph:
+          self.cruiseSpeedTarget = v_cruise_kph
+        elif self.cruiseSpeedTarget > v_cruise_kph:
+          self.cruiseSpeedTarget = 0
+      elif self.cruiseSpeedTarget == 0 and self.v_ego_kph_set + 3 < v_cruise_kph and v_cruise_kph > 20.0:  # 주행중 속도가 떨어지면 다시 크루즈연비제어 시작.
+        self.cruiseSpeedTarget = v_cruise_kph
+        if self.cruiseSpeedTarget != 0:  ## 크루즈 연비 제어모드 작동중일때: 연비제어 종료지점
+          if self.v_ego_kph_set > self.cruiseSpeedTarget: # 설정속도를 초과하면..
+            self.cruiseSpeedTarget = 0
+          else:
+            v_cruise_kph_apply = self.cruiseSpeedTarget + cruise_eco_control  # + 설정 속도로 설정함.
+      else:
+        self.cruiseSpeedTarget = 0
+
+    return v_cruise_kph_apply
 
 
 def apply_deadzone(error, deadzone):

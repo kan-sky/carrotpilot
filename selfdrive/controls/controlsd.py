@@ -91,7 +91,7 @@ class Controls:
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                    'driverMonitoringState', 'longitudinalPlan', 'lateralPlan', 'liveLocationKalman',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
-                                   'testJoystick'] + self.camera_packets + self.sensor_packets,
+                                   'testJoystick', 'roadLimitSpeed'] + self.camera_packets + self.sensor_packets,
                                   ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'])
 
     if CI is None:
@@ -462,10 +462,6 @@ class Controls:
     if self.sm['longitudinalPlan'].greenLight:
       self.events.add(EventName.greenLight)
 
-    #ajouatom
-    if not self.enabled and self.v_cruise_helper.softHoldActive and not self.events.contains(ET.NO_ENTRY): #ajouatom
-      self.events.add(EventName.buttonEnable)
-
   def data_sample(self):
     """Receive data from sockets and update carState"""
 
@@ -520,7 +516,11 @@ class Controls:
   def state_transition(self, CS):
     """Compute conditional state transitions and execute actions on state transitions"""
 
-    self.v_cruise_helper.update_v_cruise(CS, self.enabled, self.is_metric, self.reverse_cruise_increase, self.CC)
+    self.v_cruise_helper.update_v_cruise(CS, self.enabled, self.is_metric, self.reverse_cruise_increase, self)
+
+        #ajouatom
+    if not self.enabled and self.v_cruise_helper.cruiseActivate and not self.events.contains(ET.NO_ENTRY): #ajouatom
+      self.events.add(EventName.buttonEnable)
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
@@ -667,6 +667,9 @@ class Controls:
       self.LoC.reset(v_pid=CS.vEgo)
 
     if not self.joystick_mode:
+
+      CC.hudControl.softHold = self.v_cruise_helper.softHoldActive and CC.longActive # ajouatom
+
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
       t_since_plan = (self.sm.frame - self.sm.rcv_frame['longitudinalPlan']) * DT_CTRL
@@ -780,15 +783,12 @@ class Controls:
 
     ## ajouatom
     no_entry_events = self.events.contains(ET.NO_ENTRY)
-    hudControl.softHold = self.v_cruise_helper.softHoldActive and not no_entry_events
-    hudControl.cruiseGap = self.CS.personality_profile + 1 
+    hudControl.cruiseGap = self.CS.personality_profile + 1 if self.CS is not None else 1
     lead_one = self.sm['radarState'].leadOne
     hudControl.objDist = int(lead_one.dRel) if lead_one.status else 0
     hudControl.objRelSpd = lead_one.vRel if lead_one.status else 0
-    if self.enabled:
-      CC.cruiseControl.activate = False
-    else:
-      CC.cruiseControl.activate = self.v_cruise_helper.cruiseActivate and not no_entry_events
+
+    CC.cruiseControl.activate = self.v_cruise_helper.cruiseActivate and not no_entry_events
 
     hudControl.rightLaneVisible = CC.latActive
     hudControl.leftLaneVisible = CC.latActive
@@ -873,7 +873,7 @@ class Controls:
     controlsState.longControlState = self.LoC.long_control_state
     controlsState.vPid = float(self.LoC.v_pid)
     controlsState.vCruise = float(self.v_cruise_helper.v_cruise_kph)
-    controlsState.vCruiseCluster = float(self.v_cruise_helper.v_cruise_cluster_kph)
+    controlsState.vCruiseCluster = float(self.v_cruise_helper.v_cruise_kph_set) #float(self.v_cruise_helper.v_cruise_cluster_kph)
     controlsState.upAccelCmd = float(self.LoC.pid.p)
     controlsState.uiAccelCmd = float(self.LoC.pid.i)
     controlsState.ufAccelCmd = float(self.LoC.pid.f)

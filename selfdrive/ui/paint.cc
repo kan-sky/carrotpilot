@@ -861,8 +861,8 @@ void DrawApilot::drawDateTime(const UIState* s) {
         time_t now = time(nullptr);
         struct tm* local = localtime(&now);
 
-        int y = 180;
-        int nav_y = y + 40;
+        int y = 190;
+        int nav_y = y + 50;
 
         if (s->show_datetime == 1 || s->show_datetime == 2) {
             strftime(str, sizeof(str), "%H:%M", local);
@@ -965,7 +965,7 @@ void DrawApilot::drawConnInfo(const UIState* s) {
         int hda_speedLimit = car_state.getSpeedLimit();
         int hda_speedLimitDistance = car_state.getSpeedLimitDistance();
         int naviCluster = 0;// HW: (int)car_params.getNaviCluster();
-        int y = 30;
+        int y = 40;
         if (sccBus) ui_draw_image(s, { 30, y, 120, 54 }, "ic_scc2", 1.0f);
         if (activeNDA >= 200) ui_draw_image(s, { 30 + 135, y, 120, 54 }, "ic_apn", 1.0f);
         else if (hda_speedLimit > 0 && hda_speedLimitDistance > 0) ui_draw_image(s, { 30 + 135, 20, 120, 54 }, "ic_hda", 1.0f);
@@ -982,7 +982,7 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
     //auto controls_state = sm["controlsState"].getControlsState();
     //const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
     // 타겟좌측 : 갭표시
-    int myDrivingMode = 3;//HW: controls_state.getMyDrivingMode();
+    int myDrivingMode = Params().getInt("AccelerationProfile"); //HW: controls_state.getMyDrivingMode();
     //int active = controls_state.getActive();
     float gap = Params().getInt("LongitudinalPersonality")+1;// lp.getCruiseGap();
     //float tFollow = 1.0;// HW: lp.getTFollow();
@@ -993,11 +993,11 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
     char strDrivingMode[128];
     switch (myDrivingMode)
     {
-    case 0: strcpy(strDrivingMode, "GAP"); break;
-    case 1: strcpy(strDrivingMode, "연비"); break;// "연비"; break;
-    case 2: strcpy(strDrivingMode, "안전"); break;// "안전"; break;
-    case 3: strcpy(strDrivingMode, "일반"); break;// "일반"; break;
-    case 4: strcpy(strDrivingMode, "고속"); break;// "고속"; break;
+    case 1: strcpy(strDrivingMode, "ECO"); break;
+    case 2: strcpy(strDrivingMode, "NOR"); break;
+    case 3: strcpy(strDrivingMode, "SPT"); break;
+    default:
+        strcpy(strDrivingMode, "ERR"); break;
     }
 
     int dxGap = -128 - 10 - 40;
@@ -1077,8 +1077,8 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
 
         // kph
         const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
-        float applyMaxSpeed = lp.getSlcSpeedLimit();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
         float cruiseMaxSpeed = controls_state.getVCruiseCluster();// scc_smoother.getCruiseMaxSpeed();
+        float applyMaxSpeed = (cruiseMaxSpeed == controls_state.getVCruise())? lp.getSlcSpeedLimit():controls_state.getVCruise();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
         float curveSpeed = 0;//HW: controls_state.getCurveSpeed();
         bool speedCtrlActive = false;
         if (curveSpeed < 0) {
@@ -1572,10 +1572,10 @@ void DrawApilot::drawPathEnd(const UIState* s, int x, int y, int path_x, int pat
         ui_draw_text(s, x, disp_y, str, disp_size, COLOR_WHITE, BOLD);
     }
 
-#if 0//HW
     // 타겟하단: 롱컨상태표시
     if (true) {
         QString qstr;
+#if 0//HW
         if (isBrakeHold()) qstr = "AUTOHOLD";
         else if (!isEnabled()) {
             qstr = "NOT ACTIVE";
@@ -1596,17 +1596,16 @@ void DrawApilot::drawPathEnd(const UIState* s, int x, int y, int path_x, int pat
             }
             else qstr = tr("MANUAL");
         }
+#endif
         static QString _qstr = "";
-        if (isLongActive()) {
-            if (xState == cereal::LongitudinalPlan::XState::SOFT_HOLD) qstr = "SOFTHOLD";
-            else qstr = "CRUISE";
-        }
+        if (isBrakeHold()) qstr = "AUTOHOLD";
+        else if (isSoftHold()) qstr = "SOFTHOLD";
+        else if (isLongActive()) qstr = (isExperimentalMode())?"EXPERIEMENTAL":"CRUISE";
         else qstr = "MANUAL";
         if (qstr != _qstr) ui_draw_text_a(s, x, y + 175, qstr.toStdString().c_str(), 40, COLOR_WHITE, BOLD);
         _qstr = qstr;
 
     }
-#endif
 
     if (s->show_path_end) {
         //if (path_y < s->fb_h - 200) ui_fill_rect(s->vg, { path_x - path_width / 2, path_y, path_width, -10 }, (radar_rel_speed > -0.1) ? COLOR_GREEN : COLOR_RED, 5);
@@ -1661,6 +1660,7 @@ void DrawApilot::makeData(const UIState* s) {
 
     m_brakeHoldActive = car_state.getBrakeHoldActive();
     m_softHoldActive = (hud_control.getSoftHold() && isLongActive() > 0) ? 1 : 0;
+    m_experimentalMode = controls_state.getExperimentalMode() ? 1 : 0;
 
     m_vEgo = car_state.getVEgoCluster();
 
@@ -1785,11 +1785,11 @@ void DrawApilot::drawDeviceState(UIState* s, bool show) {
     int g = interp<float>(cpuTemp, { 50.f, 90.f }, { 255.f, 200.f }, false);
     NVGcolor textColor = nvgRGBA(r, g, 200, 255);
     if (s->fb_w > 1200 && show) {
-        ui_draw_text(s, s->fb_w - 20, 45, str, 35, textColor, BOLD);
+        ui_draw_text(s, s->fb_w - 20, 55, str, 35, textColor, BOLD);
         float engineRpm = car_state.getEngineRpm();
         float motorRpm = car_state.getMotorRpm();
         sprintf(str, "FPS: %d, %s: %.0f CHARGE: %.0f%%                      ", g_fps, (motorRpm > 0.0) ? "MOTOR" : "RPM", (motorRpm > 0.0) ? motorRpm : engineRpm, car_state.getChargeMeter());
-        ui_draw_text(s, s->fb_w - 20, 100, str, 35, textColor, BOLD);
+        ui_draw_text(s, s->fb_w - 20, 120, str, 35, textColor, BOLD);
     }
     nvgTextAlign(s->vg, NVG_ALIGN_RIGHT | NVG_ALIGN_BOTTOM);
     ui_draw_text(s, s->fb_w - 20, s->fb_h - 15, ip_address, 30, COLOR_WHITE, BOLD, 0.0f, 0.0f);

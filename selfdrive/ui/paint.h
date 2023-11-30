@@ -85,8 +85,10 @@ protected:
 	bool	isLongActiveReady() { return m_longActiveUserReady > 0; }
 	bool	m_brakeHoldActive = false;
 	bool	m_softHoldActive = false;
+	bool	m_experimentalMode = false;
 	bool	isBrakeHold() { return m_brakeHoldActive; }
 	bool	isSoftHold() { return m_softHoldActive; }
+	bool	isExperimentalMode() { return m_experimentalMode; }
 	bool	m_enabled = false;
 	bool	isEnabled() { return m_enabled; }
 	bool	isBlinkerOn() { return m_blinkerTimer <= (16 / 2); }

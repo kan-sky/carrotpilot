@@ -86,6 +86,7 @@ def manager_init() -> None:
     ("AChangeCost", "200"), 
     ("AChangeCostStart", "40"), 
     ("CruiseSpeedUnit", "10"),      
+    ("LiveTorqueCache", "0"),      
     ("LongitudinalTuningKpV", "100"),     
     ("LongitudinalTuningKiV", "0"),     
     ("LongitudinalTuningKf", "100"),     
@@ -95,6 +96,7 @@ def manager_init() -> None:
     ("HotspotOnBoot", "0"),      
     ("SccConnectedBus2", "0"),
     ("SoftHoldMode", "0"),       
+    ("CruiseEcoControl", "4"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
