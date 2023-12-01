@@ -107,19 +107,6 @@
     },
     {
       "group": "주행튜닝",
-      "name": "LongitudinalTuningKiV",
-      "title": "KiV게인(0)",
-      "descr": "삭제예정: 정지중에만 반영(시험용)",
-      "egroup": "LONG",
-      "etitle": "Long KiV(0)",
-      "edescr": "",
-      "min": 0,
-      "max": 2000,
-      "default": 0,
-      "unit": 1
-    },
-    {
-      "group": "주행튜닝",
       "name": "LongitudinalTuningKf",
       "title": "Kf게인(105)",
       "descr": "피드포워드 게인",
