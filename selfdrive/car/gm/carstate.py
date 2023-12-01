@@ -6,7 +6,7 @@ from openpilot.common.params import put_bool_nonblocking, put_int_nonblocking
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.selfdrive.car.gm.values import DBC, AccState, CanBus, STEER_THRESHOLD, GMFlags, CC_ONLY_CAR, CAMERA_ACC_CAR
+from openpilot.selfdrive.car.gm.values import DBC, AccState, CanBus, STEER_THRESHOLD, GMFlags, CC_ONLY_CAR, CAMERA_ACC_CAR, CruiseButtons
 
 TransmissionType = car.CarParams.TransmissionType
 NetworkLocation = car.CarParams.NetworkLocation
@@ -26,6 +26,10 @@ class CarState(CarStateBase):
     self.loopback_lka_steering_cmd_ts_nanos = 0
     self.pt_lka_steering_cmd_counter = 0
     self.cam_lka_steering_cmd_counter = 0
+
+    # GAP_DIST
+    self.distance_button_pressed = False
+
     self.buttons_counter = 0
 
     self.single_pedal_mode = False
@@ -36,6 +40,9 @@ class CarState(CarStateBase):
 
   def update(self, pt_cp, cam_cp, loopback_cp):
     ret = car.CarState.new_message()
+
+    # GAP_DIST
+    self.distance_button_pressed = pt_cp.vl["ASCMSteeringButton"]["DistanceButton"] != 0
 
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = pt_cp.vl["ASCMSteeringButton"]["ACCButtons"]
@@ -180,6 +187,10 @@ class CarState(CarStateBase):
         put_int_nonblocking("LongitudinalPersonality", self.personality_profile)
         self.params_memory.put_bool("PersonalityChangedViaWheel", True)
         self.previous_personality_profile = self.personality_profile
+
+    # GAP_DIST
+    if self.cruise_buttons in [CruiseButtons.UNPRESS, CruiseButtons.INIT] and self.distance_button_pressed:
+      self.cruise_buttons = CruiseButtons.GAP_DIST
 
     # Toggle Experimental Mode from steering wheel function
     if self.experimental_mode_via_press and ret.cruiseState.available:
