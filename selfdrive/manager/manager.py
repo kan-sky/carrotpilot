@@ -48,7 +48,6 @@ def manager_init() -> None:
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
     ("StopDistance", "600"),
-    ("MTSCEnabled", "1"),
     ("ShowDebugUI", "0"),
     ("ShowDateTime", "1"),
     ("ShowHudMode", "4"),
@@ -107,6 +106,9 @@ def manager_init() -> None:
     ("TFollowSpeedAddM", "0"),
     ("SoftHoldMode", "0"),       
     ("CruiseEcoControl", "4"),
+    ("LateralTorqueCustom", "1"),       
+    ("LateralTorqueAccelFactor", "1400"),       
+    ("LateralTorqueFriction", "60"),       
     ("SteerRatioApply", "142"),
   ]
   if not PC:

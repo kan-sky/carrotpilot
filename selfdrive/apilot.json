@@ -41,6 +41,45 @@
       "unit": 1
     },
     {
+      "group": "Á¶ÇâÆ©´×",
+      "name": "LateralTorqueCustom",
+      "title": "_LateralTorqueCustom(0)",
+      "descr": "0:LiveTorque, 1:CustomTorque",
+      "egroup": "LAT",
+      "etitle": "_LateralTorqueCustom(0)",
+      "edescr": "",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "unit": 1
+    },
+    {
+      "group": "Á¶ÇâÆ©´×",
+      "name": "LateralTorqueAccelFactor",
+      "title": "_LateralTorqueAccelFactor*0.001(2500)",
+      "descr": "",
+      "egroup": "LAT",
+      "etitle": "_LateralTorqueAccelFactor*0.001(2500)",
+      "edescr": "",
+      "min": 1000,
+      "max": 4000,
+      "default": 2500,
+      "unit": 1
+    },
+    {
+      "group": "Á¶ÇâÆ©´×",
+      "name": "LateralTorqueFriction",
+      "title": "_LateralTorqueFriction*0.001(100)",
+      "descr": "",
+      "egroup": "LAT",
+      "etitle": "_LateralTorqueFriction*0.001(100)",
+      "edescr": "",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "unit": 1
+    },
+    {
       "group": "Å©·çÁî",
       "name": "CruiseEcoControl",
       "title": "Å©·çÁî¿¬ºñÁ¦¾î(4km/h)",

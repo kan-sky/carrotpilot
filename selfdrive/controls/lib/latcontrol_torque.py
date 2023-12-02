@@ -111,12 +111,34 @@ class LatControlTorque(LatControl):
       # Increase for a stronger response, decrease for a weaker response.
       self.lat_accel_friction_factor = 0.7 # in [0, 3], in 0.05 increments. 3 is arbitrary safety limit
 
+    #ajouatom      
+    self.paramsCount = 0
+    self.lateralTorqueCustom = int(Params().get("LateralTorqueCustom", encoding="utf8"))
+    self.lateralTorqueAccelFactor = float(int(Params().get("LateralTorqueAccelFactor", encoding="utf8")))*0.001
+    self.lateralTorqueFriction = float(int(Params().get("LateralTorqueFriction", encoding="utf8")))*0.001
+
+
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
+    if self.lateralTorqueCustom > 0: 
+      return
     self.torque_params.latAccelFactor = latAccelFactor
     self.torque_params.latAccelOffset = latAccelOffset
     self.torque_params.friction = friction
 
+  def update_params(self):
+    self.paramsCount += 1
+    if self.paramsCount > 30:
+      self.paramsCount = 0
+    elif self.paramsCount == 10:
+      self.lateralTorqueCustom = int(Params().get("LateralTorqueCustom", encoding="utf8"))
+      self.lateralTorqueAccelFactor = float(int(Params().get("LateralTorqueAccelFactor", encoding="utf8")))*0.001
+      self.lateralTorqueFriction = float(int(Params().get("LateralTorqueFriction", encoding="utf8")))*0.001
+      if self.lateralTorqueCustom > 0:
+        self.torque_params.latAccelFactor = self.lateralTorqueAccelFactor
+        self.torque_params.friction = self.lateralTorqueFriction
+
   def update(self, active, CS, VM, params, last_actuators, steer_limited, desired_curvature, desired_curvature_rate, llk, lat_plan=None, model_data=None):
+    self.update_params()
     pid_log = log.ControlsState.LateralTorqueState.new_message()
     nn_log = None
 
