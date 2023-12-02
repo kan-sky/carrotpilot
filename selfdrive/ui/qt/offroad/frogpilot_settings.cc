@@ -22,6 +22,7 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(QWidget *parent) : FrogPilotPanel
     {"FireTheBabysitter", "Fire the Babysitter", "Disable some of openpilot's 'Babysitter Protocols'.", "../assets/offroad/icon_babysitter.png"},
     {"LateralTune", "Lateral Tuning", "Change the way openpilot steers.", "../assets/offroad/icon_lateral_tune.png"},
     {"LongitudinalTune", "Longitudinal Tuning", "Change the way openpilot accelerates and brakes.", "../assets/offroad/icon_longitudinal_tune.png"},
+    {"MTSCEnabled", "Map Turn Speed Control", "When enabled, the car will slow down when it predicts a lateral acceleration greater than 2.0 m/s^2.", "../assets/offroad/icon_speed_map.png"},
     {"Model", "Model Selector (Requires Reboot)", "Select your preferred openpilot model.\n\nFV = Farmville(Default)\nNLP = New Lemon Pie\nBD = Blue Diamond", "../assets/offroad/icon_calibration.png"},
     {"NudgelessLaneChange", "Nudgeless Lane Change", "Switch lanes without having to nudge the steering wheel.", "../assets/offroad/icon_lane.png"},
     {"PauseLateralOnSignal", "Pause Lateral On Turn Signal", "Pauses lateral control when a turn signal is active.", "../assets/offroad/icon_pause_lane.png"},

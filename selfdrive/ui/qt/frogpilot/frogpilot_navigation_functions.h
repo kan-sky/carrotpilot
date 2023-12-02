@@ -248,74 +248,79 @@ QString formatTime(long timeInSeconds) {
   return formattedTime;
 }
 
-QString calculateElapsedTime(const std::string &jsonData, const std::chrono::steady_clock::time_point &startTime) {
+QString formatDateTime(const std::chrono::time_point<std::chrono::system_clock> &timePoint) {
+  QDateTime dateTime = QDateTime::fromTime_t(std::chrono::system_clock::to_time_t(timePoint));
+  return dateTime.toString("h:mm ap");
+}
+
+QString calculateElapsedTime(int totalFiles, int downloadedFiles, const std::chrono::steady_clock::time_point &startTime) {
   using namespace std::chrono;
 
-  const int totalFiles = extractFromJson<int>(jsonData, "\"total_files\":");
-  const int downloadedFiles = extractFromJson<int>(jsonData, "\"downloaded_files\":");
   const long elapsed = duration_cast<seconds>(steady_clock::now() - startTime).count();
 
-  if (elapsed == 0 || downloadedFiles == 0) return "Calculating...";
-  if (downloadedFiles >= totalFiles || totalFiles <= 0) return "Downloaded";
+  if (totalFiles <= 0) return "Calculating...";
+  if (downloadedFiles >= totalFiles) return "Downloaded";
 
   return formatTime(elapsed);
 }
 
-QString calculateETA(const std::string &jsonData, const std::chrono::steady_clock::time_point &startTime) {
+QString calculateETA(int totalFiles, int downloadedFiles, const std::chrono::steady_clock::time_point &startTime) {
   using namespace std::chrono;
+
+  static std::deque<std::pair<double, long>> speedSamples;
+  static long lastUpdateDownloadedFiles = -1;
   static steady_clock::time_point lastUpdateTime = steady_clock::now();
-  static std::deque<double> rateHistory;
 
-  constexpr int minDataPoints = 5;
-  constexpr int historySize = 15;
+  const long elapsedSeconds = duration_cast<seconds>(steady_clock::now() - startTime).count();
 
-  static QString lastETA = "Calculating...";
+  if (totalFiles <= 0) return "Calculating...";
+  if (downloadedFiles >= totalFiles) return "Downloaded";
 
-  const int totalFiles = extractFromJson<int>(jsonData, "\"total_files\":");
-  const int downloadedFiles = extractFromJson<int>(jsonData, "\"downloaded_files\":");
-
-  if (totalFiles <= 0 || downloadedFiles >= totalFiles) {
-    return totalFiles <= 0 ? "Calculating..." : "Downloaded";
+  if (lastUpdateDownloadedFiles == -1) {
+    lastUpdateDownloadedFiles = downloadedFiles;
+    lastUpdateTime = steady_clock::now();
   }
 
-  if (duration_cast<milliseconds>(steady_clock::now() - lastUpdateTime).count() < 200) {
-    return lastETA;
+  long timeSinceLastUpdate = duration_cast<seconds>(steady_clock::now() - lastUpdateTime).count();
+  if (elapsedSeconds > 0 && (timeSinceLastUpdate >= 1 || downloadedFiles > lastUpdateDownloadedFiles)) {
+    double speed = timeSinceLastUpdate > 0 ?
+                   static_cast<double>(downloadedFiles - lastUpdateDownloadedFiles) / timeSinceLastUpdate :
+                   0.0;
+
+    if (speed > 0.0) {
+      speedSamples.push_back({speed, elapsedSeconds});
+    }
+
+    lastUpdateDownloadedFiles = downloadedFiles;
+    lastUpdateTime = steady_clock::now();
   }
 
-  const long elapsed = duration_cast<seconds>(steady_clock::now() - startTime).count();
-  if (elapsed == 0 || downloadedFiles == 0) return lastETA;
-
-  const double rate = downloadedFiles / static_cast<double>(elapsed);
-  if (rateHistory.size() >= historySize) rateHistory.pop_front();
-  rateHistory.push_back(rate);
-
-  if (rateHistory.size() < minDataPoints) return lastETA;
-
-  double avgRate = 0;
-  for (const double &r : rateHistory) {
-    avgRate += r;
+  const size_t sampleSize = 10;
+  while (speedSamples.size() > sampleSize) {
+    speedSamples.pop_front();
   }
-  avgRate /= rateHistory.size();
 
-  const long remainingTime = static_cast<long>((totalFiles - downloadedFiles) / avgRate);
-  if (remainingTime < 0) return lastETA;
+  double weightedSpeedSum = 0.0;
+  long totalWeight = 0;
+  for (const auto& [speed, timestamp] : speedSamples) {
+    long weight = elapsedSeconds - timestamp + 1;
+    weightedSpeedSum += speed * weight;
+    totalWeight += weight;
+  }
 
-  const system_clock::time_point completionTime = system_clock::now() + seconds(remainingTime);
-  const std::time_t completionTimeT = system_clock::to_time_t(completionTime);
-  struct tm * const timeinfo = localtime(&completionTimeT);
-  char buffer[80];
-  strftime(buffer, 80, "%I:%M%p", timeinfo);
-  const std::string formattedTime(buffer);
+  double averageSpeed = totalWeight > 0 ? weightedSpeedSum / totalWeight : 0.0;
+  if (averageSpeed <= 0.0) return "Calculating...";
 
-  lastETA = formatTime(remainingTime) + " remaining (" + QString::fromStdString(formattedTime) + ")";
-  lastUpdateTime = steady_clock::now();
-  return lastETA;
+  long remainingFiles = totalFiles - downloadedFiles;
+  long remainingTimeEstimate = static_cast<long>(remainingFiles / averageSpeed);
+
+  auto estimatedCompletionTime = system_clock::now() + seconds(remainingTimeEstimate);
+  QString estimatedTimeStr = formatDateTime(estimatedCompletionTime);
+
+  return formatTime(remainingTimeEstimate) + " (" + estimatedTimeStr + ")";
 }
 
-QString formatDownloadStatus(const std::string &jsonData) {
-  int totalFiles = extractFromJson<int>(jsonData, "\"total_files\":");
-  int downloadedFiles = extractFromJson<int>(jsonData, "\"downloaded_files\":");
-
+QString formatDownloadStatus(int totalFiles, int downloadedFiles) {
   if (totalFiles <= 0) return "Calculating...";
   if (downloadedFiles >= totalFiles) return "Downloaded";
 

@@ -1260,14 +1260,16 @@ void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
 Compass::Compass(QWidget *parent) : QWidget(parent) {
   setFixedSize(375, 325);
 
-  compassSize = 200;
+  compassSize = 250;
   circleOffset = compassSize / 2;
-  degreeLabelOffset = circleOffset + 20;
-  innerCompass = circleOffset / 1.25;
-  x = compassSize / 1.5 + 100;
-  y = compassSize / 1.5 + 50;
+  degreeLabelOffset = circleOffset + 25;
+  innerCompass = btn_size / 2;
+  x = compassSize / 1.5 + 50;
+  y = compassSize / 1.5 - 15;
 
-  compassInnerImg = loadPixmap("../assets/images/compass_inner.png", QSize(compassSize / 1.5, compassSize / 1.5));
+  compassInnerImg = loadPixmap("../assets/images/compass_inner.png", QSize(compassSize / 1.75, compassSize / 1.75));
+
+  initializeStaticElements();
 }
 
 void Compass::updateState(int bearing_deg) {
@@ -1305,8 +1307,8 @@ void Compass::initializeStaticElements() {
   // Draw the static degree lines
   for (int i = 0; i < 360; i += 15) {
     const bool isCardinalDirection = i % 90 == 0;
-    const int lineLength = isCardinalDirection ? 12 : 8;
-    p.setPen(QPen(Qt::white, isCardinalDirection ? 2 : 1));
+    const int lineLength = isCardinalDirection ? 15 : 10;
+    p.setPen(QPen(Qt::white, isCardinalDirection ? 3 : 1));
     p.save();
     p.translate(x, y);
     p.rotate(i);
@@ -1319,11 +1321,6 @@ void Compass::paintEvent(QPaintEvent *event) {
   QPainter p(this);
   p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-  if (!staticElementsInitialized) {
-    initializeStaticElements();
-    staticElementsInitialized = true;
-  }
-
   // Draw static elements
   p.drawPixmap(0, 0, staticElements);
 
@@ -1335,7 +1332,7 @@ void Compass::paintEvent(QPaintEvent *event) {
   p.translate(-x, -y);
 
   // Draw the dynamic bearing degree numbers and lines
-  QFont font = InterFont(6, QFont::Normal);
+  QFont font = InterFont(10, QFont::Normal);
   for (int i = 0; i < 360; i += 15) {
     const bool isBold = abs(i - static_cast<int>(bearingDeg)) <= 7;
     font.setWeight(isBold ? QFont::Bold : QFont::Normal);
@@ -1353,12 +1350,12 @@ void Compass::paintEvent(QPaintEvent *event) {
   }
 
   // Draw cardinal directions
-  p.setFont(InterFont(20, QFont::Bold));
+  p.setFont(InterFont(25, QFont::Bold));
   const QString directions[] = {"N", "E", "S", "W"};
   const int angles[] = {0, 90, 180, 270};
   const int alignmentFlags[] = {Qt::AlignTop | Qt::AlignHCenter, Qt::AlignRight | Qt::AlignVCenter, Qt::AlignBottom | Qt::AlignHCenter, Qt::AlignLeft | Qt::AlignVCenter};
   for (int i = 0; i < 4; ++i) {
-    const int offset = (directions[i] == "E") ? -4 : (directions[i] == "W" ? 4 : 0);
+    const int offset = (directions[i] == "E") ? -5 : (directions[i] == "W" ? 5 : 0);
     p.setOpacity((bearingDeg >= angles[i] - 22 && bearingDeg < angles[i] + 23) ? 1.0 : 0.2);
     p.drawText(QRect(x - innerCompass + offset, y - innerCompass, innerCompass * 2, innerCompass * 2), alignmentFlags[i], directions[i]);
   }

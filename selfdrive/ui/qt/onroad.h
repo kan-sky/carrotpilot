@@ -115,7 +115,6 @@ protected:
   void paintEvent(QPaintEvent *event) override;
 
 private:
-  bool staticElementsInitialized;
   int bearingDeg;
   int circleOffset;
   int compassSize;

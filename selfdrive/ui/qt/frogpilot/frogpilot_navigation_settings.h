@@ -79,6 +79,7 @@ public:
 
 private:
   void cancelDownload(QWidget *parent);
+  void checkIfUpdateMissed();
   void downloadMaps();
   void downloadSchedule();
   void hideEvent(QHideEvent *event);

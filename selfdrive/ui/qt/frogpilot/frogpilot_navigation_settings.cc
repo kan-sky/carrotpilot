@@ -30,7 +30,7 @@ FrogPilotNavigationPanel::FrogPilotNavigationPanel(QWidget *parent) : QFrame(par
                                           "",
                                           scheduleOptions);
   schedule = params.getInt("PreferredSchedule");
-  schedulePending =  params.getBool("SchedulePending");
+  schedulePending = params.getBool("SchedulePending");
   list->addItem(preferredSchedule);
 
   list->addItem(offlineMapsSize = new LabelControl(tr("Offline Maps Size"), formatSize(calculateDirectorySize(offlineFolderPath))));
@@ -73,6 +73,8 @@ FrogPilotNavigationPanel::FrogPilotNavigationPanel(QWidget *parent) : QFrame(par
   mainLayout->setCurrentWidget(navigationWidget);
 
   QObject::connect(uiState(), &UIState::uiUpdate, this, &FrogPilotNavigationPanel::updateState);
+
+  checkIfUpdateMissed();
 }
 
 void FrogPilotNavigationPanel::hideEvent(QHideEvent *event) {
@@ -82,6 +84,7 @@ void FrogPilotNavigationPanel::hideEvent(QHideEvent *event) {
 }
 
 void FrogPilotNavigationPanel::updateState() {
+  if (!isVisible()) updateVisibility(downloadActive);
   if (downloadActive) updateStatuses();
   if (schedule) downloadSchedule();
 }
@@ -89,7 +92,13 @@ void FrogPilotNavigationPanel::updateState() {
 void FrogPilotNavigationPanel::updateStatuses() {
   static std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
   osmDownloadProgress = params.get("OSMDownloadProgress");
-  downloadActive = elapsedTime != "Downloaded";
+
+  const int totalFiles = extractFromJson<int>(osmDownloadProgress, "\"total_files\":");
+  const int downloadedFiles = extractFromJson<int>(osmDownloadProgress, "\"downloaded_files\":");
+
+  if (downloadedFiles >= totalFiles && !osmDownloadProgress.empty()) {
+    downloadActive = false;
+  }
 
   if (osmDownloadProgress != previousOSMDownloadProgress && isVisible()) {
     qint64 fileSize = calculateDirectorySize(offlineFolderPath);
@@ -97,11 +106,11 @@ void FrogPilotNavigationPanel::updateStatuses() {
     previousOSMDownloadProgress = osmDownloadProgress;
   }
 
-  elapsedTime = calculateElapsedTime(osmDownloadProgress, startTime);
+  elapsedTime = calculateElapsedTime(totalFiles, downloadedFiles, startTime);
 
   offlineMapsElapsed->setText(elapsedTime);
-  offlineMapsETA->setText(calculateETA(osmDownloadProgress, startTime));
-  offlineMapsStatus->setText(formatDownloadStatus(osmDownloadProgress));
+  offlineMapsETA->setText(calculateETA(totalFiles, downloadedFiles, startTime));
+  offlineMapsStatus->setText(formatDownloadStatus(totalFiles, downloadedFiles));
 
   if (downloadActive != previousDownloadActive) {
     startTime = !downloadActive ? std::chrono::steady_clock::now() : startTime;
@@ -119,6 +128,37 @@ void FrogPilotNavigationPanel::updateVisibility(bool visibility) {
   removeOfflineMapsButton->setVisible(!visibility);
 }
 
+void FrogPilotNavigationPanel::checkIfUpdateMissed() {
+  std::string lastScheduledUpdate = params.get("LastScheduledUpdate");
+
+  if (lastScheduledUpdate.empty() || schedule == 0) {
+    return;
+  }
+
+  std::time_t t = std::time(nullptr);
+  std::tm *now = std::localtime(&t);
+
+  std::tm lastUpdate = {};
+  sscanf(lastScheduledUpdate.c_str(), "%d-%d-%d", &lastUpdate.tm_year, &lastUpdate.tm_mon, &lastUpdate.tm_mday);
+  lastUpdate.tm_year -= 1900;
+  lastUpdate.tm_mon -= 1;
+
+  std::time_t lastUpdateTime = std::mktime(&lastUpdate);
+  std::tm *lastUpdateDay = std::localtime(&lastUpdateTime);
+
+  if (schedule == 1) {
+    bool isTodaySunday = (now->tm_wday == 0);
+    bool wasLastUpdateSunday = (lastUpdateDay->tm_wday == 0);
+
+    schedulePending = (!isTodaySunday && !wasLastUpdateSunday);
+  } else if (schedule == 2) {
+    bool isTodayFirstOfMonth = (now->tm_mday == 1);
+    bool wasLastUpdateFirstOfMonth = (lastUpdate.tm_mday == 1);
+
+    schedulePending = (!isTodayFirstOfMonth && !wasLastUpdateFirstOfMonth);
+  }
+}
+
 void FrogPilotNavigationPanel::downloadSchedule() {
   const bool wifi = (*uiState()->sm)["deviceState"].getDeviceState().getNetworkType() == cereal::DeviceState::NetworkType::WIFI;
 
@@ -130,6 +170,12 @@ void FrogPilotNavigationPanel::downloadSchedule() {
   if ((isScheduleTime || schedulePending) && !(scene.started || scheduleCompleted) && wifi) {
     downloadMaps();
     scheduleCompleted = true;
+
+    char dateStr[11];
+    snprintf(dateStr, sizeof(dateStr), "%04d-%02d-%02d", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday);
+    std::string lastScheduledUpdate(dateStr);
+
+    params.put("LastScheduledUpdate", lastScheduledUpdate);
   } else if (!isScheduleTime) {
     scheduleCompleted = false;
   } else {
@@ -155,6 +201,7 @@ void FrogPilotNavigationPanel::cancelDownload(QWidget *parent) {
 }
 
 void FrogPilotNavigationPanel::downloadMaps() {
+  params.remove("OSMDownloadProgress");
   paramsMemory.put("OSMDownloadLocations", params.get("MapsSelected"));
   removeOfflineMapsButton->setVisible(true);
   downloadActive = true;
@@ -175,13 +222,16 @@ void FrogPilotNavigationPanel::setMaps() {
     QStringList states = ButtonSelectionControl::selectedStates.split(',', QString::SkipEmptyParts);
     QStringList countries = ButtonSelectionControl::selectedCountries.split(',', QString::SkipEmptyParts);
 
-    if (!states.isEmpty() || !countries.isEmpty()) {
-      QJsonObject json;
-      json.insert("states", QJsonArray::fromStringList(states));
-      json.insert("nations", QJsonArray::fromStringList(countries));
+    QJsonObject json;
+    json.insert("states", QJsonArray::fromStringList(states));
+    json.insert("nations", QJsonArray::fromStringList(countries));
 
-      params.put("MapsSelected", QJsonDocument(json).toJson(QJsonDocument::Compact).toStdString());
+    params.put("MapsSelected", QJsonDocument(json).toJson(QJsonDocument::Compact).toStdString());
+
+    if (!states.isEmpty() || !countries.isEmpty()) {
       downloadOfflineMapsButton->setVisible(true);
+    } else {
+      params.remove("MapsSelected");
     }
   }).detach();
 }

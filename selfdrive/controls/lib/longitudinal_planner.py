@@ -12,6 +12,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.selfdrive.controls.conditional_experimental_mode import ConditionalExperimentalMode
+from openpilot.selfdrive.controls.mtsc import mtsc
 from openpilot.selfdrive.controls.speed_limit_controller import SpeedLimitController
 from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc, N
@@ -105,6 +106,7 @@ class LongitudinalPlanner:
     self.stopped_for_light_previously = False
 
     self.green_light_count = 0
+    self.m_offset = 0
     self.overridden_speed = 0
     self.slc_target = 0
     self.v_offset = 0
@@ -246,12 +248,20 @@ class LongitudinalPlanner:
       self.green_light_count = np.clip(self.green_light_count, 0, 10)
 
       # Only trigger the alert if the green light is detected for 0.5 seconds
-      self.green_light = self.green_light_count >= 10 and self.previously_driving and not have_lead
+      self.green_light = self.green_light_count >= 10 and self.previously_driving and (v_lead > 5 if have_lead else True)
       # Reset the counter when the green light alert is triggered
       self.green_light_count *= not self.green_light
 
       self.stopped_for_light_previously |= stopped_for_light
       self.stopped_for_light_previously &= not self.green_light
+
+    # Pfeiferj's Map Turn Speed Controller
+    mtsc_v = mtsc.target_speed(v_ego, sm['carState'].aEgo)
+    if v_cruise > mtsc_v and mtsc_v != 0:
+      self.m_offset = max(0, int(v_cruise - mtsc_v))
+      v_cruise = mtsc_v
+    else:
+      self.m_offset = 0
 
     # Pfeiferj's Speed Limit Controller
     if self.speed_limit_controller:
@@ -355,7 +365,7 @@ class LongitudinalPlanner:
     longitudinalPlan.slcOverridden = self.override_slc
     longitudinalPlan.slcSpeedLimit = SpeedLimitController.desired_speed_limit
     longitudinalPlan.slcSpeedLimitOffset = SpeedLimitController.offset
-    longitudinalPlan.vtscOffset = self.v_offset
+    longitudinalPlan.vtscOffset = max(self.m_offset, self.v_offset)
     # LongitudinalPlan variables for onroad driving insights
     longitudinalPlan.safeObstacleDistance = self.mpc.safe_obstacle_distance
     longitudinalPlan.stoppedEquivalenceFactor = self.mpc.stopped_equivalence_factor
