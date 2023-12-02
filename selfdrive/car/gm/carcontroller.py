@@ -54,6 +54,9 @@ class CarController:
     # FrogPilot variables
     self.use_ev_tables = False
 
+    # ajouatom
+    self.activateCruise = 0
+
   def update_frogpilot_variables(self, params):
     self.use_ev_tables = params.get_bool("EVTable")
 
@@ -118,6 +121,14 @@ class CarController:
       can_sends.append(gmcan.create_steering_control(self.packer_pt, CanBus.POWERTRAIN, apply_steer, idx, CC.latActive))
 
     if self.CP.openpilotLongitudinalControl:
+
+      # ajouatom
+      if not CC.enabled:
+        self.activateCruise = 0
+      if CC.cruiseControl.activate and self.activateCruise == 0: ## ajouatom: send command to panda via Button spam(RES_ACCEL), for auto engage
+        self.activateCruise = 1
+        can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.POWERTRAIN, CS.buttons_counter, CruiseButtons.RES_ACCEL))
+
       # Gas/regen, brakes, and UI commands - all at 25Hz
       if self.frame % 4 == 0:
         stopping = actuators.longControlState == LongCtrlState.stopping
