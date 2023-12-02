@@ -125,7 +125,7 @@ class CarInterface(CarInterfaceBase):
       ret.minSteerSpeed = 6.8 * CV.MPH_TO_MS
 
       # Tuning
-      ret.longitudinalTuning.kpV = [2.0]
+      ret.longitudinalTuning.kpV = [1.75]
       ret.longitudinalTuning.kiV = [0.35, 0.53, 0.62, 0.7, 0.5, 0.36]
       ret.stoppingDecelRate = 0.2
       if ret.enableGasInterceptor:
@@ -151,6 +151,7 @@ class CarInterface(CarInterfaceBase):
       ret.tireStiffnessFactor = 0.469  # Stock Michelin Energy Saver A/S, LiveParameters
       ret.centerToFront = ret.wheelbase * 0.45  # Volt Gen 1, TODO corner weigh
 
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
       ret.lateralTuning.pid.kpBP = [0., 40.]
       ret.lateralTuning.pid.kpV = [0., 0.17]
       ret.lateralTuning.pid.kiBP = [0.]
