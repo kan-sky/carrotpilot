@@ -266,6 +266,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     { "TFollowSpeedAdd", PERSISTENT },
     { "TFollowSpeedAddM", PERSISTENT },
     { "SoftHoldMode", PERSISTENT },
+    { "SteerRatioApply", PERSISTENT },
 
     // FrogPilot parameters
     {"AccelerationPath", PERSISTENT},

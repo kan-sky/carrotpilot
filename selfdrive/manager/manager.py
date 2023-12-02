@@ -104,7 +104,9 @@ def manager_init() -> None:
     ("TFollowSpeedAdd", "0"),
     ("TFollowSpeedAddM", "0"),
     ("SoftHoldMode", "0"),       
-    ("CruiseEcoControl", "4"),
+    ("CruiseEcoControl", "4"), 
+    # APM tuning
+    ("SteerRatioApply", "142"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
