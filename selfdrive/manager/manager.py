@@ -48,6 +48,7 @@ def manager_init() -> None:
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
     ("StopDistance", "600"),
+    ("MTSCEnabled", "1"),
     ("ShowDebugUI", "0"),
     ("ShowDateTime", "1"),
     ("ShowHudMode", "4"),

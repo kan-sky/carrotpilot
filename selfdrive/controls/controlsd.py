@@ -615,7 +615,7 @@ class Controls:
     lp = self.sm['liveParameters']
     x = max(lp.stiffnessFactor, 0.1)
     if self.v_cruise_helper.steerRatioApply > 0.0:
-      sr = self.cruise_helper.steerRatioApply
+      sr = self.v_cruise_helper.steerRatioApply
     else:
       sr = max(lp.steerRatio, 0.1)
       sr *= self.v_cruise_helper.liveSteerRatioApply
