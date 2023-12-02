@@ -61,7 +61,39 @@ class VCruiseHelper:
     self.params = Params()
     self.v_cruise_kph_set = V_CRUISE_UNSET
     self.cruiseSpeedTarget = 0
-    self.roadSpeed = 10
+    self.roadSpeed = 30
+    
+    #ajouatom: params
+    self.params_count = 0
+    self.autoNaviSpeedBumpSpeed = float(self.params.get_int("AutoNaviSpeedBumpSpeed"))
+    self.autoNaviSpeedBumpTime = float(self.params.get_int("AutoNaviSpeedBumpTime"))
+    self.autoNaviSpeedCtrlEnd = float(self.params.get_int("AutoNaviSpeedCtrlEnd"))
+    self.autoNaviSpeedSafetyFactor = float(self.params.get_int("AutoNaviSpeedSafetyFactor")) * 0.01
+    self.autoNaviSpeedDecelRate = float(self.params.get_int("AutoNaviSpeedDecelRate")) * 0.01
+    self.autoNaviSpeedCtrl = 2
+    self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
+    self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
+    self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
+    self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
+
+  def _params_update():
+    self.params_count += 1
+    if self.params_count == 10:
+      self.autoNaviSpeedBumpSpeed = float(self.params.get_int("AutoNaviSpeedBumpSpeed"))
+      self.autoNaviSpeedBumpTime = float(self.params.get_int("AutoNaviSpeedBumpTime"))
+      self.autoNaviSpeedCtrlEnd = float(self.params.get_int("AutoNaviSpeedCtrlEnd"))
+      self.autoNaviSpeedSafetyFactor = float(self.params.get_int("AutoNaviSpeedSafetyFactor")) * 0.01
+      self.autoNaviSpeedDecelRate = float(self.params.get_int("AutoNaviSpeedDecelRate")) * 0.01
+      self.autoNaviSpeedCtrl = 2
+    elif self.params_count == 20:
+      self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
+      self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
+    elif self.params_count == 30:
+      self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
+      self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
+    elif self.params_count >= 100:
+      self.params_count = 0
+    
     #add Event
     self.events = Events()
 
@@ -264,8 +296,6 @@ class VCruiseHelper:
       self.softHoldActive = False
       self.cruiseActivate = 0
 
-    self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
-    self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
     if gas_tok:
       if controls.enabled:
         v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
@@ -327,7 +357,7 @@ class VCruiseHelper:
     v_ego = CS.vEgoCluster
     msg = self.roadLimitSpeed = controls.sm['roadLimitSpeed']
 
-    self.roadSpeed = clip(10, msg.roadLimitSpeed, 150.0)
+    self.roadSpeed = clip(30, msg.roadLimitSpeed, 150.0)
     camType = int(msg.camType)
     xSignType = msg.xSignType
 
@@ -337,13 +367,7 @@ class VCruiseHelper:
     leftDist = 0
     speedLimitType = 0
     safeDist = 0
-    
-    self.autoNaviSpeedBumpSpeed = float(self.params.get_int("AutoNaviSpeedBumpSpeed"))
-    self.autoNaviSpeedBumpTime = float(self.params.get_int("AutoNaviSpeedBumpTime"))
-    self.autoNaviSpeedCtrlEnd = float(self.params.get_int("AutoNaviSpeedCtrlEnd"))
-    self.autoNaviSpeedSafetyFactor = float(self.params.get_int("AutoNaviSpeedSafetyFactor")) * 0.01
-    self.autoNaviSpeedDecelRate = float(self.params.get_int("AutoNaviSpeedDecelRate")) * 0.01
-    self.autoNaviSpeedCtrl = 2
+  
     
     if camType == 22 or xSignType == 22:
       safeSpeed = self.autoNaviSpeedBumpSpeed
@@ -490,4 +514,3 @@ def get_speed_error(modelV2: log.ModelDataV2, v_ego: float) -> float:
     vel_err = clip(modelV2.temporalPose.trans[0] - v_ego, -MAX_VEL_ERR, MAX_VEL_ERR)
     return float(vel_err)
   return 0.0
-

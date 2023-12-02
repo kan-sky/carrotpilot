@@ -2,6 +2,19 @@
   "apilot": 20220111,
   "params": [
     {
+      "group": "조향튜닝",
+      "name": "LiveSteerRatioApply",
+      "title": "LiveSteerRatioApply(100%)",
+      "descr": "",
+      "egroup": "LAT",
+      "etitle": "LiveSteerRatioApply(100%)",
+      "edescr": "",
+      "min": 1,
+      "max": 200,
+      "default": 100,
+      "unit": 1
+    },
+    {
       "group": "정지",
       "name": "StopDistance",
       "title": "정지거리(550cm)",
@@ -28,19 +41,6 @@
       "unit": 1
     },
     {
-      "group": "조향튜닝",
-      "name": "SteerRatioApply",
-      "title": "SteerRatio적용x0.1(0)",
-      "descr": "0: LiveSteerRatio사용, 단위:0.1",
-      "egroup": "LAT",
-      "etitle": "SteerRatioApplyx0.1(0)",
-      "edescr": "0: Use LiveSteerRatio, 1:Custom value",
-      "min": 0,
-      "max": 300,
-      "default": 140,
-      "unit": 1
-    },
-    {
       "group": "크루즈",
       "name": "CruiseEcoControl",
       "title": "크루즈연비제어(4km/h)",
@@ -51,6 +51,19 @@
       "min": 0,
       "max": 10,
       "default": 4,
+      "unit": 1
+    },
+    {
+      "group": "조향튜닝",
+      "name": "SteerRatioApply",
+      "title": "SteerRatioCustomx0.1(0)",
+      "descr": "0: LiveSteerRatio사용, 단위:0.1",
+      "egroup": "LAT",
+      "etitle": "SteerRatioCustomx0.1(0)",
+      "edescr": "0: Use LiveSteerRatio, 1:Custom value",
+      "min": 0,
+      "max": 300,
+      "default": 0,
       "unit": 1
     },
     {
@@ -230,7 +243,7 @@
       "egroup": "CRUISE",
       "etitle": "GasCruiseON:Speed",
       "edescr": "",
-      "min": 0,
+      "min": 20,
       "max": 140,
       "default": 0,
       "unit": 5

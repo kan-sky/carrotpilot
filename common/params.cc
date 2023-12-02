@@ -247,8 +247,10 @@ std::unordered_map<std::string, uint32_t> keys = {
     { "AChangeCost", PERSISTENT },
     { "AChangeCostStart", PERSISTENT },
     { "CruiseSpeedUnit", PERSISTENT },
+    { "LiveSteerRatioApply", PERSISTENT },
     { "LiveTorqueCache", PERSISTENT },
     { "CruiseEcoControl", PERSISTENT },
+    { "SteerRatioApply", PERSISTENT },
     { "CruiseMaxVals1", PERSISTENT },
     { "CruiseMaxVals2", PERSISTENT },
     { "CruiseMaxVals3", PERSISTENT },
@@ -266,7 +268,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     { "TFollowSpeedAdd", PERSISTENT },
     { "TFollowSpeedAddM", PERSISTENT },
     { "SoftHoldMode", PERSISTENT },
-    { "SteerRatioApply", PERSISTENT },
 
     // FrogPilot parameters
     {"AccelerationPath", PERSISTENT},

@@ -381,8 +381,11 @@ def main():
         atype = "none" if atype is None else atype
         value = "-1" if value is None else value
         try:
+          print("try")
           value_int = int(value)
+          print("ok");
         except:
+          print("exception")
           value_int = -100
 
         xCmd = server.get_apilot_val("apilot_cmd")
@@ -393,7 +396,8 @@ def main():
         if ret:
           prev_recvTime = now
 
-        #print(atype, value)
+        if atype != 'none':
+          print(atype, value)
         delta_dist = 0.0
         if CS is not None:
           delta_dist = CS.totalDistance - totalDistance
@@ -526,7 +530,7 @@ def main():
           xTurnInfo = 5 # speed down
         elif nTBTTurnType in [153, 154, 249]: # TG
           xTurnInfo = 5 # speed down
-        elif nTBTTurnType >= 0:
+        elif nTBTTurnType >= 0 and not mappyMode_valid:
           xTurnInfo = -1
         if nTBTDist > 0 and xTurnInfo >= 0:
           xDistToTurn = nTBTDist

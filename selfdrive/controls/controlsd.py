@@ -202,9 +202,6 @@ class Controls:
     self.recalibrating_seen = False
     self.nn_alert_shown = False
 
-    # use fixed steerRatio
-    self.second = 0.0
-    self.SteerRatioApply = float(int(Params().get("SteerRatioApply", encoding="utf8"))) / 10.
     # TODO: no longer necessary, aside from process replay
     self.sm['liveParameters'].valid = True
     self.can_log_mono_time = 0
@@ -361,13 +358,6 @@ class Controls:
 
       if log.PandaState.FaultType.relayMalfunction in pandaState.faults:
         self.events.add(EventName.relayMalfunction)
-
-    # APM tuning
-    self.second += DT_CTRL
-    if self.second > 1.0:
-      # use fixed steerRatio
-      self.SteerRatioApply = float(int(Params().get("SteerRatioApply", encoding="utf8"))) / 10.
-      self.second = 0.0
 
     # Handle HW and system malfunctions
     # Order is very intentional here. Be careful when modifying this.
@@ -624,11 +614,11 @@ class Controls:
     # Update VehicleModel
     lp = self.sm['liveParameters']
     x = max(lp.stiffnessFactor, 0.1)
-    # use fixed steerRatio
-    if self.SteerRatioApply > 0.0:
-      sr = max(self.SteerRatioApply, 0.1)
+    if self.v_cruise_helper.steerRatioApply > 0.0:
+      sr = self.cruise_helper.steerRatioApply
     else:
       sr = max(lp.steerRatio, 0.1)
+      sr *= self.v_cruise_helper.liveSteerRatioApply
     self.VM.update_params(x, sr)
 
     # Update Torque Params

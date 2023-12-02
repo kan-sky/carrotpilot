@@ -47,7 +47,7 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
-    ("StopDistance", "550"),
+    ("StopDistance", "600"),
     ("ShowDebugUI", "0"),
     ("ShowDateTime", "1"),
     ("ShowHudMode", "4"),
@@ -86,6 +86,7 @@ def manager_init() -> None:
     ("AChangeCost", "200"), 
     ("AChangeCostStart", "40"), 
     ("CruiseSpeedUnit", "10"),      
+    ("LiveSteerRatioApply", "100"),      
     ("LiveTorqueCache", "0"),      
     ("CruiseMaxVals1", "160"),
     ("CruiseMaxVals2", "120"),
@@ -104,8 +105,7 @@ def manager_init() -> None:
     ("TFollowSpeedAdd", "0"),
     ("TFollowSpeedAddM", "0"),
     ("SoftHoldMode", "0"),       
-    ("CruiseEcoControl", "4"), 
-    # APM tuning
+    ("CruiseEcoControl", "4"),
     ("SteerRatioApply", "142"),
   ]
   if not PC:
