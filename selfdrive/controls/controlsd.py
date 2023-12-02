@@ -155,7 +155,8 @@ class Controls:
 
     # cleanup old params
     if not self.CP.experimentalLongitudinalAvailable or is_release_branch():
-      self.params.remove("ExperimentalLongitudinalEnabled")
+      #self.params.remove("ExperimentalLongitudinalEnabled")
+      pass
     if not self.CP.openpilotLongitudinalControl:
       self.params.remove("ExperimentalMode")
 
@@ -519,8 +520,12 @@ class Controls:
     self.v_cruise_helper.update_v_cruise(CS, self.enabled, self.is_metric, self.reverse_cruise_increase, self)
 
         #ajouatom
-    if not self.enabled and self.v_cruise_helper.cruiseActivate and not self.events.contains(ET.NO_ENTRY): #ajouatom
+    if not self.enabled and self.v_cruise_helper.cruiseActivate > 0 and not self.events.contains(ET.NO_ENTRY): #ajouatom
       self.events.add(EventName.buttonEnable)
+      print("CruiseActivate: Button Enable")
+    if self.enabled and self.v_cruise_helper.cruiseActivate < 0:
+      self.events.add(EventName.buttonCancel)
+      print("CruiseActivate: Button Cancel")
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
@@ -788,7 +793,8 @@ class Controls:
     hudControl.objDist = int(lead_one.dRel) if lead_one.status else 0
     hudControl.objRelSpd = lead_one.vRel if lead_one.status else 0
 
-    CC.cruiseControl.activate = self.v_cruise_helper.cruiseActivate and not no_entry_events
+    CC.cruiseControl.activate = self.v_cruise_helper.cruiseActivate > 0 and not no_entry_events
+    
 
     hudControl.rightLaneVisible = CC.latActive
     hudControl.leftLaneVisible = CC.latActive

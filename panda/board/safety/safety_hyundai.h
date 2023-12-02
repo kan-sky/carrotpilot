@@ -329,10 +329,10 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
   // ajouatom: for softHold
   else if ((addr == 0x4F1) && hyundai_longitudinal) {
       int button = GET_BYTE(to_send, 0) & 0x7U;
-      if (button == 3 && !controls_allowed) {
+      if (button == 1) {
           controls_allowed = true;
-          tx = 0;
       }
+      tx = 0;
   }
 // xxxpilot
   if(addr == 832)

@@ -23,6 +23,7 @@ LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MIN = -1.2
 A_CRUISE_MAX_VALS = [1.6, 1.2, 0.8, 0.6]
 A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
+A_CRUISE_MAX_BP_APILOT = [0., 40 * CV.KPH_TO_MS, 60 * CV.KPH_TO_MS, 80 * CV.KPH_TO_MS, 110 * CV.KPH_TO_MS, 140 * CV.KPH_TO_MS]
 
 # Acceleration profiles - Credit goes to the DragonPilot team!
                  # MPH = [0.,  35,   35,  40,    40,  45,    45,  67,    67,   67, 123]
@@ -109,12 +110,36 @@ class LongitudinalPlanner:
     self.v_offset = 0
     self.v_target = MIN_TARGET_V
 
+  #ajouatom
+    self.myDrivingMode = 3 # general mode
+    self.mySafeModeFactor = 0.8
+    self.myEcoModeFactor = 0.8
+    self.cruiseMaxVals1 = 1.6
+    self.cruiseMaxVals2 = 1.2
+    self.cruiseMaxVals3 = 1.0
+    self.cruiseMaxVals4 = 0.8
+    self.cruiseMaxVals5 = 0.7
+    self.cruiseMaxVals6 = 0.6
+  
   def read_param(self):
     try:
       self.personality = int(self.params.get('LongitudinalPersonality'))
     except (ValueError, TypeError):
       self.personality = log.LongitudinalPersonality.standard
 
+    # ajouatom
+    #self.mySafeModeFactor = float(self.params.get_int("MySafeModeFactor")) / 100.
+    #self.myEcoModeFactor = float(self.params.get_int("MyEcoModeFactor")) / 100.
+    self.cruiseMaxVals1 = float(self.params.get_int("CruiseMaxVals1")) / 100.
+    self.cruiseMaxVals2 = float(self.params.get_int("CruiseMaxVals2")) / 100.
+    self.cruiseMaxVals3 = float(self.params.get_int("CruiseMaxVals3")) / 100.
+    self.cruiseMaxVals4 = float(self.params.get_int("CruiseMaxVals4")) / 100.
+    self.cruiseMaxVals5 = float(self.params.get_int("CruiseMaxVals5")) / 100.
+    self.cruiseMaxVals6 = float(self.params.get_int("CruiseMaxVals6")) / 100.
+    
+  def get_max_accel(self, v_ego):
+    cruiseMaxVals = [self.cruiseMaxVals1, self.cruiseMaxVals2, self.cruiseMaxVals3, self.cruiseMaxVals4, self.cruiseMaxVals5, self.cruiseMaxVals6]
+    return interp(v_ego, A_CRUISE_MAX_BP_APILOT, cruiseMaxVals)
   @staticmethod
   def parse_model(model_msg, model_error):
     if (len(model_msg.position.x) == 33 and
@@ -162,8 +187,17 @@ class LongitudinalPlanner:
     if self.mpc.mode == 'acc':
       if self.acceleration_profile == 1:
         accel_limits = [get_min_accel_eco_tune(v_ego), get_max_accel_eco_tune(v_ego)]
-      elif self.acceleration_profile == 2:
-        accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
+      elif self.acceleration_profile == 2:      
+        if self.myDrivingMode in [1]: # apilot eco mode
+          myMaxAccel = clip(self.get_max_accel(v_ego)*self.myEcoModeFactor, 0, ACCEL_MAX)
+        elif self.myDrivingMode in [2]: # apilot safe mode
+          myMaxAccel = clip(self.get_max_accel(v_ego)*self.myEcoModeFactor*mySafeModeFactor, 0, ACCEL_MAX)
+        elif self.myDrivingMode in [3,4]: # apilot general
+          myMaxAccel = clip(self.get_max_accel(v_ego), 0, ACCEL_MAX)
+        else:
+          myMaxAccel = self.get_max_accel(v_ego)
+        accel_limits = [A_CRUISE_MIN, myMaxAccel]      
+        #accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
       elif self.acceleration_profile == 3:
         accel_limits = [get_min_accel_sport_tune(v_ego), get_max_accel_sport_tune(v_ego)]
       accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
@@ -273,9 +307,9 @@ class LongitudinalPlanner:
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
+    self.mpc.reset_state = reset_state
     self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, have_lead, self.aggressive_acceleration, self.increased_stopping_distance, self.smoother_braking,
                     self.custom_personalities, self.aggressive_follow, self.standard_follow, self.relaxed_follow, personality=self.personality)
-
     self.x_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.x_solution)
     self.v_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.a_solution)
@@ -357,4 +391,3 @@ class LongitudinalPlanner:
     if self.vision_turn_controller:
       self.curve_sensitivity = self.params.get_int("CurveSensitivity") / 100
       self.turn_aggressiveness = self.params.get_int("TurnAggressiveness") / 100
-

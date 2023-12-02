@@ -136,7 +136,7 @@ class LongControl:
                                                        CS.cruiseState.standstill, a_target_now)
 
     if active and CC.hudControl.softHold:
-      long_control_state = LongCtrlState.stopping
+      self.long_control_state = LongCtrlState.stopping
 
     if self.long_control_state == LongCtrlState.off:
       self.reset(CS.vEgo)

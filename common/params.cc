@@ -249,6 +249,12 @@ std::unordered_map<std::string, uint32_t> keys = {
     { "CruiseSpeedUnit", PERSISTENT },
     { "LiveTorqueCache", PERSISTENT },
     { "CruiseEcoControl", PERSISTENT },
+    { "CruiseMaxVals1", PERSISTENT },
+    { "CruiseMaxVals2", PERSISTENT },
+    { "CruiseMaxVals3", PERSISTENT },
+    { "CruiseMaxVals4", PERSISTENT },
+    { "CruiseMaxVals5", PERSISTENT },
+    { "CruiseMaxVals6", PERSISTENT },
     { "LongitudinalTuningKpV", PERSISTENT },
     { "LongitudinalTuningKiV", PERSISTENT },
     { "LongitudinalTuningKf", PERSISTENT },
@@ -257,6 +263,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     { "EnableRadarTracks", PERSISTENT },
     { "HotspotOnBoot", PERSISTENT },
     { "SccConnectedBus2", PERSISTENT },
+    { "TFollowSpeedAdd", PERSISTENT },
+    { "TFollowSpeedAddM", PERSISTENT },
     { "SoftHoldMode", PERSISTENT },
 
     // FrogPilot parameters

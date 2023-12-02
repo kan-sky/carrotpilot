@@ -3,12 +3,13 @@ import os
 import time
 import numpy as np
 from cereal import log
-from openpilot.common.numpy_fast import clip
+from openpilot.common.numpy_fast import clip, interp
 from openpilot.system.swaglog import cloudlog
 # WARNING: imports outside of constants will not trigger a rebuild
 from openpilot.selfdrive.modeld.constants import index_function
 from openpilot.selfdrive.car.interfaces import ACCEL_MIN
 from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU
+from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 
 if __name__ == '__main__':  # generating code
@@ -40,7 +41,7 @@ J_EGO_COST = 5.0
 A_CHANGE_COST = 200.
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
-LEAD_DANGER_FACTOR = 0.75
+LEAD_DANGER_FACTOR = 0.85
 LIMIT_COST = 1e6
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
@@ -250,8 +251,10 @@ class LongitudinalMpc:
     self.mode = mode
     self.aChangeCost = 200
     self.aChangeCostStart = 40
+    self.tFollowSpeedAdd = 0.0
+    self.tFollowSpeedAddM = 0.0
     self.lo_timer = 0 
-    self.stopDistance = STOP_DISTANCE
+    self.v_ego_prev = 0.0
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.reset()
     self.source = SOURCES[2]
@@ -367,6 +370,7 @@ class LongitudinalMpc:
     self.update_params()
     t_follow = get_T_FOLLOW(custom_personalities, aggressive_follow, standard_follow, relaxed_follow, personality)
     v_ego = self.x0[1]
+    a_ego = self.x0[2]
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
@@ -384,6 +388,10 @@ class LongitudinalMpc:
       t_follow_offset = np.clip((v_ego - lead_xv_0[:,1]) - COMFORT_BRAKE, 1, distance_factor)
       t_follow = t_follow / t_follow_offset
 
+    if v_ego >= self.v_ego_prev:
+      t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 40, 100], [t_follow, t_follow + self.tFollowSpeedAddM, t_follow + self.tFollowSpeedAdd]) 
+    self.v_ego_prev = v_ego
+
     # LongitudinalPlan variables for onroad driving insights
     self.safe_obstacle_distance = float(np.mean(get_safe_obstacle_distance(v_ego, t_follow))) if have_lead else 0
     self.stopped_equivalence_factor = float(np.mean(get_stopped_equivalence_factor(v_ego, lead_xv_0[:,1], increased_stopping_distance))) if have_lead else 0
@@ -397,8 +405,8 @@ class LongitudinalMpc:
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(v_ego, lead_xv_0[:,1], increased_stopping_distance)
     lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(v_ego, lead_xv_1[:,1], increased_stopping_distance)
 
-    self.params[:,0] = ACCEL_MIN
-    self.params[:,1] = self.max_a
+    self.params[:,0] = ACCEL_MIN if not self.reset_state else a_ego
+    self.params[:,1] = self.max_a if not self.reset_state else a_ego
 
     # Update in ACC mode or ACC/e2e blend
     if self.mode == 'acc':
@@ -512,6 +520,9 @@ class LongitudinalMpc:
       self.lo_timer = 0
     elif self.lo_timer == 20:
       pass
+    elif self.lo_timer == 100:
+      self.tFollowSpeedAdd = float(Params().get_int("TFollowSpeedAdd")) / 100.
+      self.tFollowSpeedAddM = float(Params().get_int("TFollowSpeedAddM")) / 100.
     elif self.lo_timer == 120:
       self.aChangeCost = Params().get_int("AChangeCost")
       self.aChangeCostStart = Params().get_int("AChangeCostStart")

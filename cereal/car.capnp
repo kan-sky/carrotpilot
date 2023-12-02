@@ -105,6 +105,10 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     roadCameraError @100;
     driverCameraError @101;
     wideRoadCameraError @102;
+
+    # speeddown sound
+    slowingDownSpeedSound @140;
+
     highCpuUsage @105;
     cruiseMismatch @106;
     lkasDisabled @107;

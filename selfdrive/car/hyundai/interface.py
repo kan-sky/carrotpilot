@@ -338,7 +338,8 @@ class CarInterface(CarInterfaceBase):
     ret.stoppingControl = True
     ret.startingState = False # apilot: True
     ret.vEgoStarting = 0.1
-    ret.startAccel = 1.0
+    ret.startAccel = 2.0
+    ret.stoppingDecelRate = 1.2 # brake_travel/s while trying to stop
     ret.longitudinalActuatorDelayLowerBound = 0.5
     ret.longitudinalActuatorDelayUpperBound = 0.5
 
