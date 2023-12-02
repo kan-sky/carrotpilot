@@ -277,12 +277,12 @@
     {
       "group": "农风令",
       "name": "AutoResumeFromGasSpeed",
-      "title": "竣伎农风令ON:加档",
+      "title": "竣伎农风令ON:加档(0=荤侩救窃, 国飘)",
       "descr": "",
       "egroup": "CRUISE",
       "etitle": "GasCruiseON:Speed",
       "edescr": "",
-      "min": 20,
+      "min": 0,
       "max": 140,
       "default": 0,
       "unit": 5
