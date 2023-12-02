@@ -532,6 +532,7 @@ void FrogPilotPanel::setParams() {
     {"SilentMode", "0"},
     {"SmoothBraking", "1"},
     {"SpeedLimitController", "1"},
+    {"MTSCEnabled", "1"},
     {"StandardFollow", "15"},
     {"StandardJerk", "10"},
     {"StoppingDistance", FrogsGoMoo ? "6" : "3"},

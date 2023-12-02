@@ -380,24 +380,22 @@ def main():
         value = server.get_apilot_val("value")
         atype = "none" if atype is None else atype
         value = "-1" if value is None else value
+        if atype != 'none':
+          print(atype, value)
+
         try:
-          print("try")
-          value_int = int(value)
-          print("ok");
-        except:
-          print("exception")
+          value_int = clip(int(value), -10000, 2000000000)
+        except ValueError:
           value_int = -100
 
         xCmd = server.get_apilot_val("apilot_cmd")
         xArg = server.get_apilot_val("apilot_arg")
-        xIndex = value_int
+        #xIndex = value_int
 
         now = time.monotonic()
         if ret:
           prev_recvTime = now
 
-        if atype != 'none':
-          print(atype, value)
         delta_dist = 0.0
         if CS is not None:
           delta_dist = CS.totalDistance - totalDistance
