@@ -151,13 +151,13 @@ class CarInterface(CarInterfaceBase):
       ret.tireStiffnessFactor = 0.469  # Stock Michelin Energy Saver A/S, LiveParameters
       ret.centerToFront = ret.wheelbase * 0.45  # Volt Gen 1, TODO corner weigh
 
+      #ret.lateralTuning.pid.kpBP = [0., 40.]
+      #ret.lateralTuning.pid.kpV = [0., 0.17]
+      #ret.lateralTuning.pid.kiBP = [0.]
+      #ret.lateralTuning.pid.kiV = [0.]
+      #ret.lateralTuning.pid.kf = 1.  # get_steer_feedforward_volt()
+      ret.steerActuatorDelay = 0.18 if useEVTables else 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
-      ret.lateralTuning.pid.kpBP = [0., 40.]
-      ret.lateralTuning.pid.kpV = [0., 0.17]
-      ret.lateralTuning.pid.kiBP = [0.]
-      ret.lateralTuning.pid.kiV = [0.]
-      ret.lateralTuning.pid.kf = 1.  # get_steer_feedforward_volt()
-      ret.steerActuatorDelay = 0.18 if useEVTables else 0.2 
 
       ret.longitudinalTuning.kpBP = [0.]
       ret.longitudinalTuning.kpV = [1.75]
