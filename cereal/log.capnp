@@ -1037,6 +1037,10 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   stoppedEquivalenceFactorStock @47 :Float32;
   vtscOffset @48 :Float32;
 
+  trafficState @49 :Int32;
+  xState @50 :Int32;
+  debugLongText @51 : Text;
+
   enum LongitudinalPlanSource {
     cruise @0;
     lead0 @1;
@@ -1111,6 +1115,9 @@ struct LateralPlan @0xe1e9318e2ae8b51e {
   # FrogPilot LateralPlans
   laneWidthLeft @34 :Float32;
   laneWidthRight @35 :Float32;
+
+  # ajouatom
+  latDebugText @36 :Text;
 
   struct SolverState {
     x @0 :List(List(Float32));

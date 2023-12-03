@@ -125,7 +125,7 @@ class CarController:
       # ajouatom
       if not CC.enabled:
         self.activateCruise = 0
-      if CC.cruiseControl.activate and self.activateCruise == 0: ## ajouatom: send command to panda via Button spam(RES_ACCEL), for auto engage
+      if False: # GM not working... if CC.cruiseControl.activate and self.activateCruise == 0: ## ajouatom: send command to panda via Button spam(RES_ACCEL), for auto engage
         self.activateCruise = 1
         can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.POWERTRAIN, CS.buttons_counter, CruiseButtons.RES_ACCEL))
 

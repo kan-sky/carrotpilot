@@ -391,7 +391,7 @@ void ExperimentalButton::updateState(const UIState &s) {
 
   // FrogPilot variables
   rotatingWheel = scene.rotating_wheel;
-  wheelIcon = scene.wheel_icon;
+  wheelIcon = (s.show_mode == 0)?scene.wheel_icon:0;
 
   // Update the icon so the steering wheel rotates in real time
   if (rotatingWheel && steeringAngleDeg != scene.steering_angle_deg) {
@@ -525,7 +525,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const auto nav_instruction = sm["navInstruction"].getNavInstruction();
 
   // Handle older routes where vCruiseCluster is not set
-  float v_cruise = cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
+  float v_cruise =  cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
   setSpeed = cs_alive ? v_cruise : SET_SPEED_NA;
   is_cruise_set = setSpeed > 0 && (int)setSpeed != SET_SPEED_NA;
   if (is_cruise_set && !s.scene.is_metric) {
@@ -1251,6 +1251,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);
+
   ui_update_params(uiState());
   prev_draw_t = millis_since_boot();
 }

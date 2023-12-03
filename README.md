@@ -1,3 +1,49 @@
+![image](https://github.com/ajouatom/carrotpilot/assets/43668841/4862230b-36c3-4ddd-8c59-943e73f9380c)
+
+What is carrotpilot?
+------
+CarrotPilot is based on FrogPilot. I've added various UI elements and features to FrogPilot's functionality.
+
+Why carrot?
+------
+In Korea, there's a humorous and casual way of saying 'of course' using the word for 'carrot,' which is '당근' in Korean. This is because '당근' (dang-geun, carrot) sounds very similar to '당연하다' (dang-yeon-ha-da), which means 'of course.' It's a playful pun commonly used in everyday conversation among Koreans. So, if you hear someone responding with '당근,' they are affirmatively saying 'of course' in a light-hearted way.
+
+What is the useful features of CarrotPilot? 
+------
+**Radar Tracks: HKG cars only**
+  - If you only turn on the "EnableRadarTracks" in the Toggle menu, it will be activated when the ignition is turned on.
+    
+**APM:**
+  - APM is ApilotManager.
+  - APM is for Android Phone/Tablet.
+  - In CarrotPilot, all settings other than those for FrogPilot can only be used through APM.
+    
+**APN: Korea navigation only**
+  - When navigatgion is connected, you can use APN.
+  - It's a feature that automatically recuces speed in response to speed cameras and speed bumps for accident prevention.
+    
+**APILOT UI:**
+  - You can experience a variety of APILOT UIs using APM.
+    
+**APILOT Traffic Stop/Go Mode:**
+  - If you turn off the ConditionalExperimental Setting in FrogPilot, you can experience the APILOT Traffic Stop/Go Mode in CarrotPilot.
+
+**Custom Acceleration Based on Speed:**
+  - In APM, you can fine-tune the accleration based on driving speed.
+  - Accelration Profile must be set to Normal in FrogPilot.
+    
+**Use Lane line mode:**
+  - If the speed exceeds the set speed, it automatically switches to lane mode. This method uses lat_mpc
+    
+**Automatic Engage: HKG car only**
+  - SOFTHOLD: It's a feature that corresponds to the Autohold function.
+  - Auto Engage: If the gas pedal is pressed and the speed exceeds the set speed, Enage automatically activates
+
+**Voice Recognition: Korean only, under construction!**
+  - The connected APM supports voice recognition. It allows for lane changes and speed control using voice commands.
+
+---
+
 ![openpilot on the comma 3X](https://i.imgur.com/6l2qbf5.png)
 
 Table of Contents

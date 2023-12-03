@@ -38,7 +38,7 @@ class LanePlanner:
 
   def parse_model(self, md):
     lane_lines = md.laneLines
-    if len(lane_lines) == 4 and len(lane_lines[0].t) == TRAJECTORY_SIZE:
+    if len(lane_lines) >= 4 and len(lane_lines[0].t) == TRAJECTORY_SIZE:
       self.ll_t = (np.array(lane_lines[1].t) + np.array(lane_lines[2].t))/2
       # left and right ll x is the same
       self.ll_x = lane_lines[1].x

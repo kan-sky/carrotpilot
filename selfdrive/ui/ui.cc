@@ -435,8 +435,10 @@ void update_model(UIState *s,
   //  const float lead_d = lead_one.getDRel() * 2.;
   //  max_distance = std::clamp((float)(lead_d - fmin(lead_d * 0.35, 10.)), 0.0f, max_distance);
   //}
-  int show_path_mode = s->show_path_mode;
   SubMaster& sm = *(s->sm);
+  auto lp = sm["lateralPlan"].getLateralPlan();
+  //int show_path_color = (lp.getUseLaneLines()) ? s->show_path_color_lane : s->show_path_color;
+  int show_path_mode = (lp.getUseLaneLines()) ? s->show_path_mode_lane : s->show_path_mode;
   auto controls_state = sm["controlsState"].getControlsState();
   bool longActive = controls_state.getEnabled();
   if (longActive == false) show_path_mode = s->show_path_mode_cruise_off;
@@ -692,10 +694,10 @@ void ui_update_params(UIState *s) {
   case 60:
       s->show_path_mode = std::atoi(params.get("ShowPathMode").c_str());;
       s->show_path_color = std::atoi(params.get("ShowPathColor").c_str());;
-      s->show_path_mode_lane = 0;//std::atoi(params.get("ShowPathModeLane").c_str());;
+      s->show_path_mode_lane = std::atoi(params.get("ShowPathModeLane").c_str());;
       break;
   case 70:
-      s->show_path_color_lane = 0;//std::atoi(params.get("ShowPathColorLane").c_str());;
+      s->show_path_color_lane = std::atoi(params.get("ShowPathColorLane").c_str());;
       s->show_path_width = std::atof(params.get("ShowPathWidth").c_str()) / 100.;
       s->show_plot_mode = std::atoi(params.get("ShowPlotMode").c_str());
       break;

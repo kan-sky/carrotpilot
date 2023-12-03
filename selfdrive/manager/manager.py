@@ -106,9 +106,11 @@ def manager_init() -> None:
     ("TFollowSpeedAddM", "0"),
     ("SoftHoldMode", "0"),       
     ("CruiseEcoControl", "4"),
+    ("UseLaneLineSpeed", "0"),    
+    ("PathOffset", "0"),  
     ("LateralTorqueCustom", "1"),       
     ("LateralTorqueAccelFactor", "1400"),       
-    ("LateralTorqueFriction", "60"),       
+    ("LateralTorqueFriction", "5"),       
     ("SteerRatioApply", "142"),
   ]
   if not PC:

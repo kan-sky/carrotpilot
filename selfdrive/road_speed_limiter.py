@@ -325,6 +325,7 @@ def main():
   nSdiBlockDist = -1
   nTBTDist = -1
   nRoadLimitSpeed = -1
+  xIndex = 0
   
   prev_recvTime = time.monotonic()
   #autoNaviSpeedCtrl = int(Params().get("AutoNaviSpeedCtrl"))
@@ -380,8 +381,9 @@ def main():
         value = server.get_apilot_val("value")
         atype = "none" if atype is None else atype
         value = "-1" if value is None else value
-        if atype != 'none':
-          print(atype, value)
+        
+        #if atype != 'none':
+        #  print(atype, value)
 
         try:
           value_int = clip(int(value), -10000, 2000000000)
