@@ -644,7 +644,7 @@ class LongitudinalMpc:
           stop_x = 1000
         else:
           self.trafficStopAdjustRatio = 0.8
-          stop_dist = self.xStop  * interp(self.xStop, [0, 100], [1.0, self.trafficStopAdjustRatio])  ##³²Àº°Å¸®¿¡ µû¶ó Á¤Áö°Å¸® ºñÀ²Á¶Á¤
+          stop_dist = self.xStop * interp(self.xStop, [0, 100], [1.0, self.trafficStopAdjustRatio])  ##ë‚¨ì€ê±°ë¦¬ì— ë”°ë¼ ì •ì§€ê±°ë¦¬ ë¹„ìœ¨ì¡°ì •
           if stop_dist > 5.0:
             self.stopDist = stop_dist
           stop_x = 0
@@ -682,7 +682,7 @@ class LongitudinalMpc:
       self.stopDist = self.stopDist if self.stopDist > stop_dist else stop_dist
       stop_x = 0.0
     self.debugLongText = "XState({}),stop_x={:.1f},stopDist={:.1f},Traffic={}".format(str(self.xState), stop_x, self.stopDist, str(self.trafficState))
-    #¹øÈ£¸¦ ÀÐÀ»¶§´Â self.xState.value
+    #ï¿½ï¿½È£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ self.xState.value
     return v_cruise, stop_x + self.stopDist, mode
 
 
