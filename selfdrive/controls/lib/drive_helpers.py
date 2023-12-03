@@ -306,7 +306,7 @@ class VCruiseHelper:
     button_kph = clip(button_kph, V_CRUISE_MIN, V_CRUISE_MAX)
     #return button_type, self.long_pressed, v_cruise_kph
 
-    if button_type != 0 and controls.enable:
+    if button_type != 0 and controls.enabled:
       if self.long_pressed:
         if button_type in [ButtonType.accelCruise, ButtonType.decelCruise]:
           v_cruise_kph = button_kph
