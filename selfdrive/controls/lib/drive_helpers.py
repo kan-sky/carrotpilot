@@ -76,6 +76,8 @@ class VCruiseHelper:
     self.sendEvent_frame = 0
     self.turnSpeed_prev = 300
     self.curvatureFilter = StreamingMovingAverage(20)
+    self.apilotEventWait = 0
+    self.apilotEventPrev = 0
 
     
     #ajouatom: params
@@ -217,11 +219,13 @@ class VCruiseHelper:
 
     self.v_cruise_cluster_kph = self.v_cruise_kph
 
-  def _make_event(self, controls, event_name):
+  def _make_event(self, controls, event_name, waiting = 20):
     elapsed_time = (controls.sm.frame - self.sendEvent_frame)*DT_CTRL
-    if elapsed_time > 3.0:
+    if elapsed_time > self.apilotEventWait:
       controls.events.add(event_name)
       self.sendEvent_frame = controls.sm.frame
+      self.apilotEventPrev = event_name
+      self.apilotEventWait = waiting
 
   def _update_event_apilot(self, CS, controls):
     lp = controls.sm['longitudinalPlan']
@@ -530,7 +534,8 @@ class VCruiseHelper:
       applySpeed = safeSpeed
     elif leftDist > 0 and safeSpeed > 0 and safeDist > 0:
       applySpeed = self.decelerate_for_speed_camera(safeSpeed/3.6, safeDist, v_cruise_kph_prev * CV.KPH_TO_MS, self.autoNaviSpeedDecelRate, leftDist) * CV.MS_TO_KPH
-      self._make_event(controls, EventName.slowingDownSpeedSound)
+      if applySpeed < CS.vEgoCluster * CV.MS_TO_KPH:
+        self._make_event(controls, EventName.speedDown, 60.0)
     else:
       applySpeed = 255
 
