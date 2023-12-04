@@ -61,6 +61,11 @@ class CarController:
     self.softHoldMode = 1
     self.jerk_count = 0
     self.activateCruise = 0
+    self.button_wait = 12
+    self.resume_cnt = 0
+    self.resume_wait_timer = 0
+    self.button_alive = 0
+    self.button_alive_frame = 0
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -219,15 +224,64 @@ class CarController:
   def create_button_messages(self, CC: car.CarControl, CS: car.CarState, use_clu11: bool):
     can_sends = []
     if use_clu11:
+      #if CC.cruiseControl.cancel:
+      #  can_sends.append(hyundaican.create_clu11(self.packer, self.frame, CS.clu11, Buttons.CANCEL, self.CP.carFingerprint))
+      #elif CC.cruiseControl.resume:
+      #  # send resume at a max freq of 10Hz
+      #  if (self.frame - self.last_button_frame) * DT_CTRL > 0.1:
+      #    # send 25 messages at a time to increases the likelihood of resume being accepted
+      #    can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint)] * 25)
+      #    if (self.frame - self.last_button_frame) * DT_CTRL >= 0.15:
+      #      self.last_button_frame = self.frame
       if CC.cruiseControl.cancel:
         can_sends.append(hyundaican.create_clu11(self.packer, self.frame, CS.clu11, Buttons.CANCEL, self.CP.carFingerprint))
       elif CC.cruiseControl.resume:
-        # send resume at a max freq of 10Hz
-        if (self.frame - self.last_button_frame) * DT_CTRL > 0.1:
-          # send 25 messages at a time to increases the likelihood of resume being accepted
-          can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint)] * 25)
-          if (self.frame - self.last_button_frame) * DT_CTRL >= 0.15:
+        if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:            
+          if self.resume_wait_timer > 0:
+            self.resume_wait_timer -= 1
+          else:
+            can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint))
+            self.resume_cnt += 1
+            if self.resume_cnt >= int(randint(4, 5) * 2):
+              self.resume_cnt = 0
+              self.resume_wait_timer = int(randint(20, 25) * 2)
+            
+        else:
+          # send resume at a max freq of 10Hz
+          if (self.frame - self.last_button_frame) * DT_CTRL > 0.1:
+            # send 25 messages at a time to increases the likelihood of resume being accepted
+            #can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint)] * 25)
+            can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint))
             self.last_button_frame = self.frame
+      else:
+        self.resume_wait_timer = 0
+        self.resume_cnt = 0
+        target = int(set_speed_in_units+0.5)
+        current = int(CS.out.cruiseState.speed*CV.MS_TO_KPH + 0.5)
+
+        #CC.debugTextCC = "BTN:00,T:{:.1f},C:{:.1f},{},{}".format(target, current, self.wait_timer, self.alive_timer)
+        if (self.frame - self.last_button_frame) > self.button_wait:
+          if (self.frame - self.button_alive_frame) > self.button_alive:
+            self.button_wait = randint(8,15)
+            self.last_button_frame = self.frame
+          elif CC.enabled and CS.cruise_buttons[-1] == Buttons.NONE:
+            if not CS.out.cruiseState.enabled:
+              if CC.longActive and (hud_control.leadVisible or current > 10.0):
+                can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint))
+                #CC.debugTextCC = "BTN:++,T:{:.1f},C:{:.1f}".format(target, current)
+            #elif CS.out.cruiseGap != hud_control.cruiseGap:
+            #  can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.GAP_DIST, self.CP.carFingerprint))
+            #  CC.debugTextCC = "currentGap = {}, target = {}".format(CS.out.cruiseGap, hud_control.cruiseGap)
+            elif target < current and current>= 31:
+              can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.SET_DECEL, self.CP.carFingerprint))
+              #CC.debugTextCC = "BTN:--,T:{:.1f},C:{:.1f}".format(target, current)
+            elif target > current and current < 160:
+              can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint))
+              #CC.debugTextCC = "BTN:++,T:{:.1f},C:{:.1f}".format(target, current)
+        else:
+          self.button_alive = randint(4, 8) #randint(12, 18)
+          self.button_alive_frame = self.frame
+      
     else:
       if (self.frame - self.last_button_frame) * DT_CTRL > 0.25:
         # cruise cancel
@@ -251,3 +305,5 @@ class CarController:
             self.last_button_frame = self.frame
 
     return can_sends
+
+   

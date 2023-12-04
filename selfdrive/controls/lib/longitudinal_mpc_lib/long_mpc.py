@@ -682,7 +682,7 @@ class LongitudinalMpc:
       self.stopDist = self.stopDist if self.stopDist > stop_dist else stop_dist
       stop_x = 0.0
     self.debugLongText = "XState({}),stop_x={:.1f},stopDist={:.1f},Traffic={}".format(str(self.xState), stop_x, self.stopDist, str(self.trafficState))
-    #��ȣ�� �������� self.xState.value
+    #번호를 읽을때는 self.xState.value
     return v_cruise, stop_x + self.stopDist, mode
 
 

@@ -6,9 +6,16 @@ from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.realtime import DT_MDL, DT_CTRL
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.common.params import Params
-from openpilot.selfdrive.controls.lib.events import Events, ET
+import numpy as np
+from common.filter_simple import StreamingMovingAverage
 
 EventName = car.CarEvent.EventName
+
+## 국가법령정보센터: 도로설계기준
+V_CURVE_LOOKUP_BP = [0., 1./800., 1./670., 1./560., 1./440., 1./360., 1./265., 1./190., 1./135., 1./85., 1./55., 1./30., 1./15.]
+#V_CRUVE_LOOKUP_VALS = [300, 150, 120, 110, 100, 90, 80, 70, 60, 50, 40, 30, 20]
+V_CRUVE_LOOKUP_VALS = [300, 150, 120, 110, 100, 90, 80, 70, 60, 50, 45, 35, 30]
+MIN_CURVE_SPEED = 20. * CV.KPH_TO_MS
 
 
 # WARNING: this value was determined based on the model's training distribution,
@@ -67,8 +74,9 @@ class VCruiseHelper:
     self.xState = 0
     self.trafficState = 0
     self.sendEvent_frame = 0
-    #add Event
-    self.events = Events()
+    self.turnSpeed_prev = 300
+    self.curvatureFilter = StreamingMovingAverage(20)
+
     
     #ajouatom: params
     self.params_count = 0
@@ -82,6 +90,10 @@ class VCruiseHelper:
     self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
     self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
     self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
+    self.autoCurveSpeedCtrlUse = int(Params().get("AutoCurveSpeedCtrlUse"))
+    self.autoCurveSpeedFactor = float(int(Params().get("AutoCurveSpeedFactor", encoding="utf8")))*0.01
+    self.autoCurveSpeedFactorIn = float(int(Params().get("AutoCurveSpeedFactorIn", encoding="utf8")))*0.01
+    self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
 
   def _params_update():
     self.params_count += 1
@@ -95,10 +107,14 @@ class VCruiseHelper:
     elif self.params_count == 20:
       self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
       self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
+      self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
     elif self.params_count == 30:
       self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
       self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
     elif self.params_count >= 100:
+      self.autoCurveSpeedCtrlUse = int(Params().get("AutoCurveSpeedCtrlUse"))
+      self.autoCurveSpeedFactor = float(int(Params().get("AutoCurveSpeedFactor", encoding="utf8")))*0.01
+      self.autoCurveSpeedFactorIn = float(int(Params().get("AutoCurveSpeedFactorIn", encoding="utf8")))*0.01
       self.params_count = 0
     
 
@@ -125,7 +141,6 @@ class VCruiseHelper:
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
       self.v_cruise_kph_set = V_CRUISE_UNSET
       self.cruiseActivate = 0
-      print("Init CruiseAtivate2")
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_cruise_increase):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
@@ -213,10 +228,10 @@ class VCruiseHelper:
     xState = lp.xState
     trafficState = lp.trafficState
 
-    if xState != self.xState: #0:lead, 1:cruise, 2:e2eCruise, 3:e2eStop, 4:e2ePrepare
+    if xState != self.xState and controls.enabled and self.brake_pressed_count < 0 and self.gas_pressed_count < 0: #0:lead, 1:cruise, 2:e2eCruise, 3:e2eStop, 4:e2ePrepare
       if xState == 3:
         self._make_event(controls, EventName.trafficStopping)  # stopping
-      elif xState == 4:
+      elif xState == 4 and not self.softHoldActive:
         self._make_event(controls, EventName.trafficSignGreen) # starting
     self.xState = xState
 
@@ -224,19 +239,91 @@ class VCruiseHelper:
       if self.softHoldActive and trafficState == 2:
         self._make_event(controls, EventName.trafficSignChanged)
     self.trafficState = trafficState
+  def _update_lead(self, controls):
+    leadOne = controls.sm['radarState'].leadOne
+    if leadOne.status:
+      self.lead_dRel = leadOne.dRel
+      self.lead_vRel = leadOne.vRel
+    else:
+      self.lead_dRel = 250
+      self.lead_vRdl = 0
 
   def _update_v_cruise_apilot(self, CS, controls):
+    self._update_lead(controls)
     self.v_ego_kph_set = int(CS.vEgoCluster * CV.MS_TO_KPH + 0.5)
+    if self.v_cruise_kph_set == V_CRUISE_UNSET:
+      self.v_cruise_kph_set = V_CRUISE_INITIAL
     v_cruise_kph = self.v_cruise_kph_set    
     v_cruise_kph = self._update_cruise_buttons(CS, v_cruise_kph, controls)
     #v_cruise_kph = self.update_apilot_cmd(controls, v_cruise_kph)
     v_cruise_kph_apply = self.cruise_control_speed(v_cruise_kph)
     apn_limit_kph = self.update_speed_apilot(CS, controls, self.v_cruise_kph)
-
     v_cruise_kph_apply = min(v_cruise_kph_apply, apn_limit_kph)
-
+    self.curveSpeed = self.apilot_curve(CS, controls)
+    if self.autoCurveSpeedCtrlUse > 0:
+      v_cruise_kph_apply = min(v_cruise_kph_apply, self.curveSpeed)
     self.v_cruise_kph_set = v_cruise_kph
     self.v_cruise_kph = v_cruise_kph_apply
+
+  def apilot_curve(self, CS, controls):
+    # 회전속도를 선속도 나누면 : 곡률이 됨. [20]은 약 4초앞의 곡률을 보고 커브를 계산함.
+    #curvature = abs(controls.sm['modelV2'].orientationRate.z[20] / clip(CS.vEgo, 0.1, 100.0))
+    orientationRates = np.array(controls.sm['modelV2'].orientationRate.z, dtype=np.float32)
+    # 계산된 결과로, oritetationRates를 나누어 조금더 curvature값이 커지도록 함.
+    speed = min(self.turnSpeed_prev / 3.6, clip(CS.vEgo, 0.5, 100.0))    
+    #curvature = np.max(np.abs(orientationRates[12:])) / speed  # 12: 약1.4초 미래의 curvature를 계산함.
+    curvature = np.max(np.abs(orientationRates[12:20])) / speed  # 12: 약1.4~3.5초 미래의 curvature를 계산함.
+    curvature = self.curvatureFilter.process(curvature) * self.autoCurveSpeedFactor
+    turnSpeed = 300
+    if abs(curvature) > 0.0001:
+      turnSpeed = interp(curvature, V_CURVE_LOOKUP_BP, V_CRUVE_LOOKUP_VALS)
+      turnSpeed = clip(turnSpeed, MIN_CURVE_SPEED, 255)
+    else:
+      turnSpeed = 300
+
+    self.turnSpeed_prev = turnSpeed
+    speed_diff = max(0, CS.vEgo*3.6 - turnSpeed)
+    turnSpeed = turnSpeed - speed_diff * self.autoCurveSpeedFactorIn
+    #controls.debugText2 = 'CURVE={:5.1f},curvature={:5.4f},mode={:3.1f}'.format(self.turnSpeed_prev, curvature, self.drivingModeIndex)
+    return turnSpeed
+
+  def update_apilot_cmd(self, controls, v_cruise_kph, longActiveUser):
+    msg = controls.sm['roadLimitSpeed']
+    #print(msg.xCmd, msg.xArg, msg.xIndex)
+
+    if msg.xIndex > 0 and msg.xIndex != self.xIndex:
+      self.xIndex = msg.xIndex
+      if msg.xCmd == "SPEED":
+        if msg.xArg == "UP":
+          v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph, self.roadSpeed)
+        elif msg.xArg == "DOWN":
+          if self.v_ego_kph_set < v_cruise_kph:
+            v_cruise_kph = self.v_ego_kph_set
+          elif v_cruise_kph > 30:
+            v_cruise_kph -= 10
+        else:
+          v_cruise_kph = clip(int(msg.xArg), V_CRUISE_MIN, V_CRUISE_MAX)
+      #elif msg.xCmd == "CRUISE":
+      #  if msg.xArg == "ON":
+      #    longActiveUser = 1
+      #  elif msg.xArg == "OFF":
+      #    self.userCruisePaused = True
+      #    longActiveUser = -1
+      #  elif msg.xArg == "GO":
+      #    if longActiveUser <= 0:
+      #      longActiveUser = 1
+      #    elif self.xState in [XState.softHold, XState.e2eStop]:
+      #      controls.cruiseButtonCounter += 1
+      #    else:
+      #      v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph, self.roadSpeed)
+      #  elif msg.xArg == "STOP":
+      #    if self.xState in [XState.e2eStop, XState.e2eCruisePrepare]:
+      #      controls.cruiseButtonCounter -= 1
+      #    else:
+      #      v_cruise_kph = 20
+      elif msg.xCmd == "LANECHANGE":
+        pass
+    return v_cruise_kph, longActiveUser
 
   def _update_cruise_buttons(self, CS, v_cruise_kph, controls):
 
@@ -259,6 +346,7 @@ class VCruiseHelper:
       gas_tok = True if 0 < self.gas_pressed_count < 60 else False
       self.gas_pressed_count = -1 if self.gas_pressed_count > 0 else self.gas_pressed_count - 1
 
+    ## ButtonEvent process
     button_kph = v_cruise_kph
     buttonEvents = CS.buttonEvents
     button_speed_up_diff = 1
@@ -326,6 +414,7 @@ class VCruiseHelper:
       self.softHoldActive = False
       self.cruiseActivate = 0
 
+    ## Auto Engage/Disengage via Gas/Brake
     if gas_tok:
       if controls.enabled:
         v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
@@ -333,7 +422,11 @@ class VCruiseHelper:
         print("Cruise Activate from GasTok")
         self.cruiseActivate = 1
     elif self.gas_pressed_count == -1:
-      if not controls.enabled and self.v_ego_kph_set > self.autoResumeFromGasSpeed > 0:
+      if controls.enabled:
+        if 0 < self.lead_dRel < CS.vEgo * 0.8 and self.autoCancelFromGasMode > 0:
+          self.cruiseActivate = -1
+          print("Cruise Deactivate from gas.. too close leadCar!")
+      elif self.v_ego_kph_set > self.autoResumeFromGasSpeed > 0:
         if self.cruiseActivate <= 0:
           print("Cruise Activate from Speed")
         self.cruiseActivate = 1
@@ -357,9 +450,13 @@ class VCruiseHelper:
       print("Cruise Activete from SoftHold")
       self.softHoldActive = True
       self.cruiseActivate = 1
+    elif not controls.enabled and self.brake_pressed_count < 0 and self.gas_pressed_count < 0:
+      cruiseOnDist = abs(self.cruiseOnDist)
+      if cruiseOnDist > 0 and CS.vEgo > 0.2 and self.lead_vRel < 0 and self.lead_dRel < cruiseOnDist:
+        self._make_event(controls, EventName.stopstop)
+        if cruiseOnDist > 0:
+          self.cruiseActivate = 1
 
-## TODO: 가속 추월시 급정거 방지를 위한 Cruise OFF
-## 
     v_cruise_kph = clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
     return v_cruise_kph
 
@@ -433,7 +530,7 @@ class VCruiseHelper:
       applySpeed = safeSpeed
     elif leftDist > 0 and safeSpeed > 0 and safeDist > 0:
       applySpeed = self.decelerate_for_speed_camera(safeSpeed/3.6, safeDist, v_cruise_kph_prev * CV.KPH_TO_MS, self.autoNaviSpeedDecelRate, leftDist) * CV.MS_TO_KPH
-      self.events.add(EventName.slowingDownSpeedSound)
+      self._make_event(controls, EventName.slowingDownSpeedSound)
     else:
       applySpeed = 255
 

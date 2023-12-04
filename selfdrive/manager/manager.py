@@ -75,6 +75,9 @@ def manager_init() -> None:
     ("ShowPlotMode", "0"),
     ("AutoResumeFromGasSpeed", "0"),
     ("AutoCancelFromGasMode", "0"),    
+    ("AutoCurveSpeedCtrlUse", "0"),
+    ("AutoCurveSpeedFactor", "100"),
+    ("AutoCurveSpeedFactorIn", "50"),
     ("AutoNaviSpeedCtrlEnd", "6"),
     ("AutoNaviSpeedBumpTime", "1"),
     ("AutoNaviSpeedBumpSpeed", "35"),
@@ -109,9 +112,10 @@ def manager_init() -> None:
     ("UseLaneLineSpeed", "0"),    
     ("PathOffset", "0"),  
     ("LateralTorqueCustom", "1"),       
-    ("LateralTorqueAccelFactor", "1400"),       
+    ("LateralTorqueAccelFactor", "2000"),       
     ("LateralTorqueFriction", "5"),       
-    ("SteerRatioApply", "142"),
+    ("CruiseOnDist", "0"),
+    ("SteerRatioApply", "145"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

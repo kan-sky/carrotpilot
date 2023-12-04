@@ -106,6 +106,19 @@
       "unit": 1
     },
     {
+      "group": "크루즈",
+      "name": "CruiseOnDist",
+      "title": "크루즈ON거리(0cm)",
+      "descr": "엑셀/브레이크OFF, 선행차가 가까와지면 크루즈ON(+),알람(-)",
+      "egroup": "CRUISE",
+      "etitle": "CruiseOnDist(0cm)",
+      "edescr": "Gas/Brake Off and LeadCar close, CruiseON(+) or Alarm(-)",
+      "min": -500,
+      "max": 500,
+      "default": 0,
+      "unit": 50
+    },
+    {
       "group": "조향튜닝",
       "name": "SteerRatioApply",
       "title": "SteerRatioCustomx0.1(0)",
@@ -272,6 +285,32 @@
       "min": 0,
       "max": 200,
       "default": 100,
+      "unit": 1
+    },
+    {
+      "group": "감속제어",
+      "name": "AutoCurveSpeedFactor",
+      "title": "커브속도조절비율(100%)",
+      "descr": "높으면 커브속도가 느려집니다.",
+      "egroup": "DECEL",
+      "etitle": "CurveSpeedFactor(100%)",
+      "edescr": "Higher value, slow curve speed",
+      "min": 50,
+      "max": 300,
+      "default": 100,
+      "unit": 1
+    },
+    {
+      "group": "감속제어",
+      "name": "AutoCurveSpeedFactorIn",
+      "title": "커브속도조절비율진입(10%)",
+      "descr": "올리면 진입속도를 더 줄이도록 노력합니다.",
+      "egroup": "DECEL",
+      "etitle": "CurveSpeedFactorWeight(10%)",
+      "edescr": "Higher value, more speed down",
+      "min": 0,
+      "max": 300,
+      "default": 10,
       "unit": 1
     },
     {
@@ -724,6 +763,19 @@
       "min": -100,
       "max": 200,
       "default": 0,
+      "unit": 1
+    },
+    {
+      "group": "감속제어",
+      "name": "AutoCurveSpeedCtrlUse",
+      "title": "커브속도(1)",
+      "descr": "0:사용안함,1:사용함",
+      "egroup": "FDIST",
+      "etitle": "AutoCurveSpeedCtrl(1)",
+      "edescr": "",
+      "min": 0,
+      "max": 3,
+      "default": 1,
       "unit": 1
     },
     {

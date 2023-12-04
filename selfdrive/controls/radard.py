@@ -104,7 +104,7 @@ class Track:
     if abs(self.aLeadK) < 0.5:
       self.aLeadTau = aLeadTau
     else:
-      self.aLeadTau = self.aLeadTau * 0.9
+      self.aLeadTau *= 0.9
 
     self.cnt += 1
 

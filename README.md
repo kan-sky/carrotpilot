@@ -13,33 +13,37 @@ What is the useful features of CarrotPilot?
 **Radar Tracks: HKG cars only**
   - If you only turn on the "EnableRadarTracks" in the Toggle menu, it will be activated when the ignition is turned on.
     
-**APM:**
+**APM: APILOT feature**
   - APM is ApilotManager.
   - APM is for Android Phone/Tablet.
   - In CarrotPilot, all settings other than those for FrogPilot can only be used through APM.
     
-**APN: Korea navigation only**
+**APN: Korea navigation only, APILOT feature**
   - When navigatgion is connected, you can use APN.
   - It's a feature that automatically recuces speed in response to speed cameras and speed bumps for accident prevention.
     
-**APILOT UI:**
+**APILOT UI: APM, APILOT feature**
   - You can experience a variety of APILOT UIs using APM.
     
-**APILOT Traffic Stop/Go Mode:**
+**APILOT Traffic Stop/Go Mode: APILOT feature**
   - If you turn off the ConditionalExperimental Setting in FrogPilot, you can experience the APILOT Traffic Stop/Go Mode in CarrotPilot.
 
-**Custom Acceleration Based on Speed:**
+**Custom Acceleration Based on Speed: APM**
   - In APM, you can fine-tune the accleration based on driving speed.
   - Accelration Profile must be set to Normal in FrogPilot.
+
+**Fuel Efficiency Control Feature: APM, APILOT feature**
+  - It controls to slightly exceed the set speed, then naturally reduces acceleration at the set speed to lessen engine strain (Hybrid vehicles naturally switch to EV mode).
+  - CruiseEcoControl(APM)
     
 **Use Lane line mode:**
   - If the speed exceeds the set speed, it automatically switches to lane mode. This method uses lat_mpc
     
-**Automatic Engage: HKG car only**
+**Automatic Engage: HKG car only, APILOT feature**
   - SOFTHOLD: It's a feature that corresponds to the Autohold function.
   - Auto Engage: If the gas pedal is pressed and the speed exceeds the set speed, Enage automatically activates
 
-**Voice Recognition: Korean only, under construction!**
+**Voice Recognition: APM, Korean only, APILOT feature, under construction!**
   - The connected APM supports voice recognition. It allows for lane changes and speed control using voice commands.
 
 ---

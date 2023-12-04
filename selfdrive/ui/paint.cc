@@ -1076,9 +1076,9 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
         //bool long_control = 1;// scc_smoother.getLongControl();
 
         // kph
-        const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
+        //const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
         float cruiseMaxSpeed = controls_state.getVCruiseCluster();// scc_smoother.getCruiseMaxSpeed();
-        float applyMaxSpeed = (cruiseMaxSpeed == controls_state.getVCruise())? lp.getSlcSpeedLimit():controls_state.getVCruise();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
+        float applyMaxSpeed = controls_state.getVCruise();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
         float curveSpeed = 0;//HW: controls_state.getCurveSpeed();
         bool speedCtrlActive = false;
         if (curveSpeed < 0) {
@@ -1661,7 +1661,6 @@ void DrawApilot::makeData(const UIState* s) {
 
     m_vEgo = car_state.getVEgoCluster();
 
-#if 0 // HW:
     const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
     if (!isLongActive()) m_trafficMode = 0;  // 크루즈가 꺼져있으면... 신호등을 모두 꺼버려?
     else if (lp.getTrafficState() >= 100) m_trafficMode = 3; // yellow
@@ -1673,8 +1672,6 @@ void DrawApilot::makeData(const UIState* s) {
         case 3: m_trafficMode = 3; break; // yellow
         }
     }
-#endif
-
 }
 
 void DrawApilot::drawLeadApilot(const UIState* s) {
