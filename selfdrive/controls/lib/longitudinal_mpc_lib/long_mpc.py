@@ -598,7 +598,7 @@ class LongitudinalMpc:
 
     if v_ego_kph < 1.0:
       stopSign = model_x < 20.0 and model_v < 10.0
-    elif v_ego_kph < 80.0:
+    elif v_ego_kph < 82.0:
       stopSign = model_x < 120.0 and ((model_v < 3.0) or (model_v < v[0]*0.7))  and abs(y[-1]) < 5.0
     else:
       stopSign = False
@@ -633,42 +633,37 @@ class LongitudinalMpc:
     if self.xState == XState.e2eStop:
       if carstate.gasPressed:
         self.xState = XState.e2ePrepare
-        stop_x = 1000.0
       elif radar_detected and (radarstate.leadOne.dRel - stop_x) < 2.0:
         self.xState = XState.lead
-        stop_x = 1000.0
       else:
-        self.comfort_brake = COMFORT_BRAKE * 0.9
         if self.trafficState == TrafficState.green:
           self.xState = XState.e2ePrepare
-          stop_x = 1000
         else:
+          self.comfort_brake = COMFORT_BRAKE * 0.9
           self.trafficStopAdjustRatio = 0.8
           stop_dist = self.xStop * interp(self.xStop, [0, 100], [1.0, self.trafficStopAdjustRatio])  ##남은거리에 따라 정지거리 비율조정
           if stop_dist > 5.0:
             self.stopDist = stop_dist
           stop_x = 0
     elif self.xState == XState.e2ePrepare:
-      if v_ego_kph < 5.0 and self.trafficState != TrafficState.green:
+      if self.status:
+        self.xState = XState.lead
+      elif v_ego_kph < 5.0 and self.trafficState != TrafficState.green:
         self.xState = XState.e2eStop
         self.stopDist = 2.0
-      elif v_ego_kph > 5.0 and stop_x > 60.0:
+      elif v_ego_kph > 5.0: # and stop_x > 30.0:
         self.xState = XState.e2eCruise
-      else:
-        stop_x = 1000.0
     else: #XState.lead, XState.cruise, XState.e2eCruise
       if self.status:
         self.xState = XState.lead
-        stop_x = 1000.0
       elif self.trafficState == TrafficState.red and not carstate.gasPressed:
         self.xState = XState.e2eStop
         self.stopDist = self.xStop
       else:
         self.xState = XState.e2eCruise
 
-    if self.trafficState in [TrafficState.off, TrafficState.green]:
+    if self.trafficState in [TrafficState.off, TrafficState.green] or self.xState not in [XState.e2eStop]:
       stop_x = 1000.0
-
 
     mode = 'blended' if self.xState in [XState.e2ePrepare] else 'acc'
 

@@ -1,4 +1,6 @@
+![image](https://github.com/ajouatom/carrotpilot/assets/43668841/ee65208b-9ca5-4861-942c-1dd1028f138f)
 ![image](https://github.com/ajouatom/carrotpilot/assets/43668841/4862230b-36c3-4ddd-8c59-943e73f9380c)
+![image](https://github.com/ajouatom/carrotpilot/assets/43668841/c80e6fe7-5229-439f-a48d-6fefcc6c0e37)
 
 What is carrotpilot?
 ------
@@ -6,12 +8,15 @@ CarrotPilot is based on FrogPilot. I've added various UI elements and features t
 
 Why carrot?
 ------
-In Korea, there's a humorous and casual way of saying 'of course' using the word for 'carrot,' which is '당근' in Korean. This is because '당근' (dang-geun, carrot) sounds very similar to '당연하다' (dang-yeon-ha-da), which means 'of course.' It's a playful pun commonly used in everyday conversation among Koreans. So, if you hear someone responding with '당근,' they are affirmatively saying 'of course' in a light-hearted way.
+In Korea, there's a humorous and casual way of saying 'of course' using the word for 'carrot,' which is 'dang-geun' in Korean. This is because 'dang-geun' (carrot) sounds very similar to 'dang-yeon-ha-da', which means 'of course.' It's a playful pun commonly used in everyday conversation among Koreans. So, if you hear someone responding with 'dang-geun,' they are affirmatively saying 'of course' in a light-hearted way.
 
 What is the useful features of CarrotPilot? 
 ------
 **Radar Tracks: HKG cars only**
   - If you only turn on the "EnableRadarTracks" in the Toggle menu, it will be activated when the ignition is turned on.
+
+**SCC Wiring Modification Support: HKG cars only**
+  - If the C-CAN wiring of the SCC modules is bypassed and connected to BUS2, long control using radar is supported.
     
 **APM: APILOT feature**
   - APM is ApilotManager.
@@ -24,6 +29,8 @@ What is the useful features of CarrotPilot?
     
 **APILOT UI: APM, APILOT feature**
   - You can experience a variety of APILOT UIs using APM.
+  - Path UI: When long control is turned off or on, and depending on whether it's in lane mode or laneless mode, it's possible to specify different shapes and colors for the path. Above all, the moving path shape looks cool.
+  - Debug plotting: It's a plotting tool for tuning long control and steering control. 
     
 **APILOT Traffic Stop/Go Mode: APILOT feature**
   - If you turn off the ConditionalExperimental Setting in FrogPilot, you can experience the APILOT Traffic Stop/Go Mode in CarrotPilot.

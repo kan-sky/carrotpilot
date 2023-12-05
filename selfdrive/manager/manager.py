@@ -194,6 +194,13 @@ def manager_cleanup() -> None:
 
   cloudlog.info("everything is dead")
 
+def is_running_on_wsl2():
+  try:
+    with open('/proc/version', 'r') as f:
+      contents = f.read()
+      return 'WSL2' in contents or 'Ubuntu' in contents
+  except FileNotFoundError:
+    return False
 
 def manager_thread() -> None:
 
@@ -254,7 +261,7 @@ def manager_thread() -> None:
     # Exit main loop when uninstall/shutdown/reboot is needed
     shutdown = False
     for param in ("DoUninstall", "DoShutdown", "DoReboot"):
-      if params.get_bool(param):
+      if params.get_bool(param) and not is_running_on_wsl2():
         shutdown = True
         params.put("LastManagerExitReason", f"{param} {datetime.datetime.now()}")
         cloudlog.warning(f"Shutting down manager - {param} set")

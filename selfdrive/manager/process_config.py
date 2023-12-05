@@ -49,7 +49,6 @@ def only_offroad(started, params, CP: car.CarParams) -> bool:
 def allow_uploads(started, params, CP: car.CarParams) -> bool:
   enable_logging = not params_memory.get_bool("NoLogging")
   wifi_connected = HARDWARE.get_network_type() == WIFI and not started
-  return False
   return wifi_connected if params_memory.get_bool("DisableOnroadUploads") else enable_logging
 
 def enable_dm(started, params, CP: car.CarParams) -> bool:

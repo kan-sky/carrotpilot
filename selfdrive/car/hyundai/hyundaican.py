@@ -142,10 +142,10 @@ def create_acc_commands_mix_scc(CP, packer, enabled, accel, upper_jerk, lower_je
   lead_visible = hud_control.leadVisible
   cruiseGap = CS.personality_profile + 1 #hud_control.cruiseGap
   softHold = hud_control.softHold
-  softHoldInfo = softHold  #계기판에 표시안하게 하려면 False로 하면됨~
+  softHoldInfo = softHold > 1  #계기판에 표시안하게 하려면 False로 하면됨~
   long_override = CC.cruiseControl.override
   brakePressed = CS.out.brakePressed
-  longEnabled = enabled #CC.longEnabled
+  longEnabled = CC.longActive or (softHold > 0 and softHoldMode == 2) #CC.longEnabled
   longActive = CC.longActive
   radarAlarm = hud_control.radarAlarm
   stopReq = 1 if stopping and longEnabled else 0
@@ -157,13 +157,13 @@ def create_acc_commands_mix_scc(CP, packer, enabled, accel, upper_jerk, lower_je
   driverOverride =  CS.out.driverOverride  #1:gas, 2:braking, 0: normal
   jerkUpperLimit = upper_jerk
   jerkLowerLimit = lower_jerk
-  if enabled:
+  if enabled or longEnabled:
     scc12_accMode = 2 if long_override else 0 if brakePressed else 1 if longActive else 0 #Brake, Accel, LongActiveUser < 0
     scc14_accMode = 4 if long_override or not longEnabled else 4 if brakePressed else 1 if longActive else 0
     if CS.out.brakeHoldActive: # autoHold가 작동한경우..
       scc12_accMode = 0
       scc14_accMode = 4
-    elif softHold and brakePressed and longEnabled and softHoldMode == 2: #longActive:
+    elif softHold > 0 and brakePressed and longEnabled and softHoldMode == 2: #longActive:
       scc12_accMode = 1
       scc14_accMode = 1
       stopReq = 1

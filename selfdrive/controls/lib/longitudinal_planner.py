@@ -178,7 +178,7 @@ class LongitudinalPlanner:
 
     long_control_off = sm['controlsState'].longControlState == LongCtrlState.off
     force_slow_decel = sm['controlsState'].forceDecel
-    soft_hold = sm['carControl'].hudControl.softHold #ajouatom
+    soft_hold = sm['carControl'].hudControl.softHold > 0 #ajouatom
 
     # Reset current state when not engaged, or user is controlling the speed
     reset_state = long_control_off or soft_hold if self.CP.openpilotLongitudinalControl else not sm['controlsState'].enabled

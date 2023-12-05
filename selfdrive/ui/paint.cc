@@ -1597,7 +1597,7 @@ void DrawApilot::drawPathEnd(const UIState* s, int x, int y, int path_x, int pat
         static QString _qstr = "";
         if (isBrakeHold()) qstr = "AUTOHOLD";
         else if (isSoftHold()) qstr = "SOFTHOLD";
-        else if (isLongActive()) qstr = (xState==3)?"STOPPING":(xState==4)?"STARTING":"CRUISE";
+        else if (isLongActive()) qstr = "CRUISE"; // qstr = (xState == 3) ? "STOPPING" : (xState == 4) ? "STARTING" : "CRUISE";
         else qstr = "MANUAL";
         if (qstr != _qstr) ui_draw_text_a(s, x, y + 175, qstr.toStdString().c_str(), 40, COLOR_WHITE, BOLD);
         _qstr = qstr;
@@ -1656,7 +1656,7 @@ void DrawApilot::makeData(const UIState* s) {
     m_blinkerTimer = (m_blinkerTimer + 1) % 16;
 
     m_brakeHoldActive = car_state.getBrakeHoldActive();
-    m_softHoldActive = (hud_control.getSoftHold() && isLongActive() > 0) ? 1 : 0;
+    m_softHoldActive = hud_control.getSoftHold();
     m_experimentalMode = controls_state.getExperimentalMode() ? 1 : 0;
 
     m_vEgo = car_state.getVEgoCluster();

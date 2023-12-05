@@ -434,7 +434,7 @@ struct CarControl {
     cruiseGap @10: Int32;
     objDist @11: Int32;
     objRelSpd @12: Float32;
-    softHold @13: Bool;
+    softHold @13: Int32;
     radarAlarm @14: Bool;
 
     enum VisualAlert {
