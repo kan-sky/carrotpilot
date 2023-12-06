@@ -77,6 +77,7 @@ class VCruiseHelper:
     self.turnSpeed_prev = 300
     self.curvatureFilter = StreamingMovingAverage(20)
     self.softHold_count = 0
+    self.cruiseActiveReady = 0
     self.apilotEventWait = 0
     self.apilotEventPrev = 0
 
@@ -251,8 +252,8 @@ class VCruiseHelper:
       self.lead_dRel = leadOne.dRel
       self.lead_vRel = leadOne.vRel
     else:
-      self.lead_dRel = 250
-      self.lead_vRdl = 0
+      self.lead_dRel = 0
+      self.lead_vRel = 0
 
   def _update_v_cruise_apilot(self, CS, controls):
     self._update_lead(controls)
@@ -272,6 +273,8 @@ class VCruiseHelper:
     self.v_cruise_kph = v_cruise_kph_apply
 
   def apilot_curve(self, CS, controls):
+    if len(controls.sm['modelV2'].orientationRate.z) != 33:
+      return 300
     # 회전속도를 선속도 나누면 : 곡률이 됨. [20]은 약 4초앞의 곡률을 보고 커브를 계산함.
     #curvature = abs(controls.sm['modelV2'].orientationRate.z[20] / clip(CS.vEgo, 0.1, 100.0))
     orientationRates = np.array(controls.sm['modelV2'].orientationRate.z, dtype=np.float32)
@@ -353,6 +356,9 @@ class VCruiseHelper:
       gas_tok = True if 0 < self.gas_pressed_count < 60 else False
       self.gas_pressed_count = -1 if self.gas_pressed_count > 0 else self.gas_pressed_count - 1
 
+    if controls.enabled or CS.brakePressed or CS.gasPressed:
+      self.cruiseActiveReady = 0
+
     ## ButtonEvent process
     button_kph = v_cruise_kph
     buttonEvents = CS.buttonEvents
@@ -412,14 +418,15 @@ class VCruiseHelper:
           else:
             v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
         elif button_type == ButtonType.decelCruise:
-          if v_cruise_kph > self.v_ego_kph_set - 5:
+          if v_cruise_kph > self.v_ego_kph_set - 2:
             v_cruise_kph = self.v_ego_kph_set
           else:
-            v_cruise_kph = button_kph
+            #v_cruise_kph = button_kph
+            self.cruiseActiveReady = 1
+            self.cruiseActivate = -1
 
-    #if self.brake_pressed_count > 0 or self.gas_pressed_count > 0 or button_type in [ButtonType.cancel, ButtonType.accelCruise, ButtonType.decelCruise]:
     if self.gas_pressed_count > 0 or button_type in [ButtonType.cancel, ButtonType.accelCruise, ButtonType.decelCruise]:
-      self.softHoldActive = 0
+    #  self.softHoldActive = 0
       self.cruiseActivate = 0
 
     ## Auto Engage/Disengage via Gas/Brake
@@ -458,9 +465,13 @@ class VCruiseHelper:
       print("Cruise Activete from SoftHold")
       self.softHoldActive = 2
       self.cruiseActivate = 1
+    elif self.cruiseActiveReady > 0:
+      if 0 < self.lead_dRel or self.xState == 3:
+        print("Cruise Activate from Lead or Traffic sign stop")
+        self.cruiseActivate = 1
     elif not controls.enabled and self.brake_pressed_count < 0 and self.gas_pressed_count < 0:
       cruiseOnDist = abs(self.cruiseOnDist)
-      if cruiseOnDist > 0 and CS.vEgo > 0.2 and self.lead_vRel < 0 and self.lead_dRel < cruiseOnDist:
+      if cruiseOnDist > 0 and CS.vEgo > 0.2 and self.lead_vRel < 0 and 0 < self.lead_dRel < cruiseOnDist:
         self._make_event(controls, EventName.stopstop)
         if cruiseOnDist > 0:
           self.cruiseActivate = 1

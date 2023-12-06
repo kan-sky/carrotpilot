@@ -677,7 +677,12 @@ class Controls:
 
     if not self.joystick_mode:
 
-      CC.hudControl.softHold = self.v_cruise_helper.softHoldActive if CC.alwaysOnLateral and not self.events.contains(ET.NO_ENTRY) else 0  # ajouatom
+      # SoftHold functions: for HKG only ## ajouatom
+      if CC.alwaysOnLateral and not self.events.contains(ET.NO_ENTRY) and CS.vEgo < 0.5:  
+        pass
+      else:
+        self.v_cruise_helper.softHoldActive = 0
+      CC.hudControl.softHold = self.v_cruise_helper.softHoldActive
 
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)

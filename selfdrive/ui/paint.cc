@@ -838,6 +838,7 @@ void DrawApilot::drawTPMS(const UIState* s) {
             ui_draw_text(s, bx + 80, by + 75, get_tpms_text(rr), 38, get_tpms_color(rr), BOLD);
         }
         else {
+            bx += 20;
             //int center_x = bx - 30;
             //int center_y = by - 0;
             //int marginX = (int)(rcFont.width() * 3.2f);

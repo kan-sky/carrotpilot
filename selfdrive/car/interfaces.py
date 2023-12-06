@@ -227,6 +227,8 @@ class CarInterfaceBase(ABC):
     ret = CarInterfaceBase.get_std_params(candidate)
     ret = cls._get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs)
 
+    if "SIMULATION" in os.environ:  #ajouatom why?
+      ret.steerControlType = car.CarParams.SteerControlType.angle
     # Enable torque controller for all cars that do not use angle based steering
     if ret.steerControlType != car.CarParams.SteerControlType.angle:
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)

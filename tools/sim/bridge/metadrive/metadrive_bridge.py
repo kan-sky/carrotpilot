@@ -96,19 +96,19 @@ class MetaDriveBridge(SimulatorBridge):
       on_continuous_line_done=False,
       crash_vehicle_done=False,
       crash_object_done=False,
-      traffic_density=0.0, # traffic is incredibly expensive
+      traffic_density=0.02, # traffic is incredibly expensive
       map_config=dict(
         type=MapGenerateMethod.PG_MAP_FILE,
         config=[
           None,
           straight_block(120),
-          curve_block(240, 90),
+          curve_block(240, 60),
           straight_block(120),
-          curve_block(240, 90),
+          curve_block(240, 60),
           straight_block(120),
-          curve_block(240, 90),
+          curve_block(240, 60),
           straight_block(120),
-          curve_block(240, 90),
+          curve_block(240, 60),
         ]
       ),
       decision_repeat=1,

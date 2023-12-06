@@ -577,8 +577,8 @@ static void update_state(UIState *s) {
     scene.enabled = controlsState.getEnabled();
     scene.experimental_mode = controlsState.getExperimentalMode();
   }
-  if (sm.updated("gpsLocationExternal")) {
-    const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
+  if (sm.updated("gpsLocation")) {
+    const auto gpsLocationExternal = sm["gpsLocation"].getGpsLocation();
     if (scene.compass) {
       scene.bearing_deg = gpsLocationExternal.getBearingDeg();
     }
@@ -738,7 +738,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "carControl",
-    "gpsLocationExternal", "lateralPlan", "longitudinalPlan",
+    "gpsLocation", "lateralPlan", "longitudinalPlan",
     "liveParameters", "roadLimitSpeed", "liveTorqueParameters",
   });
 

@@ -254,6 +254,7 @@ class CarController:
             can_sends.append(hyundaican.create_clu11_button(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint))
             self.last_button_frame = self.frame
       else:
+        set_speed_in_units = CC.hudControl.setSpeed * (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
         self.resume_wait_timer = 0
         self.resume_cnt = 0
         target = int(set_speed_in_units+0.5)
