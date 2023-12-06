@@ -23,8 +23,9 @@ const std::tuple<AudibleAlert, QString, int, float> sound_list[] = {
   {AudibleAlert::PROMPT_DISTRACTED, "prompt_distracted.wav", QSoundEffect::Infinite, MAX_VOLUME},
 
   {AudibleAlert::WARNING_SOFT, "warning_soft.wav", QSoundEffect::Infinite, MAX_VOLUME},
-  //{AudibleAlert::WARNING_IMMEDIATE, "warning_immediate.wav", QSoundEffect::Infinite, MAX_VOLUME},
-  {AudibleAlert::WARNING_IMMEDIATE, "warning_immediate.wav", 2, MAX_VOLUME},
+  {AudibleAlert::WARNING_IMMEDIATE, "warning_immediate.wav", QSoundEffect::Infinite, MAX_VOLUME},
+
+  {AudibleAlert::FIREFOX, "firefox.wav", QSoundEffect::Infinite, MAX_VOLUME},
   {AudibleAlert::LONG_ENGAGED, "tici_engaged.wav", 0, MAX_VOLUME},
   {AudibleAlert::LONG_DISENGAGED, "tici_disengaged.wav", 0, MAX_VOLUME},
   {AudibleAlert::TRAFFIC_SIGN_GREEN, "traffic_sign_green.wav", 0, MAX_VOLUME},
@@ -59,9 +60,11 @@ protected:
   int current_volume = -1;
 
   // FrogPilot variables
-  Params params;
   bool isCustomTheme;
   bool isSilentMode;
   int customSounds;
+
   std::unordered_map<int, QString> soundPaths;
+
+  Params params;
 };

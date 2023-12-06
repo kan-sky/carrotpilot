@@ -14,8 +14,6 @@
 #include "common/watchdog.h"
 #include "common/util.h"
 #include "system/hardware/hw.h"
-#include "selfdrive/ui/qt/frogpilot/frogpilot_navigation_settings.h"
-#include "selfdrive/ui/qt/offroad/frogpilot_settings.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
@@ -24,6 +22,9 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
+
+#include "selfdrive/frogpilot/ui/frogpilot_settings.h"
+#include "selfdrive/frogpilot/navigation/ui/frogpilot_navigation_settings.h"
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   // param, title, desc, icon
@@ -118,7 +119,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     toggles[param.toStdString()] = toggle;
 
     // insert longitudinal personality after NDOG toggle
-    if (param == "DisengageOnAccelerator" && !params.getInt("PersonalitiesViaWheel")) {
+    if (param == "DisengageOnAccelerator" && !params.getInt("AdjustablePersonalities")) {
       addItem(long_personality_setting);
     }
   }

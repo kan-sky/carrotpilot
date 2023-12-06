@@ -110,7 +110,7 @@ class CarState(CarStateBase):
     # cruise state
     if self.CP.openpilotLongitudinalControl:
       # These are not used for engage/disengage since openpilot keeps track of state using the buttons
-      ret.cruiseState.available = cp.vl["TCS13"]["ACCEnable"] == 0 and self.enable_cruise
+      ret.cruiseState.available = self.main_enabled
       ret.cruiseState.enabled = cp.vl["TCS13"]["ACC_REQ"] == 1
       ret.cruiseState.standstill = False
       ret.cruiseState.nonAdaptive = False
@@ -270,8 +270,7 @@ class CarState(CarStateBase):
 
     # Check for cruise control button press
     if self.prev_main_buttons == 0 and self.main_buttons[-1] != 0:
-      self.enable_cruise = not self.enable_cruise
-    self.params_memory.put_bool("EnableCruise", self.enable_cruise)
+      self.main_enabled = not self.main_enabled
 
     return ret
 
@@ -326,7 +325,7 @@ class CarState(CarStateBase):
 
     # cruise state
     # CAN FD cars enable on main button press, set available if no TCS faults preventing engagement
-    ret.cruiseState.available = cp.vl["TCS"]["ACCEnable"] == 0
+    ret.cruiseState.available = self.main_enabled
     if self.CP.openpilotLongitudinalControl:
       # These are not used for engage/disengage since openpilot keeps track of state using the buttons
       ret.cruiseState.enabled = cp.vl["TCS"]["ACC_REQ"] == 1
@@ -347,7 +346,10 @@ class CarState(CarStateBase):
 
     self.prev_cruise_buttons = self.cruise_buttons[-1]
     self.cruise_buttons.extend(cp.vl_all[self.cruise_btns_msg_canfd]["CRUISE_BUTTONS"])
+    self.prev_main_buttons = self.main_buttons[-1]
     self.main_buttons.extend(cp.vl_all[self.cruise_btns_msg_canfd]["ADAPTIVE_CRUISE_MAIN_BTN"])
+    if self.main_buttons[-1] != self.prev_main_buttons:
+      self.main_enabled = not self.main_enabled
     self.buttons_counter = cp.vl[self.cruise_btns_msg_canfd]["COUNTER"]
     ret.accFaulted = cp.vl["TCS"]["ACCEnable"] != 0  # 0 ACC CONTROL ENABLED, 1-3 ACC CONTROL DISABLED
 

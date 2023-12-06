@@ -163,7 +163,6 @@ common/ratekeeper.h
 common/watchdog.cc
 common/watchdog.h
 
-common/modeldata.h
 common/mat.h
 common/timing.h
 
@@ -173,12 +172,9 @@ common/i2c.cc
 common/i2c.h
 
 selfdrive/controls/__init__.py
-selfdrive/controls/conditional_experimental_mode.py
 selfdrive/controls/controlsd.py
-selfdrive/controls/mtsc.py
 selfdrive/controls/plannerd.py
 selfdrive/controls/radard.py
-selfdrive/controls/speed_limit_controller.py
 selfdrive/controls/lib/__init__.py
 selfdrive/controls/lib/alertmanager.py
 selfdrive/controls/lib/alerts_offroad.json
@@ -237,12 +233,10 @@ selfdrive/locationd/paramsd.py
 selfdrive/locationd/models/__init__.py
 selfdrive/locationd/models/.gitignore
 selfdrive/locationd/models/car_kf.py
-selfdrive/locationd/models/gnss_kf.py
 selfdrive/locationd/models/live_kf.py
 selfdrive/locationd/models/live_kf.h
 selfdrive/locationd/models/live_kf.cc
 selfdrive/locationd/models/constants.py
-selfdrive/locationd/models/gnss_helpers.py
 
 selfdrive/locationd/torqued.py
 selfdrive/locationd/calibrationd.py
@@ -286,6 +280,11 @@ system/sensord/sensors_qcom2.cc
 system/sensord/sensors/*.cc
 system/sensord/sensors/*.h
 system/sensord/pigeond.py
+
+system/webrtc/__init__.py
+system/webrtc/webrtcd.py
+system/webrtc/device/audio.py
+system/webrtc/device/video.py
 
 selfdrive/thermald/thermald.py
 selfdrive/thermald/power_monitoring.py
@@ -341,11 +340,6 @@ system/camerad/cameras/camera_common.h
 system/camerad/cameras/camera_common.cc
 system/camerad/cameras/sensor2_i2c.h
 
-system/camerad/imgproc/conv.cl
-system/camerad/imgproc/pool.cl
-system/camerad/imgproc/utils.cc
-system/camerad/imgproc/utils.h
-
 selfdrive/manager/__init__.py
 selfdrive/manager/build.py
 selfdrive/manager/helpers.py
@@ -358,7 +352,6 @@ selfdrive/manager/test/test_manager.py
 selfdrive/modeld/.gitignore
 selfdrive/modeld/__init__.py
 selfdrive/modeld/SConscript
-selfdrive/modeld/model_switcher.py
 selfdrive/modeld/modeld.py
 selfdrive/modeld/parse_model_outputs.py
 selfdrive/modeld/fill_model_msg.py
@@ -454,6 +447,9 @@ third_party/qt5/larch64/bin/**
 scripts/update_now.sh
 scripts/stop_updater.sh
 
+teleoprtc/**
+
+rednose_repo/site_scons/site_tools/rednose_filter.py
 rednose/.gitignore
 rednose/**
 
@@ -609,3 +605,8 @@ tinygrad_repo/tinygrad/runtime/ops_disk.py
 tinygrad_repo/tinygrad/runtime/ops_gpu.py
 tinygrad_repo/tinygrad/shape/*
 tinygrad_repo/tinygrad/*.py
+
+selfdrive/frogpilot/functions/conditional_experimental_mode.py
+selfdrive/frogpilot/functions/map_turn_speed_controller.py
+selfdrive/frogpilot/functions/model_switcher.py
+selfdrive/frogpilot/functions/speed_limit_controller.py

@@ -460,6 +460,9 @@ class LongitudinalMpc:
     
     if not self.conditional_experimental_mode:
       v_cruise, stop_x, self.mode = self.update_apilot(carstate, radarstate, model, v_cruise)
+    else:
+      stop_x = 1000.0
+      self.xState = XState.e2eCruise
 
     # Update in ACC mode or ACC/e2e blend
     if self.mode == 'acc':

@@ -102,13 +102,13 @@ class MetaDriveBridge(SimulatorBridge):
         config=[
           None,
           straight_block(120),
-          curve_block(240, 60),
+          curve_block(240, 90),
           straight_block(120),
-          curve_block(240, 60),
+          curve_block(240, 90),
           straight_block(120),
-          curve_block(240, 60),
+          curve_block(240, 90),
           straight_block(120),
-          curve_block(240, 60),
+          curve_block(240, 90),
         ]
       ),
       decision_repeat=1,

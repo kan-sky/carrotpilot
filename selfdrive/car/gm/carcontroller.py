@@ -6,7 +6,7 @@ from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits, create_gas_interceptor_command
 from openpilot.selfdrive.car.gm import gmcan
-from openpilot.selfdrive.car.gm.values import DBC, CanBus, CarControllerParams, CruiseButtons, GMFlags, CC_ONLY_CAR, EV_CAR
+from openpilot.selfdrive.car.gm.values import DBC, CanBus, CarControllerParams, CruiseButtons, GMFlags, CC_ONLY_CAR, EV_CAR, SDGM_CAR
 from openpilot.selfdrive.controls.lib.drive_helpers import apply_deadzone
 from openpilot.selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
 
@@ -147,8 +147,7 @@ class CarController:
           self.apply_brake = 0
         elif near_stop and stopping and not CC.cruiseControl.resume:
           self.apply_gas = self.params.INACTIVE_REGEN
-          brake_step = int(min(1, self.CP.stoppingDecelRate * DT_CTRL * 4))
-          self.apply_brake = int(max(self.apply_brake + brake_step, min(-100 * self.CP.stopAccel, self.params.MAX_BRAKE)))
+          self.apply_brake = int(min(-100 * self.CP.stopAccel, self.params.MAX_BRAKE))
         else:
           # Normal operation
           brake_accel = actuators.accel + self.accel_g * interp(CS.out.vEgo, BRAKE_PITCH_FACTOR_BP, BRAKE_PITCH_FACTOR_V)
@@ -195,10 +194,10 @@ class CarController:
           can_sends.append(gmcan.create_friction_brake_command(self.packer_ch, friction_brake_bus, self.apply_brake,
                                                              idx, CC.enabled, near_stop, at_full_stop, self.CP))
 
-        # Send dashboard UI commands (ACC status)
-        send_fcw = hud_alert == VisualAlert.fcw
-        can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, CC.enabled,
-                                                            hud_v_cruise * CV.MS_TO_KPH, hud_control.leadVisible, send_fcw, CS.display_menu, CS.personality_profile))
+          # Send dashboard UI commands (ACC status)
+          send_fcw = hud_alert == VisualAlert.fcw
+          can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, CC.enabled,
+                                                              hud_v_cruise * CV.MS_TO_KPH, hud_control.leadVisible, send_fcw, CS.display_menu, CS.personality_profile))
       else:
         # to keep accel steady for logs when not sending gas
         accel += self.accel_g
@@ -240,7 +239,10 @@ class CarController:
       if (self.frame - self.last_button_frame) * DT_CTRL > 0.04:
         if self.cancel_counter > CAMERA_CANCEL_DELAY_FRAMES:
           self.last_button_frame = self.frame
-          can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.CAMERA, CS.buttons_counter, CruiseButtons.CANCEL))
+          if self.CP.carFingerprint in SDGM_CAR:
+            can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.POWERTRAIN, CS.buttons_counter, CruiseButtons.CANCEL))
+          else:
+            can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.CAMERA, CS.buttons_counter, CruiseButtons.CANCEL))
 
     if self.CP.networkLocation == NetworkLocation.fwdCamera:
       # Silence "Take Steering" alert sent by camera, forward PSCMStatus with HandsOffSWlDetectionStatus=1

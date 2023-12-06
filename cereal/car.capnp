@@ -117,30 +117,22 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     locationdPermanentError @118;
     paramsdTemporaryError @50;
     paramsdPermanentError @119;
-
-    # FrogPilot Events
-    frogSteerSaturated @120;
-    greenLight @121;
-    pedalInterceptorNoBrake @122;
-    torqueNNLoad @123;
-    turningLeft @124;
-    turningRight @125;
-    
+   
     # ajouatom events
-    cruisePaused @126;
-    cruiseResume @127;
-    autoHold @128;
-    trafficStopping @129;
-    trafficError @130;
-    laneChangeRoadEdge @131;
-    speedDown @132;
-    audioPrompt @133;
-    audioRefuse @134;
-    stopStop @135;
-    audioLaneChange @136;
-    audioTurn @137;
-    trafficSignGreen @138;
-    trafficSignChanged @139;
+    cruisePaused @120;
+    cruiseResume @121;
+    autoHold @122;
+    trafficStopping @123;
+    trafficError @124;
+    laneChangeRoadEdge @125;
+    speedDown @126;
+    audioPrompt @127;
+    audioRefuse @128;
+    stopStop @129;
+    audioLaneChange @130;
+    audioTurn @131;
+    trafficSignGreen @132;
+    trafficSignChanged @133;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
@@ -278,7 +270,6 @@ struct CarState {
     speedOffset @3 :Float32;
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
-    speedLimit @7 :Float32;
   }
 
   enum GearShifter {
@@ -370,11 +361,6 @@ struct CarControl {
   leftBlinker @15: Bool;
   rightBlinker @16: Bool;
 
-  # FrogPilot CarControls
-  alwaysOnLateral @17: Bool;
-  drivingGear @18: Bool;
-  reverseCruise @19: Bool;
-
   # Any car specific rate limits or quirks applied by
   # the CarController are reflected in actuatorsOutput
   # and matches what is sent to the car
@@ -464,21 +450,23 @@ struct CarControl {
       promptRepeat @7;
       promptDistracted @8;
 
-      longEngaged @9;
-      longDisengaged @10;
+      firefox @9;
 
-      trafficSignGreen @11;
-      trafficSignChanged @12;
-      laneChange @13;
-      stopping @14;
-      autoHold @15;
-      engage2 @16;
-      disengage2 @17;
-      trafficError @18;
-      bsdWarning @19;
-      speedDown @20;
-      stopStop @21;
-      audioTurn @22;
+      longEngaged @10;
+      longDisengaged @11;
+
+      trafficSignGreen @12;
+      trafficSignChanged @13;
+      laneChange @14;
+      stopping @15;
+      autoHold @16;
+      engage2 @17;
+      disengage2 @18;
+      trafficError @19;
+      bsdWarning @20;
+      speedDown @21;
+      stopStop @22;
+      audioTurn @23;
       
     }
   }
@@ -557,6 +545,7 @@ struct CarParams {
   openpilotLongitudinalControl @37 :Bool; # is openpilot doing the longitudinal control?
   carVin @38 :Text; # VIN number queried during fingerprinting
   dashcamOnly @41: Bool;
+  passive @73: Bool;   # is openpilot in control?
   transmissionType @43 :TransmissionType;
   carFw @44 :List(CarFw);
 
@@ -595,8 +584,6 @@ struct CarParams {
     steeringAngleDeadzoneDeg @5 :Float32;
     latAccelFactor @6 :Float32;
     latAccelOffset @7 :Float32;
-    nnModelName @8 :Text;
-    nnModelFuzzyMatch @9 :Bool;
   }
 
   struct LongitudinalPIDTuning {

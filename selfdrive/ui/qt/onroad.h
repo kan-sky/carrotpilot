@@ -9,9 +9,9 @@
 
 #include "common/util.h"
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/screenrecorder/screenrecorder.h"
 #include "selfdrive/ui/qt/widgets/cameraview.h"
 
+#include "selfdrive/frogpilot/screenrecorder/screenrecorder.h"
 
 const int btn_size = 192;
 const int img_size = (btn_size / 4) * 3;
@@ -22,13 +22,12 @@ static bool showSLCOffset;
 static bool speedHidden;
 static double fps;
 
-
 // ***** onroad widgets *****
 class OnroadAlerts : public QWidget {
   Q_OBJECT
 
 public:
-  OnroadAlerts(QWidget *parent = 0) : QWidget(parent) {}
+  OnroadAlerts(QWidget *parent = 0) : QWidget(parent), scene(uiState()->scene) {}
   void updateAlert(const Alert &a);
 
 protected:
@@ -37,71 +36,9 @@ protected:
 private:
   QColor bg;
   Alert alert = {};
-};
-
-class ExperimentalButton : public QPushButton {
-  Q_OBJECT
-
-public:
-  explicit ExperimentalButton(QWidget *parent = 0);
-  void updateState(const UIState &s);
-
-private:
-  void paintEvent(QPaintEvent *event) override;
-  void changeMode();
-
-  Params params;
-  Params paramsMemory{"/dev/shm/params"};
-  const UIScene &scene;
-  QPixmap engage_img;
-  QPixmap experimental_img;
-  bool experimental_mode;
-  bool engageable;
 
   // FrogPilot variables
-  bool rotatingWheel;
-  int steeringAngleDeg;
-  int wheelIcon;
-  std::map<int, QPixmap> wheelImages;
-
-};
-
-
-class MapSettingsButton : public QPushButton {
-  Q_OBJECT
-
-public:
-  explicit MapSettingsButton(QWidget *parent = 0);
-
-private:
-  void paintEvent(QPaintEvent *event) override;
-
-  QPixmap settings_img;
-};
-
-// FrogPilot widgets
-class PersonalityButton : public QPushButton {
-public:
-  explicit PersonalityButton(QWidget *parent = 0);
-
-  void checkUpdate();
-
-private:
-  void handleClick();
-  void paintEvent(QPaintEvent *event) override;
-  void updateState();
-
-  Params params;
-  Params paramsMemory{"/dev/shm/params"};
   const UIScene &scene;
-
-  int personalityProfile;
-  qreal fadeDuration;
-  qreal textDuration;
-
-  QElapsedTimer transitionTimer;
-
-  QVector<std::pair<QPixmap, QString>> profile_data;
 };
 
 class Compass : public QWidget {
@@ -126,6 +63,72 @@ private:
   QPixmap staticElements;
 };
 
+class ExperimentalButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  explicit ExperimentalButton(QWidget *parent = 0);
+  void updateState(const UIState &s, bool leadInfo);
+
+private:
+  void paintEvent(QPaintEvent *event) override;
+  void changeMode();
+
+  Params params;
+  QPixmap engage_img;
+  QPixmap experimental_img;
+  bool experimental_mode;
+  bool engageable;
+
+  // FrogPilot variables
+  bool firefoxRandomEventTriggered;
+  bool rotatingWheel;
+  int steeringAngleDeg;
+  int wheelIcon;
+  int y_offset;
+
+  std::map<int, QPixmap> wheelImages;
+
+  Params paramsMemory{"/dev/shm/params"};
+  const UIScene &scene;
+};
+
+
+class MapSettingsButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  explicit MapSettingsButton(QWidget *parent = 0);
+
+private:
+  void paintEvent(QPaintEvent *event) override;
+
+  QPixmap settings_img;
+};
+
+// FrogPilot buttons
+class PersonalityButton : public QPushButton {
+public:
+  explicit PersonalityButton(QWidget *parent = 0);
+
+  void checkUpdate();
+  void handleClick();
+  void updateState();
+
+private:
+  void paintEvent(QPaintEvent *event) override;
+
+  Params params;
+  Params paramsMemory{"/dev/shm/params"};
+  const UIScene &scene;
+
+  int personalityProfile = 0;
+
+  QElapsedTimer transitionTimer;
+
+  QVector<std::pair<QPixmap, QString>> profile_data;
+};
+
 // container window for the NVG UI
 class AnnotatedCameraWidget : public CameraWidget {
   Q_OBJECT
@@ -138,12 +141,6 @@ public:
 
 private:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
-
-  // FrogPilot widgets
-  void drawCompass(QPainter &p);
-  void drawLeadInfo(QPainter &p);
-  void drawStatusBar(QPainter &p);
-  void drawTurnSignals(QPainter &p);
 
   QVBoxLayout *main_layout;
   ExperimentalButton *experimental_btn;
@@ -167,11 +164,14 @@ private:
   int skip_frame_count = 0;
   bool wide_cam_requested = false;
 
+  // FrogPilot widgets
+  void drawLeadInfo(QPainter &p);
+  void drawStatusBar(QPainter &p);
+  void drawTurnSignals(QPainter &p);
+  void initializeFrogPilotWidgets();
+  void updateFrogPilotWidgets(QPainter &p);
+
   // FrogPilot variables
-  QHBoxLayout *bottom_layout;
-  Params params;
-  Params paramsMemory{"/dev/shm/params"};
-  const UIScene &scene;
   bool accelerationPath;
   bool adjacentPath;
   bool alwaysOnLateral;
@@ -207,13 +207,22 @@ private:
   int conditionalStatus;
   int customColors;
   int customSignals;
-  int totalFrames = 8;
+  int totalFrames;
+  QTimer *animationTimer;
+  size_t animationFrameIndex;
+
+  std::unordered_map<int, std::pair<QString, std::pair<QColor, std::map<double, QBrush>>>> themeConfiguration;
+  std::vector<QPixmap> signalImgVector;
+
+  QHBoxLayout *bottom_layout;
+
   Compass *compass_img;
   PersonalityButton *personality_btn;
   ScreenRecorder *recorder_btn;
-  size_t animationFrameIndex;
-  std::unordered_map<int, std::pair<QString, std::pair<QColor, std::map<double, QBrush>>>> themeConfiguration;
-  std::vector<QPixmap> signalImgVector;
+
+  Params params;
+  Params paramsMemory{"/dev/shm/params"};
+  const UIScene &scene;
 
 protected:
   void paintGL() override;
@@ -255,11 +264,12 @@ private:
   QHBoxLayout* split;
 
   // FrogPilot variables
+  QPoint timeoutPoint = QPoint(420, 69);
+  QTimer clickTimer;
+
   Params params;
   Params paramsMemory{"/dev/shm/params"};
   const UIScene &scene;
-  QPoint timeoutPoint = QPoint(420, 69);
-  QTimer clickTimer;
 
 private slots:
   void offroadTransition(bool offroad);

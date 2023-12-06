@@ -81,7 +81,7 @@ def read_tz(x):
 
 
 def read_thermal(thermal_config):
-  dat = messaging.new_message('deviceState')
+  dat = messaging.new_message('deviceState', valid=True)
   dat.deviceState.cpuTempC = [read_tz(z) / thermal_config.cpu[1] for z in thermal_config.cpu[0]]
   dat.deviceState.gpuTempC = [read_tz(z) / thermal_config.gpu[1] for z in thermal_config.gpu[0]]
   dat.deviceState.memoryTempC = read_tz(thermal_config.mem[0]) / thermal_config.mem[1]
@@ -167,7 +167,7 @@ def hw_state_thread(end_event, hw_queue):
 
 
 def thermald_thread(end_event, hw_queue) -> None:
-  pm = messaging.PubMaster(['deviceState'])
+  pm = messaging.PubMaster(['deviceState', 'frogpilotDeviceState'])
   sm = messaging.SubMaster(["peripheralState", "gpsLocationExternal", "controlsState", "pandaStates"], poll=["pandaStates"])
 
   count = 0
@@ -245,8 +245,13 @@ def thermald_thread(end_event, hw_queue) -> None:
     except queue.Empty:
       pass
 
-    msg.deviceState.freeSpace = round(get_available_bytes(default=32.0 * (2 ** 30)) / (2 ** 30))
-    msg.deviceState.usedSpace = round(get_used_bytes(default=0.0 * (2 ** 30)) / (2 ** 30))
+    fpmsg = messaging.new_message('frogpilotDeviceState')
+
+    fpmsg.frogpilotDeviceState.freeSpace = round(get_available_bytes(default=32.0 * (2 ** 30)) / (2 ** 30))
+    fpmsg.frogpilotDeviceState.usedSpace = round(get_used_bytes(default=0.0 * (2 ** 30)) / (2 ** 30))
+
+    pm.send("frogpilotDeviceState", fpmsg)
+
     msg.deviceState.freeSpacePercent = get_available_percent(default=100.0)
     msg.deviceState.memoryUsagePercent = int(round(psutil.virtual_memory().percent))
     msg.deviceState.cpuUsagePercent = [int(round(n)) for n in psutil.cpu_percent(percpu=True)]

@@ -3,7 +3,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <optional>
 
 #include <QObject>
 #include <QTimer>
@@ -14,9 +13,11 @@
 #include "nanovg.h"
 
 #include "cereal/messaging/messaging.h"
-#include "common/modeldata.h"
+#include "common/mat.h"
 #include "common/params.h"
 #include "common/timing.h"
+#include "selfdrive/ui/qt/network/wifi_manager.h"
+#include "system/hardware/hw.h"
 
 const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
@@ -25,7 +26,18 @@ const int UI_FREQ = 20; // Hz
 const int BACKLIGHT_OFFROAD = 50;
 typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 
-const mat3 DEFAULT_CALIBRATION = {{ 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0 }};
+const float MIN_DRAW_DISTANCE = 10.0;
+const float MAX_DRAW_DISTANCE = 100.0;
+constexpr mat3 DEFAULT_CALIBRATION = {{ 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0 }};
+constexpr mat3 FCAM_INTRINSIC_MATRIX = (mat3){{2648.0, 0.0, 1928.0 / 2,
+                                           0.0, 2648.0, 1208.0 / 2,
+                                           0.0, 0.0, 1.0}};
+// tici ecam focal probably wrong? magnification is not consistent across frame
+// Need to retrain model before this can be changed
+constexpr mat3 ECAM_INTRINSIC_MATRIX = (mat3){{567.0, 0.0, 1928.0 / 2,
+                                           0.0, 567.0, 1208.0 / 2,
+                                           0.0, 0.0, 1.0}};
+
 
 constexpr vec3 default_face_kpts_3d[] = {
   {-5.98, -51.20, 8.00}, {-17.64, -49.14, 8.00}, {-23.81, -46.40, 8.00}, {-29.98, -40.91, 8.00}, {-32.04, -37.49, 8.00},
@@ -186,10 +198,12 @@ typedef struct UIScene {
   bool map_open;
   bool mute_dm;
   bool personalities_via_screen;
+  bool random_events;
   bool road_name_ui;
   bool rotating_wheel;
   bool show_driver_camera;
   bool show_fps;
+  bool speed_limit_controller;
   bool speed_limit_overridden;
   bool turn_signal_left;
   bool turn_signal_right;
@@ -199,6 +213,7 @@ typedef struct UIScene {
   int conditional_speed;
   int conditional_speed_lead;
   int conditional_status;
+  int current_random_event;
   int custom_colors;
   int custom_signals;
   int screen_brightness;
@@ -294,10 +309,8 @@ private:
   QTimer *timer;
   bool started_prev = false;
   PrimeType prime_type = PrimeType::UNKNOWN;
-  
-  // FrogPilot variables
-  Params params;
-  Params paramsMemory{"/dev/shm/params"};
+
+  WifiManager *wifi = nullptr;
 };
 
 UIState *uiState();

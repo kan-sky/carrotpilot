@@ -207,7 +207,7 @@ def chunk_data(data, size):
 
 def crash_log(candidate):
   params = Params()
-  dongle_id = params.get("DongleId", encoding='utf-8')
+  serial_id = params.get("HardwareSerial", encoding='utf-8')
 
   control_keys, vehicle_keys, visual_keys = [
     "AdjustablePersonalities", "AlwaysOnLateral", "AlwaysOnLateralMain", "ConditionalExperimental", "CESpeed", "CESpeedLead", "CECurves", 
@@ -223,7 +223,7 @@ def crash_log(candidate):
   ], [
     "CustomTheme", "CustomColors", "CustomIcons", "CustomSignals", "CustomSounds", "CameraView", "Compass", "CustomUI", "LaneLinesWidth", "RoadEdgesWidth", 
     "PathWidth", "PathEdgeWidth", "AccelerationPath", "AdjacentPath", "BlindSpotPath", "ShowFPS", "LeadInfo", "RoadNameUI", "UnlimitedLength", 
-    "DriverCamera", "GreenLightAlert", "RotatingWheel", "ScreenBrightness", "Sidebar", "SilentMode", "WheelIcon", "HideSpeed", "NumericalTemp", 
+    "DriverCamera", "GreenLightAlert", "RandomEvents", "RotatingWheel", "ScreenBrightness", "Sidebar", "SilentMode", "WheelIcon", "HideSpeed", "NumericalTemp", 
     "Fahrenheit", "ShowCPU", "ShowGPU", "ShowMemoryUsage", "ShowSLCOffset", "ShowStorageLeft", "ShowStorageUsed"
   ]
 
@@ -234,12 +234,12 @@ def crash_log(candidate):
   with sentry_sdk.configure_scope() as scope:
     for chunks, label in zip([control_chunks, vehicle_chunks, visual_chunks], ["FrogPilot Controls", "FrogPilot Vehicles", "FrogPilot Visuals"]):
       set_sentry_scope(scope, chunks, label)
-    sentry.capture_warning(f"Fingerprinted: {candidate}", dongle_id)
+    sentry.capture_warning(f"Fingerprinted: {candidate}", serial_id)
 
 def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
   params = Params()
   car_model = params.get("CarModel", encoding='utf-8')
-  dongle_id = params.get("DongleId", encoding='utf-8')
+  serial_id = params.get("HardwareSerial", encoding='utf-8')
 
   candidate, fingerprints, vin, car_fw, source, exact_match = fingerprint(logcan, sendcan, num_pandas)
 
@@ -250,7 +250,7 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
       cloudlog.event("Car doesn't match any fingerprints", fingerprints=fingerprints, error=True)
       candidate = "mock"
 
-  if get_branch() == "origin/FrogPilot-Development" and dongle_id[:3] != "be6":
+  if get_branch() == "origin/FrogPilot-Development" and serial_id[:3] != "cff":
     candidate = "mock"
 
   crash_log(candidate)
