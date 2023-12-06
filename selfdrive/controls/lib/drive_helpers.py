@@ -426,16 +426,18 @@ class VCruiseHelper:
           else:
             v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
         elif button_type == ButtonType.decelCruise:
-          if v_cruise_kph > self.v_ego_kph_set - 2:
+          if v_cruise_kph > self.v_ego_kph_set - 5:
             v_cruise_kph = self.v_ego_kph_set
           else:
             #v_cruise_kph = button_kph
             self.cruiseActiveReady = 1
             self.cruiseActivate = -1
+            print("cruiseActivateReady")
 
-    if self.gas_pressed_count > 0 or button_type in [ButtonType.cancel, ButtonType.accelCruise, ButtonType.decelCruise]:
+    if self.brake_pressed_count > 0 or self.gas_pressed_count > 0 or button_type in [ButtonType.cancel, ButtonType.accelCruise, ButtonType.decelCruise]:
     #  self.softHoldActive = 0
-      self.cruiseActivate = 0
+      if self.cruiseActivate > 0:
+        self.cruiseActivate = 0
 
     ## Auto Engage/Disengage via Gas/Brake
     if gas_tok:
@@ -480,8 +482,9 @@ class VCruiseHelper:
     elif not controls.enabled and self.brake_pressed_count < 0 and self.gas_pressed_count < 0:
       cruiseOnDist = abs(self.cruiseOnDist)
       if cruiseOnDist > 0 and CS.vEgo > 0.2 and self.lead_vRel < 0 and 0 < self.lead_dRel < cruiseOnDist:
-        self._make_event(controls, EventName.stopstop)
+        self._make_event(controls, EventName.stopStop)
         if cruiseOnDist > 0:
+          print("cruiseOnDist Activate")
           self.cruiseActivate = 1
 
     v_cruise_kph = clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
@@ -570,8 +573,8 @@ class VCruiseHelper:
                   msg.camLimitSpeed, msg.camLimitSpeedLeftDist,
                   CS.speedLimit, CS.speedLimitDistance,
                   apTbtSpeed, apTbtDistance)
-    if applySpeed < 200:
-      print(log)
+    #if applySpeed < 200:
+    #  print(log)
     #controls.debugText1 = log
     return applySpeed #, roadSpeed, leftDist, speedLimitType
 
