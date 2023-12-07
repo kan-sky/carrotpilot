@@ -51,13 +51,13 @@ const CanMsg GM_CC_LONG_TX_MSGS[] = {{0x180, 0, 4}, {0x1E1, 0, 7},  // pt bus
 
 // TODO: do checksum and counter checks. Add correct timestep, 0.1s for now.
 RxCheck gm_rx_checks[] = {
-  {.msg = {{0x184, 0, 8, .expected_freq = 10U}, { 0 }, { 0 }}},
-  {.msg = {{0x34A, 0, 5, .expected_freq = 10U}, { 0 }, { 0 }}},
-  {.msg = {{0x1E1, 0, 7, .expected_freq = 10U},   // Non-SDGM Car
-           {0x1E1, 2, 7, .expected_freq = 10U}}}, // SDGM Car
-  {.msg = {{0xF1, 0, 6, .expected_freq = 10U},   // Non-SDGM Car
-           {0xF1, 2, 6, .expected_freq = 10U}}}, // SDGM Car
-  {.msg = {{0x1C4, 0, 8, .expected_freq = 10U}, { 0 }, { 0 }}},
+  {.msg = {{0x184, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},
+  {.msg = {{0x34A, 0, 5, .frequency = 10U}, { 0 }, { 0 }}},
+  {.msg = {{0x1E1, 0, 7, .frequency = 10U},   // Non-SDGM Car
+           {0x1E1, 2, 7, .frequency = 10U}}}, // SDGM Car
+  {.msg = {{0xF1, 0, 6, .frequency = 10U},   // Non-SDGM Car
+           {0xF1, 2, 6, .frequency = 10U}}}, // SDGM Car
+  {.msg = {{0x1C4, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},
 };
 
 const uint16_t GM_PARAM_HW_CAM = 1;

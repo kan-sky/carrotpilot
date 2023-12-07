@@ -8,7 +8,7 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE, PC
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_branch, get_commit, get_origin, get_version, is_tested_branch
 
 

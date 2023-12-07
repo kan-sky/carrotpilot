@@ -94,6 +94,7 @@ class VCruiseHelper:
     self.autoNaviSpeedCtrl = 2
     self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
     self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
+    self.autoCruiseControl = Params().get_int("AutoCruiseControl")
     self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
     self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
     self.autoCurveSpeedCtrlUse = int(Params().get("AutoCurveSpeedCtrlUse"))
@@ -114,6 +115,7 @@ class VCruiseHelper:
     elif self.params_count == 20:
       self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
       self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
+      self.autoCruiseControl = Params().get_int("AutoCruiseControl")
       self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
       self.softHoldMode = Params().get_int("SoftHoldMode")
     elif self.params_count == 30:
@@ -433,6 +435,8 @@ class VCruiseHelper:
             self.cruiseActiveReady = 1
             self.cruiseActivate = -1
             print("cruiseActivateReady")
+    elif button_type != 0 and not controls.enabled:
+      self.cruiseActivate = 0
 
     if self.brake_pressed_count > 0 or self.gas_pressed_count > 0 or button_type in [ButtonType.cancel, ButtonType.accelCruise, ButtonType.decelCruise]:
     #  self.softHoldActive = 0
@@ -475,6 +479,12 @@ class VCruiseHelper:
       print("Cruise Activete from SoftHold")
       self.softHoldActive = 2
       self.cruiseActivate = 1
+    elif self.brake_pressed_count == -1 and self.xState == 3:
+      print("Cruise Activate from Traffic sign stop")
+      self.cruiseActivate = 1
+    elif self.brake_pressed_count == -1 and (0 < self.lead_dRel < 100):
+      print("Cruise Activate from Lead Car")
+      self.cruiseActivate = 1
     elif self.cruiseActiveReady > 0:
       if 0 < self.lead_dRel or self.xState == 3:
         print("Cruise Activate from Lead or Traffic sign stop")
@@ -487,6 +497,8 @@ class VCruiseHelper:
           print("cruiseOnDist Activate")
           self.cruiseActivate = 1
 
+    if False:#self.autoCruiseControl == 0:
+      self.cruiseActivate = 0
     v_cruise_kph = clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
     return v_cruise_kph
 

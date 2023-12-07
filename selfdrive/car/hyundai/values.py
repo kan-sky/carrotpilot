@@ -15,8 +15,8 @@ Ecu = car.CarParams.Ecu
 
 
 class CarControllerParams:
-  ACCEL_MIN = -3.5 # m/s
-  ACCEL_MAX = 2.0 # m/s
+  ACCEL_MIN = -4.0 # m/s
+  ACCEL_MAX = 2.5 # m/s
 
   def __init__(self, CP):
     self.STEER_DELTA_UP = 3
@@ -44,13 +44,20 @@ class CarControllerParams:
 
     # these cars have significantly more torque than most HKG; limit to 70% of max
     elif CP.flags & HyundaiFlags.ALT_LIMITS:
-      self.STEER_MAX = 270
-      self.STEER_DELTA_UP = 2
-      self.STEER_DELTA_DOWN = 3
+      self.STEER_MAX = 384
+      self.STEER_DELTA_UP = 3
+      self.STEER_DELTA_DOWN = 7
 
+    elif CP.carFingerprint in (CAR.KIA_STINGER, CAR.KONA_HEV):
+      self.STEER_MAX = 384
+    elif CP.carFingerprint in (CAR.SANTA_FE_HEV_2022):
+      self.STEER_MAX = 409
+      self.STEER_DELTA_UP = 3
+      self.STEER_DELTA_DOWN = 7
+      
     # Default for most HKG
     else:
-      self.STEER_MAX = 384
+      self.STEER_MAX = 409
 
 
 class HyundaiFlags(IntFlag):
