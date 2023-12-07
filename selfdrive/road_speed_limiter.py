@@ -362,7 +362,7 @@ def main():
 
         #print(Port.RECEIVE_PORT)
 
-        dat = messaging.new_message()
+        dat = messaging.new_message('roadLimitSpeed', valid=True)
         dat.init('roadLimitSpeed')
         dat.roadLimitSpeed.active = server.active
         dat.roadLimitSpeed.roadLimitSpeed = server.get_limit_val("road_limit_speed", 0)

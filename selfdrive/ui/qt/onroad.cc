@@ -1095,7 +1095,9 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
         updateFrogPilotWidgets(painter);
     }
     else {
+        updateFrogPilotWidgets(painter);
         ui_draw(s, width(), height());
+
     }
   }
 
