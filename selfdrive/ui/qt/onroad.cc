@@ -113,13 +113,6 @@ void OnroadWindow::updateState(const UIState &s) {
     bg = bgColor;
     update();
   }
-
-#ifdef ENABLE_MAPS
-  // Make sure the sidebar is always closed when the map is open
-  if (geometry().x() > 0 && map->isVisible()) {
-    clickTimer.start(1);
-  }
-#endif
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
@@ -452,13 +445,9 @@ MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
   setEnabled(false);
 }
 
-void MapSettingsButton::updateState(bool compass) {
-  y_offset = !compass ? 10 : 0;
-}
-
 void MapSettingsButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2 + y_offset), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
 }
 
 
@@ -541,8 +530,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // hide map settings button for alerts and flip for right hand DM
   if (map_settings_btn->isEnabled()) {
-    map_settings_btn->setVisible(!hideBottomIcons && (compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
-    main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | (compass ? Qt::AlignTop : Qt::AlignBottom));
+    map_settings_btn->setVisible(!hideBottomIcons);
+    main_layout->setAlignment(map_settings_btn, (rightHandDM ? (!onroadAdjustableProfiles || compass) : (onroadAdjustableProfiles && !compass)) ? Qt::AlignLeft : Qt::AlignRight | Qt::AlignTop);
   }
 }
 
@@ -1025,6 +1014,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   const cereal::ModelDataV2::Reader &model = sm["modelV2"].getModelV2();
   const cereal::RadarState::Reader &radar_state = sm["radarState"].getRadarState();
 
+  updateFrogPilotVariables();
   // draw camera frame
   {
     std::lock_guard lk(frame_lock);

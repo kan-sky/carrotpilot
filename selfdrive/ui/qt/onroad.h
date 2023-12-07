@@ -99,15 +99,11 @@ class MapSettingsButton : public QPushButton {
 
 public:
   explicit MapSettingsButton(QWidget *parent = 0);
-  void updateState(bool compass);
 
 private:
   void paintEvent(QPaintEvent *event) override;
 
   QPixmap settings_img;
-
-  // FrogPilot variables
-  int y_offset;
 };
 
 // FrogPilot buttons
@@ -174,6 +170,7 @@ private:
   void drawTurnSignals(QPainter &p);
   void initializeFrogPilotWidgets();
   void updateFrogPilotWidgets(QPainter &p);
+  void updateFrogPilotVariables();
 
   // FrogPilot variables
   bool accelerationPath;
@@ -221,7 +218,6 @@ private:
   QHBoxLayout *bottom_layout;
 
   Compass *compass_img;
-  MapSettingsButton *map_settings_btn_bottom;
   PersonalityButton *personality_btn;
   ScreenRecorder *recorder_btn;
 
