@@ -1046,7 +1046,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       wide_cam_requested = wide_cam_requested && s->scene.calibration_wide_valid;
     }
     paramsMemory.putBoolNonBlocking("WideCamera", wide_cam_requested);
-    CameraWidget::setStreamType(showDriverCamera || cameraView == 3 ? VISION_STREAM_DRIVER : 
+    CameraWidget::setStreamType(scene.show_driver_camera || cameraView == 3 ? VISION_STREAM_DRIVER :
                                 wide_cam_requested && cameraView != 1 ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
 
     s->scene.wide_cam = CameraWidget::getStreamType() == VISION_STREAM_WIDE_ROAD;
@@ -1094,20 +1094,17 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       update_dmonitoring(s, sm["driverStateV2"].getDriverStateV2(), dm_fade_state, rightHandDM);
       drawDriverState(painter, s);
     }
+
     if (s->show_mode == 0) {
         drawHud(painter);
+        // Update FrogPilot widgets
+        updateFrogPilotWidgets(painter);
     }
     else {
-        painter.beginNativePainting();
+        //updateFrogPilotWidgets(painter);
         ui_draw(s, width(), height());
-        painter.endNativePainting();
-
     }
   }
-
-  // Update FrogPilot widgets
-  updateFrogPilotWidgets(painter);
-  //if (s->show_mode != 0 && !showDriverCamera) ui_draw(s, width(), height());
 
   double cur_draw_t = millis_since_boot();
   double dt = cur_draw_t - prev_draw_t;
@@ -1125,21 +1122,20 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   m.setDrawTimeMillis(cur_draw_t - start_draw_t);
   pm->send("uiDebug", msg);
   ui_update_params(uiState());
+  updateFrogPilotVariables();
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);
 
   ui_update_params(uiState());
+  updateFrogPilotVariables();
   prev_draw_t = millis_since_boot();
 }
 
 // FrogPilot widgets
 void AnnotatedCameraWidget::initializeFrogPilotWidgets() {
   bottom_layout = new QHBoxLayout();
-
-  map_settings_btn_bottom = new MapSettingsButton(this);
-  bottom_layout->addWidget(map_settings_btn_bottom);
 
   personality_btn = new PersonalityButton(this);
   bottom_layout->addWidget(personality_btn);
@@ -1192,63 +1188,57 @@ void AnnotatedCameraWidget::initializeFrogPilotWidgets() {
   });
   record_timer->start(1000 / UI_FREQ);
 }
-
+void AnnotatedCameraWidget::updateFrogPilotVariables() {
+    accelerationPath = scene.acceleration_path;
+    adjacentPath = scene.adjacent_path;
+    alwaysOnLateral = scene.always_on_lateral_active;
+    blindSpotLeft = scene.blind_spot_left;
+    blindSpotRight = scene.blind_spot_right;
+    cameraView = scene.camera_view;
+    compass = scene.compass;
+    conditionalExperimental = scene.conditional_experimental;
+    conditionalSpeed = scene.conditional_speed;
+    conditionalSpeedLead = scene.conditional_speed_lead;
+    conditionalStatus = scene.conditional_status;
+    customColors = scene.custom_colors;
+    desiredFollow = scene.desired_follow;
+    experimentalMode = scene.experimental_mode;
+    laneWidthLeft = scene.lane_width_left;
+    laneWidthRight = scene.lane_width_right;
+    leadInfo = scene.lead_info;
+    mapOpen = scene.map_open;
+    muteDM = scene.mute_dm;
+    obstacleDistance = scene.obstacle_distance;
+    obstacleDistanceStock = scene.obstacle_distance_stock;
+    onroadAdjustableProfiles = scene.personalities_via_screen;
+    roadNameUI = scene.road_name_ui;
+    showDriverCamera = scene.show_driver_camera;
+    slcOverridden = scene.speed_limit_overridden;
+    slcSpeedLimit = scene.speed_limit;
+    slcSpeedLimitOffset = scene.speed_limit_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH);
+    stoppedEquivalence = scene.stopped_equivalence;
+    stoppedEquivalenceStock = scene.stopped_equivalence_stock;
+    turnSignalLeft = scene.turn_signal_left;
+    turnSignalRight = scene.turn_signal_right;
+    vtscOffset = 0.1 * scene.vtsc_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * vtscOffset;
+}
 void AnnotatedCameraWidget::updateFrogPilotWidgets(QPainter &p) {
-  accelerationPath = scene.acceleration_path;
-  adjacentPath = scene.adjacent_path;
-  alwaysOnLateral = scene.always_on_lateral_active;
-  blindSpotLeft = scene.blind_spot_left;
-  blindSpotRight = scene.blind_spot_right;
-  cameraView = scene.camera_view;
-  compass = scene.compass;
-  conditionalExperimental = scene.conditional_experimental;
-  conditionalSpeed = scene.conditional_speed;
-  conditionalSpeedLead = scene.conditional_speed_lead;
-  conditionalStatus = scene.conditional_status;
-  customColors = scene.custom_colors;
-  desiredFollow = scene.desired_follow;
-  experimentalMode = scene.experimental_mode;
-  laneWidthLeft = scene.lane_width_left;
-  laneWidthRight = scene.lane_width_right;
-  leadInfo = scene.lead_info;
-  mapOpen = scene.map_open;
-  muteDM = scene.mute_dm;
-  obstacleDistance = scene.obstacle_distance;
-  obstacleDistanceStock = scene.obstacle_distance_stock;
-  onroadAdjustableProfiles = scene.personalities_via_screen;
-  roadNameUI = scene.road_name_ui;
-  showDriverCamera = scene.show_driver_camera;
-  slcOverridden = scene.speed_limit_overridden;
-  slcSpeedLimit = scene.speed_limit;
-  slcSpeedLimitOffset = scene.speed_limit_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH);
-  stoppedEquivalence = scene.stopped_equivalence;
-  stoppedEquivalenceStock = scene.stopped_equivalence_stock;
-  turnSignalLeft = scene.turn_signal_left;
-  turnSignalRight = scene.turn_signal_right;
-  vtscOffset = 0.1 * scene.vtsc_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * vtscOffset;
 
-  if (!showDriverCamera) {
-    if (leadInfo) {
-      drawLeadInfo(p);
-    }
-
-    if (alwaysOnLateral || conditionalExperimental || roadNameUI) {
-      drawStatusBar(p);
-    }
-
-    if (customSignals && (turnSignalLeft || turnSignalRight)) {
-      if (!animationTimer->isActive()) {
-        animationTimer->start(totalFrames * 11);  // 440 milliseconds per loop; syncs up perfectly with my 2019 Lexus ES 350 turn signal clicks
-      }
-      drawTurnSignals(p);
-    } else if (animationTimer->isActive()) {
-      animationTimer->stop();
-    }
+  if (leadInfo) {
+    drawLeadInfo(p);
   }
 
-  if (map_settings_btn->isEnabled()) {
-    map_settings_btn_bottom->setVisible(!hideBottomIcons && !(compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
-    bottom_layout->setAlignment(map_settings_btn_bottom, rightHandDM ? Qt::AlignLeft : Qt::AlignRight);
+  if (alwaysOnLateral || conditionalExperimental || roadNameUI) {
+    drawStatusBar(p);
+  }
+
+  if (customSignals && (turnSignalLeft || turnSignalRight)) {
+    if (!animationTimer->isActive()) {
+      animationTimer->start(totalFrames * 11);  // 440 milliseconds per loop; syncs up perfectly with my 2019 Lexus ES 350 turn signal clicks
+    }
+    drawTurnSignals(p);
+  } else if (animationTimer->isActive()) {
+    animationTimer->stop();
   }
 
   const bool enableCompass = compass && !hideBottomIcons;
