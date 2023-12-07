@@ -438,7 +438,7 @@ Primeless::Primeless(QWidget *parent) : QWidget(parent) {
   list = new ListWidget(mainWidget);
 
   wifi = new WifiManager(this);
-  ipLabel = new LabelControl(tr("Manage Your Settings At"), QString("%1:5050").arg(wifi->getIp4Address()));
+  ipLabel = new LabelControl(tr("Manage Your Settings At"), QString("%1:8082").arg(wifi->getIp4Address()));
   list->addItem(ipLabel);
 
   std::vector<QString> searchOptions{tr("MapBox"), tr("Amap"), tr("Google")};
@@ -514,7 +514,7 @@ void Primeless::updateState() {
   if (!isVisible()) return;
 
   QString ipAddress = wifi->getIp4Address();
-  ipLabel->setText(ipAddress.isEmpty() ? tr("Device Offline") : QString("%1:5050").arg(ipAddress));
+  ipLabel->setText(ipAddress.isEmpty() ? tr("Device Offline") : QString("%1:8082").arg(ipAddress));
 
   mapboxPublicKeySet = !params.get("MapboxPublicKey").empty();
   mapboxSecretKeySet = !params.get("MapboxSecretKey").empty();

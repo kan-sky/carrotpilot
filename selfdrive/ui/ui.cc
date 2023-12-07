@@ -187,9 +187,9 @@ void update_line_data_dist(const UIState* s, const cereal::XYZTData::Reader& lin
     QPolygonF left_points, right_points;
     left_points.reserve(40 + 1);
     right_points.reserve(40 + 1);
-    float idxs[33], line_xs[33], line_ys[33], line_zs[33];
+    float idxs[line_x.size()], line_xs[line_x.size()], line_ys[line_x.size()], line_zs[line_x.size()];
     float   x_prev = 0;
-    for (int i = 0; i < 33; i++) {
+    for (int i = 0; i < line_x.size(); i++) {
         idxs[i] = (float)i;
         if (i>0 && line_x[i] < x_prev) {
             //printf("plan data error.\n");
@@ -214,10 +214,10 @@ void update_line_data_dist(const UIState* s, const cereal::XYZTData::Reader& lin
         float z_off = interp<float>(dist, { 0.0f, 100.0 }, { z_off_start, z_off_end }, false);
         float y_off = interp<float>(z_off, { -3.0f, 0.0f, 3.0f }, { 1.5f, 0.5f, 1.5f }, false);
         y_off *= width_apply;
-        float  idx = interp<float>(dist, line_xs, idxs, 33, false);
-        if (idx >= 33) break;
-        float line_y1 = interp<float>(idx, idxs, line_ys, 33, false);
-        float line_z1 = interp<float>(idx, idxs, line_zs, 33, false);
+        float  idx = interp<float>(dist, line_xs, idxs, line_x.size(), false);
+        if (idx >= line_x.size()) break;
+        float line_y1 = interp<float>(idx, idxs, line_ys, line_x.size(), false);
+        float line_z1 = interp<float>(idx, idxs, line_zs, line_x.size(), false);
 
         QPointF left, right;
         bool l = calib_frame_to_full_frame(s, dist, line_y1 - y_off, line_z1 + z_off, &left);
@@ -249,9 +249,9 @@ void update_line_data_dist3(const UIState* s, const cereal::XYZTData::Reader& li
 
 
     // comma의 데이터는 x,y,z 점들로 이루어짐. 
-    float idxs[33], line_xs[33], line_ys[33], line_zs[33];
+    float idxs[line_x.size()], line_xs[line_x.size()], line_ys[line_x.size()], line_zs[line_x.size()];
     float   x_prev = 0;
-    for (int i = 0; i < 33; i++) {
+    for (int i = 0; i < line_x.size(); i++) {
         idxs[i] = (float)i;
         if (i > 0 && line_x[i] < x_prev) {
             //printf("plan data error.\n");
@@ -362,13 +362,13 @@ void update_line_data_dist3(const UIState* s, const cereal::XYZTData::Reader& li
             float z_off = interp<float>(dist, { 0.0f, 100.0 }, { z_off_start, z_off_end }, false);
             float y_off = interp<float>(z_off, { -3.0f, 0.0f, 3.0f }, { 1.5f, 0.5f, 1.5f }, false);
             y_off *= width_apply;
-            float  idx = interp<float>(dist, line_xs, idxs, 33, false);
-            if (idx >= 33) {
+            float  idx = interp<float>(dist, line_xs, idxs, line_x.size(), false);
+            if (idx >= line_x.size()) {
                 printf("index... %.1f\n", idx);
                 break;
             }
-            float line_y1 = interp<float>(idx, idxs, line_ys, 33, false);
-            float line_z1 = interp<float>(idx, idxs, line_zs, 33, false);
+            float line_y1 = interp<float>(idx, idxs, line_ys, line_x.size(), false);
+            float line_z1 = interp<float>(idx, idxs, line_zs, line_x.size(), false);
 
             QPointF left, right;
             bool l = calib_frame_to_full_frame(s, dist, line_y1 - y_off, line_z1 + z_off, &left);

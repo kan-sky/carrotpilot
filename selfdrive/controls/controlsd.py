@@ -87,7 +87,9 @@ class Controls:
     fire_the_babysitter = self.params.get_bool("FireTheBabysitter")
     mute_dm = fire_the_babysitter and self.params.get_bool("MuteDM")
 
-    self.random_event_active = False
+    self.random_event_triggered = False
+    self.reset_event_thread = None
+    self.stop_thread = False
 
     ignore = self.sensor_packets + ['testJoystick']
     if SIMULATION:
@@ -235,9 +237,11 @@ class Controls:
     self.update_frogpilot_params()
 
   def reset_random_event(self):
-    time.sleep(2)
-    self.params_memory.remove("CurrentRandomEvent")
-    self.random_event_active = False
+    while not self.stop_thread:
+      time.sleep(2)
+      self.params_memory.remove("CurrentRandomEvent")
+      self.random_event_triggered = False
+      break
 
   def set_initial_state(self):
     if REPLAY:
@@ -620,6 +624,11 @@ class Controls:
       self.current_alert_types.append(ET.WARNING)
 
   def state_control(self, CS):
+    # Trigger a random event if the conditions are met on the 10th interval
+    if self.sm.frame % 10 == 0:
+      self.random_event_triggered = True
+      threading.Thread(target=self.reset_random_event, args=()).start()
+
     """Given the state, this function returns a CarControl packet"""
 
     # Update VehicleModel
@@ -748,12 +757,16 @@ class Controls:
         turning = abs(lac_log.desiredLateralAccel) > 1.0
         good_speed = CS.vEgo > 5
         max_torque = abs(self.last_actuators.steer) > 0.99
-        if undershooting and turning and good_speed and max_torque and not self.random_event_active:
-          if self.random_events and random.random() < 1/10:
+        if undershooting and turning and good_speed and max_torque:
+          if self.random_event_triggered:
+            if self.reset_event_thread and self.reset_event_thread.is_alive():
+              self.stop_thread = True
+              self.reset_event_thread.join()
             lac_log.active and self.events.add(RandomEventName.firefoxSteerSaturated)
             self.params_memory.put_int("CurrentRandomEvent", 1)
-            self.random_event_active = True
-            threading.Thread(target=self.reset_random_event, args=()).start()
+            self.stop_thread = False
+            self.reset_event_thread = threading.Thread(target=self.reset_random_event)
+            self.reset_event_thread.start()
           else:
             lac_log.active and self.events.add(FrogPilotEventName.frogSteerSaturated if self.frog_sounds else EventName.steerSaturated)
       elif lac_log.saturated:

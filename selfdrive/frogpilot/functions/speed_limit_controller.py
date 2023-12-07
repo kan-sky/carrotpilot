@@ -17,7 +17,7 @@ class SpeedLimitController:
     self.write_nav_state()
 
   def update_current_max_velocity(self, max_v: float, load_state: bool = True, write_state: bool = True) -> None:
-    self.car_speed_limit = params_memory.get_int("SpeedLimitController")
+    self.car_speed_limit = params_memory.get_int("CarStateSpeedLimit")
     if load_state:
       self.load_state()
 

@@ -113,6 +113,13 @@ void OnroadWindow::updateState(const UIState &s) {
     bg = bgColor;
     update();
   }
+
+#ifdef ENABLE_MAPS
+  // Make sure the sidebar is always closed when the map is open
+  if (geometry().x() > 0 && map->isVisible()) {
+    clickTimer.start(1);
+  }
+#endif
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
@@ -349,13 +356,13 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
 ExperimentalButton::ExperimentalButton(QWidget *parent) : experimental_mode(false), engageable(false), QPushButton(parent), scene(uiState()->scene) {
   setFixedSize(btn_size, btn_size + 10);
 
-  engage_img = loadPixmap("../assets/img_chffr_wheel.png", {img_size, img_size});
+  //engage_img = loadPixmap("../assets/img_chffr_wheel.png", {img_size, img_size});
   experimental_img = loadPixmap("../assets/img_experimental.svg", {img_size, img_size});
   QObject::connect(this, &QPushButton::clicked, this, &ExperimentalButton::changeMode);
 
   // Custom steering wheel images
   wheelImages = {
-    {0, loadPixmap("../frogpilot/assets/wheel_images/img_chffr_wheel.png", {img_size, img_size})},
+    {0, loadPixmap("../assets/img_chffr_wheel.png", {img_size, img_size})},
     {1, loadPixmap("../frogpilot/assets/wheel_images/lexus.png", {img_size, img_size})},
     {2, loadPixmap("../frogpilot/assets/wheel_images/toyota.png", {img_size, img_size})},
     {3, loadPixmap("../frogpilot/assets/wheel_images/frog.png", {img_size, img_size})},
@@ -364,6 +371,7 @@ ExperimentalButton::ExperimentalButton(QWidget *parent) : experimental_mode(fals
     {6, loadPixmap("../frogpilot/assets/wheel_images/stalin.png", {img_size, img_size})},
     {7, loadPixmap("../frogpilot/assets/wheel_images/firefox.png", {img_size, img_size})}
   };
+  engage_img = wheelImages[0];
 }
 
 void ExperimentalButton::changeMode() {
@@ -406,6 +414,9 @@ void ExperimentalButton::updateState(const UIState &s, bool leadInfo) {
     steeringAngleDeg = scene.steering_angle_deg;
     update();
   }
+  else if (!rotatingWheel) {
+      update();
+  }
 }
 
 void ExperimentalButton::paintEvent(QPaintEvent *event) {
@@ -433,7 +444,7 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
 // MapSettingsButton
 MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
-  setFixedSize(btn_size, btn_size);
+  setFixedSize(btn_size, btn_size + 20);
   settings_img = loadPixmap("../assets/navigation/icon_directions_outlined.svg", {img_size, img_size});
 
   // hidden by default, made visible if map is created (has prime or mapbox token)
@@ -441,9 +452,13 @@ MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
   setEnabled(false);
 }
 
+void MapSettingsButton::updateState(bool compass) {
+  y_offset = !compass ? 10 : 0;
+}
+
 void MapSettingsButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+  drawIcon(p, QPoint(btn_size / 2, btn_size / 2 + y_offset), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
 }
 
 
@@ -511,7 +526,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   has_eu_speed_limit = (nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::VIENNA);
   is_metric = s.scene.is_metric;
   speedUnit =  s.scene.is_metric ? tr("km/h") : tr("mph");
-  hideBottomIcons = (cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE || customSignals && (turnSignalLeft || turnSignalRight));
+  hideBottomIcons = (cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE || customSignals && (turnSignalLeft || turnSignalRight)) || showDriverCamera;
   status = s.status;
 
   // update engageability/experimental mode button
@@ -526,8 +541,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // hide map settings button for alerts and flip for right hand DM
   if (map_settings_btn->isEnabled()) {
-    map_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+    map_settings_btn->setVisible(!hideBottomIcons && (compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
+    main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | (compass ? Qt::AlignTop : Qt::AlignBottom));
   }
 }
 
@@ -885,6 +900,7 @@ void AnnotatedCameraWidget::drawDriverState(QPainter &painter, const UIState *s)
   offset += alwaysOnLateral || conditionalExperimental || roadNameUI ? 25 : 0;
   int x = rightHandDM ? width() - offset : offset;
   int y = height() - offset;
+  x += onroadAdjustableProfiles ? 250 : 0;
   float opacity = dmActive ? 0.65 : 0.2;
   drawIcon(painter, QPoint(x, y), dm_img, blackColor(70), opacity);
 
@@ -1088,18 +1104,20 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       update_dmonitoring(s, sm["driverStateV2"].getDriverStateV2(), dm_fade_state, rightHandDM);
       drawDriverState(painter, s);
     }
-
     if (s->show_mode == 0) {
         drawHud(painter);
-        // Update FrogPilot widgets
-        updateFrogPilotWidgets(painter);
     }
     else {
-        updateFrogPilotWidgets(painter);
+        painter.beginNativePainting();
         ui_draw(s, width(), height());
+        painter.endNativePainting();
 
     }
   }
+
+  // Update FrogPilot widgets
+  updateFrogPilotWidgets(painter);
+  //if (s->show_mode != 0 && !showDriverCamera) ui_draw(s, width(), height());
 
   double cur_draw_t = millis_since_boot();
   double dt = cur_draw_t - prev_draw_t;
@@ -1130,10 +1148,13 @@ void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
 void AnnotatedCameraWidget::initializeFrogPilotWidgets() {
   bottom_layout = new QHBoxLayout();
 
+  map_settings_btn_bottom = new MapSettingsButton(this);
+  bottom_layout->addWidget(map_settings_btn_bottom);
+
   personality_btn = new PersonalityButton(this);
   bottom_layout->addWidget(personality_btn);
 
-  QSpacerItem *spacer = new QSpacerItem(40, 25, QSizePolicy::Expanding, QSizePolicy::Minimum);
+  QSpacerItem *spacer = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
   bottom_layout->addItem(spacer);
 
   compass_img = new Compass(this);
@@ -1216,21 +1237,28 @@ void AnnotatedCameraWidget::updateFrogPilotWidgets(QPainter &p) {
   turnSignalRight = scene.turn_signal_right;
   vtscOffset = 0.1 * scene.vtsc_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * vtscOffset;
 
-  if (leadInfo) {
-    drawLeadInfo(p);
-  }
-
-  if (alwaysOnLateral || conditionalExperimental || roadNameUI) {
-    drawStatusBar(p);
-  }
-
-  if (customSignals && (turnSignalLeft || turnSignalRight)) {
-    if (!animationTimer->isActive()) {
-      animationTimer->start(totalFrames * 11);  // 440 milliseconds per loop; syncs up perfectly with my 2019 Lexus ES 350 turn signal clicks
+  if (!showDriverCamera) {
+    if (leadInfo) {
+      drawLeadInfo(p);
     }
-    drawTurnSignals(p);
-  } else if (animationTimer->isActive()) {
-    animationTimer->stop();
+
+    if (alwaysOnLateral || conditionalExperimental || roadNameUI) {
+      drawStatusBar(p);
+    }
+
+    if (customSignals && (turnSignalLeft || turnSignalRight)) {
+      if (!animationTimer->isActive()) {
+        animationTimer->start(totalFrames * 11);  // 440 milliseconds per loop; syncs up perfectly with my 2019 Lexus ES 350 turn signal clicks
+      }
+      drawTurnSignals(p);
+    } else if (animationTimer->isActive()) {
+      animationTimer->stop();
+    }
+  }
+
+  if (map_settings_btn->isEnabled()) {
+    map_settings_btn_bottom->setVisible(!hideBottomIcons && !(compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
+    bottom_layout->setAlignment(map_settings_btn_bottom, rightHandDM ? Qt::AlignLeft : Qt::AlignRight);
   }
 
   const bool enableCompass = compass && !hideBottomIcons;
@@ -1383,9 +1411,6 @@ void Compass::paintEvent(QPaintEvent *event) {
     QRect textRect(x - innerCompass + offset + directionOffset, y - innerCompass + directionOffset, innerCompass * 2 - 2 * directionOffset, innerCompass * 2 - 2 * directionOffset);
     p.drawText(textRect, alignmentFlags[i], directions[i]);
   }
-
-  p.setOpacity(0.25);
-  p.fillRect(rect(), Qt::black);
 }
 
 void AnnotatedCameraWidget::drawLeadInfo(QPainter &p) {
@@ -1495,7 +1520,7 @@ void AnnotatedCameraWidget::drawLeadInfo(QPainter &p) {
 }
 
 PersonalityButton::PersonalityButton(QWidget *parent) : QPushButton(parent), scene(uiState()->scene) {
-  setFixedSize(btn_size * 1.25, btn_size * 1.25);
+  setFixedSize(btn_size * 1.5, btn_size * 1.5);
 
   // Configure the profile vector
   profile_data = {
@@ -1551,7 +1576,7 @@ void PersonalityButton::paintEvent(QPaintEvent *) {
 
   // Configure the button
   const auto &[profile_image, profile_text] = profile_data[personalityProfile];
-  QRect rect(0, 0, width(), height());
+  QRect rect(0, 0, width(), height() + 95);
 
   // Draw the profile text with the calculated opacity
   if (textOpacity > 0.0) {
@@ -1563,11 +1588,8 @@ void PersonalityButton::paintEvent(QPaintEvent *) {
 
   // Draw the profile image with the calculated opacity
   if (imageOpacity > 0.0) {
-    drawIcon(p, QPoint((btn_size / 2) * 1.25, btn_size / 2), profile_image, Qt::transparent, imageOpacity);
+    drawIcon(p, QPoint((btn_size / 2) * 1.25, btn_size / 2 + 95), profile_image, Qt::transparent, imageOpacity);
   }
-
-  p.setOpacity(0.25);
-  p.fillRect(rect, Qt::black);
 }
 
 void AnnotatedCameraWidget::drawStatusBar(QPainter &p) {

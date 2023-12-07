@@ -9,24 +9,24 @@ static long long milliseconds() {
   return static_cast<long long>(t.tv_sec * 1000.0 + t.tv_nsec * 1e-6);
 }
 
-ScreenRecorder::ScreenRecorder(QWidget *parent)
-  : QPushButton(parent), image_queue(30), recording(false), started(0), frame(0),
-    screen_width(2160), screen_height(1080) {
-  setFixedSize(190, 190);
+ScreenRecorder::ScreenRecorder(QWidget *parent) : QPushButton(parent), image_queue(30), recording(false), started(0), frame(0) {
+  setFixedSize(192 / 2 + 25, 192 / 2);
   setFocusPolicy(Qt::NoFocus);
-  connect(this, &QPushButton::pressed, this, &ScreenRecorder::buttonPressed);
-  connect(this, &QPushButton::released, this, &ScreenRecorder::buttonReleased);
 
+  screen_height = 1080;
+  screen_width = 2160;
   recording_height = 720;
   recording_width = (screen_width * recording_height) / screen_height + (recording_width % 2);
 
   rgb_scale_buffer = std::make_unique<uint8_t[]>(recording_width * recording_height * 4);
 
+  connect(this, &QPushButton::released, this, &ScreenRecorder::toggle);
+
   initializeEncoder();
 }
 
 void ScreenRecorder::initializeEncoder() {
-  std::string path = "/data/media/0/videos";
+  const std::string path = "/data/media/0/videos";
   encoder = std::make_unique<OmxEncoder>(path.c_str(), recording_width, recording_height, 60, 2 * 1024 * 1024, false, false);
 }
 
@@ -34,30 +34,29 @@ ScreenRecorder::~ScreenRecorder() {
   stop();
 }
 
-void ScreenRecorder::buttonReleased() {
-  toggle();
-}
-
-void ScreenRecorder::buttonPressed() {
-}
-
 void ScreenRecorder::applyColor() {
   if (frame % (UI_FREQ / 2) == 0) {
-    recording_color = (frame % UI_FREQ < (UI_FREQ / 2)) ? QColor::fromRgbF(0, 0, 0, 0.3) : QColor::fromRgbF(1, 0, 0, 0.6);
+    recording_color = (frame % UI_FREQ < (UI_FREQ / 2)) ? QColor::fromRgbF(1, 1, 1, 1) : QColor::fromRgbF(0, 0, 0, 1);
     update();
   }
 }
 
 void ScreenRecorder::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  QRect rect(45, 45, width() - 90, height() - 90);
-  QColor bgColor = recording ? recording_color : QColor::fromRgbF(1, 0, 0, 0.6);
-
   p.setRenderHint(QPainter::Antialiasing);
-  p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-  p.setBrush(bgColor);
+
+  QRect fullRect(0, 0, 192 / 2, 192 / 2);
+  QColor outerColor = recording ? recording_color : QColor::fromRgbF(1, 1, 1, 1);
+  int outerRedWidth = fullRect.width() * 0.05;
+
+  QRect outerRect = fullRect;
+  p.setBrush(outerColor);
   p.setPen(Qt::NoPen);
-  p.drawEllipse(rect);
+  p.drawEllipse(outerRect);
+
+  QRect middleRect = fullRect.marginsRemoved(QMargins(outerRedWidth, outerRedWidth, outerRedWidth, outerRedWidth));
+  p.setBrush(QColor::fromRgbF(1, 0, 0, 1));
+  p.drawEllipse(middleRect);
 }
 
 void ScreenRecorder::openEncoder(const char *filename) {
@@ -82,8 +81,8 @@ void ScreenRecorder::start() {
   if (recording) return;
 
   char filename[64];
-  time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
+  const time_t t = time(NULL);
+  const struct tm tm = *localtime(&t);
   snprintf(filename, sizeof(filename), "%04d%02d%02d-%02d%02d%02d.mp4", 
            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
            tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -103,11 +102,11 @@ void ScreenRecorder::start() {
 }
 
 void ScreenRecorder::encoding_thread_func() {
-  uint64_t start_time = nanos_since_boot() - 1;
+  const uint64_t start_time = nanos_since_boot() - 1;
   while (recording && encoder) {
     QImage popImage;
     if (image_queue.pop_wait_for(popImage, std::chrono::milliseconds(10))) {
-      QImage image = popImage.convertToFormat(QImage::Format_RGBA8888);
+      const QImage image = popImage.convertToFormat(QImage::Format_RGBA8888);
       libyuv::ARGBScale(image.bits(), image.width() * 4,
                         image.width(), image.height(),
                         rgb_scale_buffer.get(), recording_width * 4,
@@ -148,7 +147,7 @@ void ScreenRecorder::update_screen() {
 
   applyColor();
   if (rootWidget != nullptr) {
-    QPixmap pixmap = rootWidget->grab();
+    const QPixmap pixmap = rootWidget->grab();
     image_queue.push(pixmap.toImage());
   }
   frame++;

@@ -108,7 +108,6 @@ class LongitudinalPlanner:
     self.previously_driving = False
     self.stopped_for_light_previously = False
 
-    self.green_light_count = 0
     self.m_offset = 0
     self.overridden_speed = 0
     self.slc_target = 0
@@ -243,30 +242,20 @@ class LongitudinalPlanner:
 
     # Green light alert
     if self.green_light_alert:
-      self.previously_driving |= not carState.standstill
+      self.previously_driving |= enabled
       self.previously_driving &= frogpilotCarControl.drivingGear
 
       stopped_for_light = ConditionalExperimentalMode.stop_sign_and_light(carState, False, radarState.leadOne.dRel, modelData, v_ego, v_lead) and carState.standstill
 
-      if not stopped_for_light and self.stopped_for_light_previously and self.previously_driving:
-        self.green_light_count = np.clip(self.green_light_count + 1, 0, 10)
-      else:
-        self.green_light_count = 0
+      self.green_light = not stopped_for_light and self.stopped_for_light_previously and self.previously_driving and not carState.gasPressed
 
-      # Only trigger the alert if the green light is detected for 0.5 seconds
-      self.green_light = self.green_light_count >= 10 and not carState.gasPressed
-      # Reset the counter when the green light alert is triggered
-      self.green_light_count *= not self.green_light
-
-      self.stopped_for_light_previously |= stopped_for_light
-      self.stopped_for_light_previously &= not self.green_light
+      self.stopped_for_light_previously = stopped_for_light
 
     # Pfeiferj's Map Turn Speed Controller
     mtsc_v = MapTurnSpeedController.target_speed(v_ego, carState.aEgo)
     if v_cruise > mtsc_v and mtsc_v != 0:
       self.m_offset = max(0, int(v_cruise - mtsc_v))
       v_cruise = mtsc_v
-
     else:
       self.m_offset = 0
 

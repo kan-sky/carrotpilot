@@ -11,6 +11,7 @@ class ScreenRecorder : public QPushButton {
   public:
     explicit ScreenRecorder(QWidget *parent = nullptr){}
     ~ScreenRecorder() override{}
+  
     void update_screen(){}
     void toggle(){}
 #else
@@ -19,29 +20,14 @@ class ScreenRecorder : public QPushButton {
 public:
   explicit ScreenRecorder(QWidget *parent = nullptr);
   ~ScreenRecorder() override;
+
   void update_screen();
   void toggle();
-
-public slots:
-  void buttonPressed();
-  void buttonReleased();
 
 protected:
   void paintEvent(QPaintEvent *event) override;
 
 private:
-  BlockingQueue<QImage> image_queue;
-  QColor recording_color;
-  QWidget *rootWidget;
-  bool recording = false;
-  int frame = 0;
-  int recording_width, recording_height;
-  int screen_width = 2160, screen_height = 1080;
-  long long started = 0;
-  std::unique_ptr<OmxEncoder> encoder;
-  std::unique_ptr<uint8_t[]> rgb_scale_buffer;
-  std::thread encoding_thread;
-
   void applyColor();
   void closeEncoder();
   void encoding_thread_func();
@@ -49,5 +35,21 @@ private:
   void openEncoder(const char *filename);
   void start();
   void stop();
+
+  bool recording;
+  int frame;
+  int recording_height;
+  int recording_width;
+  int screen_height;
+  int screen_width;
+  long long started = 0;
+
+  std::unique_ptr<OmxEncoder> encoder;
+  std::unique_ptr<uint8_t[]> rgb_scale_buffer;
+  std::thread encoding_thread;
+
+  BlockingQueue<QImage> image_queue;
+  QColor recording_color;
+  QWidget *rootWidget;
 #endif //WSL2
 };
