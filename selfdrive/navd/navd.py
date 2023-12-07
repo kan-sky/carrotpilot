@@ -72,6 +72,8 @@ class RouteEngine:
     self.nav_condition = False
     self.noo_condition = False
 
+    self.conditional_navigation = False
+    self.send_frogpilot_navigation()
     self.update_frogpilot_params()
 
   def update(self):
@@ -402,7 +404,7 @@ class RouteEngine:
       else:
         self.noo_condition = False  # Not approaching any NoO maneuver
 
-    send_frogpilot_navigation()
+    self.send_frogpilot_navigation()
 
   def send_route(self):
     coords = []
