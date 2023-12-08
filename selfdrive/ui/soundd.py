@@ -2,7 +2,6 @@ import math
 import numpy as np
 import time
 import wave
-from scipy.signal import resample
 
 from typing import Dict, Optional, Tuple
 
@@ -14,6 +13,7 @@ from openpilot.system import micd
 
 from openpilot.common.realtime import Ratekeeper
 from openpilot.system.hardware import PC
+from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
 SAMPLE_RATE = 48000
@@ -66,9 +66,40 @@ def check_controls_timeout_alert(sm):
 
   return False
 
+def linear_resample(samples, original_rate, new_rate):
+    if original_rate == new_rate:
+        return samples
+
+    # Calculate the resampling factor and the number of samples in the resampled signal
+    resampling_factor = float(new_rate) / original_rate
+    num_resampled_samples = int(len(samples) * resampling_factor)
+
+    # Create the resampled signal array
+    resampled = np.zeros(num_resampled_samples, dtype=np.float32)
+
+    for i in range(num_resampled_samples):
+        # Calculate the original sample index
+        orig_index = i / resampling_factor
+
+        # Find the two nearest original samples
+        lower_index = int(orig_index)
+        upper_index = min(lower_index + 1, len(samples) - 1)
+
+        # Perform linear interpolation
+        resampled[i] = (samples[lower_index] * (upper_index - orig_index) +
+                        samples[upper_index] * (orig_index - lower_index))
+
+    return resampled
+
 
 class Soundd:
   def __init__(self):
+    # FrogPilot variables
+    self.params = Params()
+    self.params_memory = Params("/dev/shm/params")
+
+    self.update_frogpilot_params()
+
     self.load_sounds()
 
     self.current_alert = AudibleAlert.none
@@ -86,7 +117,7 @@ class Soundd:
     for sound in sound_list:
       filename, play_count, volume = sound_list[sound]
 
-      wavefile = wave.open(BASEDIR + "/selfdrive/assets/sounds/" + filename, 'r')
+      wavefile = wave.open(self.sound_directory + filename, 'r')
 
       #assert wavefile.getnchannels() == 1
       assert wavefile.getsampwidth() == 2
@@ -104,11 +135,9 @@ class Soundd:
       if nchannels == 2:
         samples = samples[0::2] / 2 + samples[1::2] / 2
 
-      if actual_sample_rate != SAMPLE_RATE:
-        num_samples = int(len(samples) * SAMPLE_RATE / actual_sample_rate)
-        samples = resample(samples, num_samples)
+      resampled_samples = linear_resample(samples, actual_sample_rate, SAMPLE_RATE)
 
-      self.loaded_sounds[sound] = samples.astype(np.float32) / (2**16/2)
+      self.loaded_sounds[sound] = resampled_samples.astype(np.float32) / (2**16/2)
 
   def get_sound_data(self, frames): # get "frames" worth of data from the current alert sound, looping when required
 
@@ -177,7 +206,7 @@ class Soundd:
 
         if sm.updated['microphone'] and self.current_alert == AudibleAlert.none: # only update volume filter when not playing alert
           self.spl_filter_weighted.update(sm["microphone"].soundPressureWeightedDb)
-          self.current_volume = self.calculate_volume(float(self.spl_filter_weighted.x))
+          self.current_volume = max(self.calculate_volume(float(self.spl_filter_weighted.x)) - self.silent_mode, 0)
 
         self.get_audible_alert(sm)
 
@@ -185,6 +214,27 @@ class Soundd:
 
         assert stream.active
 
+    # Update FrogPilot parameters
+    if self.params_memory.get_bool("FrogPilotTogglesUpdated"):
+      self.update_frogpilot_params()
+
+  def update_frogpilot_params(self):
+    self.silent_mode = self.params.get_bool("SilentMode")
+
+    custom_theme = self.params.get_bool("CustomTheme")
+    custom_sounds = self.params.get_int("CustomSounds") if custom_theme else 0
+
+    theme_configuration = {
+      0: "stock",
+      1: "frog_theme",
+      2: "tesla_theme",
+      3: "stalin_theme"
+    }
+
+    theme_name = theme_configuration.get(custom_sounds, "stock")
+    self.sound_directory = (f"{BASEDIR}/selfdrive/frogpilot/assets/custom_themes/{theme_name}/sounds/" if custom_sounds else f"{BASEDIR}/selfdrive/assets/sounds/")
+
+    self.load_sounds()
 
 def main():
   s = Soundd()

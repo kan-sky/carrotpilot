@@ -275,6 +275,7 @@ def gen_long_ocp():
 class LongitudinalMpc:
   def __init__(self, mode='acc'):
     self.mode = mode
+    self.trafficStopDistanceAdjust = 1.8
     self.aChangeCost = 200
     self.aChangeCostStart = 40
     self.tFollowSpeedAdd = 0.0
@@ -287,6 +288,7 @@ class LongitudinalMpc:
     self.vFilter = StreamingMovingAverage(10)
     self.t_follow = get_T_FOLLOW()
     self.stop_distance = STOP_DISTANCE
+    self.fakeCruiseDistance = 0.0
     self.comfort_brake = COMFORT_BRAKE
     self.xState = XState.cruise
     self.xStop = 0.0
@@ -468,7 +470,7 @@ class LongitudinalMpc:
     if self.mode == 'acc':
       self.params[:,5] = LEAD_DANGER_FACTOR
 
-      x2 = stop_x * np.ones(N+1) if self.xState == XState.e2eStop else 1000.0 * np.ones(N+1)
+      x2 = stop_x * np.ones(N+1) + self.trafficStopDistanceAdjust #if self.xState == XState.e2eStop else 1000.0 * np.ones(N+1)
 
 
       # Fake an obstacle for cruise, this ensures smooth acceleration to set speed
@@ -478,7 +480,7 @@ class LongitudinalMpc:
       v_cruise_clipped = np.clip(v_cruise * np.ones(N+1),
                                  v_lower,
                                  v_upper)
-      cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow, self.comfort_brake, self.stop_distance)
+      cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow, self.comfort_brake, self.stop_distance + self.fakeCruiseDistance)
       x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle, x2])
       self.source = SOURCES[np.argmin(x_obstacles[0])]
 
@@ -625,9 +627,10 @@ class LongitudinalMpc:
     y = model.position.y
     v = model.velocity.x
 
+    self.fakeCruiseDistance = 0.0
     radar_detected = radarstate.leadOne.status & radarstate.leadOne.radar
 
-    stop_x = x[30]
+    stop_x = x[31]
     self.xStop = self.update_stop_dist(stop_x)
     stop_x = self.xStop
 
@@ -648,6 +651,7 @@ class LongitudinalMpc:
           if stop_dist > 5.0:
             self.stopDist = stop_dist
           stop_x = 0
+          self.fakeCruiseDistance = 0 if self.stopDist > 10.0 else 10.0
     elif self.xState == XState.e2ePrepare:
       if self.status:
         self.xState = XState.lead

@@ -615,6 +615,8 @@ def get_interface_attr(attr: str, combine_brands: bool = False, ignore_none: boo
     try:
       brand_name = car_folder.split('/')[-1]
       brand_values = __import__(f'openpilot.selfdrive.car.{brand_name}.values', fromlist=[attr])
+      if Params().get("CarBrand") is None:
+        Params().put("CarBrand", car_folder.capitalize())
       if hasattr(brand_values, attr) or not ignore_none:
         attr_data = getattr(brand_values, attr, None)
       else:

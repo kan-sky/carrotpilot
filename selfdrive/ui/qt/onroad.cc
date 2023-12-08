@@ -113,6 +113,15 @@ void OnroadWindow::updateState(const UIState &s) {
     bg = bgColor;
     update();
   }
+
+#ifdef ENABLE_MAPS
+  // Make sure the sidebar is always closed when the map is ope
+  if (map != nullptr) {
+    if (geometry().x() > 0 && map->isVisible()) {
+      clickTimer.start(1);
+    }
+  }
+#endif
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
@@ -190,6 +199,7 @@ void OnroadWindow::offroadTransition(bool offroad) {
 
       QObject::connect(m, &MapPanel::mapPanelRequested, this, &OnroadWindow::mapPanelRequested);
       QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
+      QObject::connect(nvg->map_settings_btn_bottom, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
       nvg->map_settings_btn->setEnabled(true);
 
       m->setFixedWidth(topWidget(this)->width() / 2 - UI_BORDER_SIZE);
@@ -445,9 +455,13 @@ MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
   setEnabled(false);
 }
 
+void MapSettingsButton::updateState(bool compass) {
+  y_offset = !compass ? 10 : 0;
+}
+
 void MapSettingsButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+  drawIcon(p, QPoint(btn_size / 2, btn_size / 2 + y_offset), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
 }
 
 
@@ -530,8 +544,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // hide map settings button for alerts and flip for right hand DM
   if (map_settings_btn->isEnabled()) {
-    map_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(map_settings_btn, (rightHandDM ? (!onroadAdjustableProfiles || compass) : (onroadAdjustableProfiles && !compass)) ? Qt::AlignLeft : Qt::AlignRight | Qt::AlignTop);
+    map_settings_btn->setVisible(!hideBottomIcons && (compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
+    main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | (compass ? Qt::AlignTop : Qt::AlignBottom));
   }
 }
 
@@ -1146,6 +1160,9 @@ void AnnotatedCameraWidget::initializeFrogPilotWidgets() {
   compass_img = new Compass(this);
   bottom_layout->addWidget(compass_img);
 
+  map_settings_btn_bottom = new MapSettingsButton(this);
+  bottom_layout->addWidget(map_settings_btn_bottom);
+
   main_layout->addLayout(bottom_layout);
 
   if (params.getBool("HideSpeed")) {
@@ -1224,21 +1241,29 @@ void AnnotatedCameraWidget::updateFrogPilotVariables() {
 }
 void AnnotatedCameraWidget::updateFrogPilotWidgets(QPainter &p) {
 
-  if (leadInfo) {
-    drawLeadInfo(p);
-  }
-
-  if (alwaysOnLateral || conditionalExperimental || roadNameUI) {
-    drawStatusBar(p);
-  }
-
-  if (customSignals && (turnSignalLeft || turnSignalRight)) {
-    if (!animationTimer->isActive()) {
-      animationTimer->start(totalFrames * 11);  // 440 milliseconds per loop; syncs up perfectly with my 2019 Lexus ES 350 turn signal clicks
+  if (!showDriverCamera) {
+    if (leadInfo) {
+      drawLeadInfo(p);
     }
-    drawTurnSignals(p);
-  } else if (animationTimer->isActive()) {
-    animationTimer->stop();
+
+    if (alwaysOnLateral || conditionalExperimental || roadNameUI) {
+      drawStatusBar(p);
+    }
+
+    if (customSignals && (turnSignalLeft || turnSignalRight)) {
+      if (!animationTimer->isActive()) {
+        animationTimer->start(totalFrames * 11);  // 440 milliseconds per loop; syncs up perfectly with my 2019 Lexus ES 350 turn signal clicks
+      }
+      drawTurnSignals(p);
+    } else if (animationTimer->isActive()) {
+      animationTimer->stop();
+    }
+  }
+
+  map_settings_btn_bottom->setEnabled(map_settings_btn->isEnabled());
+  if (map_settings_btn_bottom->isEnabled()) {
+    map_settings_btn_bottom->setVisible(!hideBottomIcons && !(compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
+    bottom_layout->setAlignment(map_settings_btn_bottom, rightHandDM ? Qt::AlignLeft : Qt::AlignRight);
   }
 
   const bool enableCompass = compass && !hideBottomIcons;
@@ -1406,7 +1431,7 @@ void AnnotatedCameraWidget::drawLeadInfo(QPainter &p) {
   QString unit_d = mapOpen ? "m" : "meters";
   QString unit_s = "kmh";
   float distanceConversion = 1.0f;
-  float speedConversion = 3.6f;
+  float speedConversion = 1.0f;
 
   // Conversion factors and units
   constexpr float toFeet = 3.28084f;

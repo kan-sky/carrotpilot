@@ -139,13 +139,6 @@ public:
   explicit FrogPilotControlsPanel(QWidget *parent = nullptr);
 };
 
-class FrogPilotVehiclesPanel : public FrogPilotPanel {
-  Q_OBJECT
-
-public:
-  explicit FrogPilotVehiclesPanel(QWidget *parent = nullptr);
-};
-
 class FrogPilotVisualsPanel : public FrogPilotPanel {
   Q_OBJECT
 
@@ -164,7 +157,7 @@ public: \
     if (std::string(#className) == "AdjustablePersonalities") { \
       label.setFixedWidth(300); \
     } \
-    if (std::string(#className) == "CameraView" || std::string(#className) == "DeviceShutdown" || std::string(#className) == "SearchInput" || std::string(#className) == "StoppingDistance" || std::string(#className) == "WheelIcon") { \
+    if (std::string(#className) == "CameraView" || std::string(#className) == "DeviceShutdown" || std::string(#className) == "RouteInput" || std::string(#className) == "StoppingDistance" || std::string(#className) == "WheelIcon") { \
       label.setFixedWidth(225); \
     } \
     if (std::string(#className) == "CESpeed" || std::string(#className) == "CESpeedLead" || std::string(#className) == "Offset1" || std::string(#className) == "Offset2" || std::string(#className) == "Offset3" || std::string(#className) == "Offset4") { \

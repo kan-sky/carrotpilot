@@ -368,7 +368,7 @@ void CameraWidget::vipcConnected(VisionIpcClient *vipc_client) {
 }
 
 void CameraWidget::vipcFrameReceived() {
-    update();
+  update();
 }
 
 void CameraWidget::vipcThread() {

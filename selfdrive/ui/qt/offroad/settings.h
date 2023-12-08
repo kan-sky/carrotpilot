@@ -94,3 +94,44 @@ private:
   Params params;
   ParamWatcher *fs_watch;
 };
+class CarrotPanel : public QWidget {
+    Q_OBJECT
+
+private:
+    QStackedLayout* main_layout = nullptr;
+    QWidget* homeScreen = nullptr;
+
+    QWidget* homeWidget;
+    QVBoxLayout* carrotLayout;
+
+    ListWidget* cruiseToggles;
+    ListWidget* latLongToggles;
+    ListWidget* accelsToggles;
+    ListWidget* pathToggles;
+    ListWidget* dispToggles;
+
+    void togglesCarrot(int widgetIndex);
+
+public:
+    explicit CarrotPanel(QWidget* parent = nullptr);
+};
+
+// ajouatom:
+class CValueControl : public AbstractControl {
+    Q_OBJECT
+
+public:
+    CValueControl(const QString& params, const QString& title, const QString& desc, const QString& icon, int min, int max, int unit = 1);
+
+private:
+    QPushButton btnplus;
+    QPushButton btnminus;
+    QLabel label;
+
+    QString m_params;
+    int     m_min;
+    int     m_max;
+    int     m_unit;
+
+    void refresh();
+};

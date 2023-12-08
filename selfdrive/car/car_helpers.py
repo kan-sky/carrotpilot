@@ -249,6 +249,9 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
     else:
       cloudlog.event("Car doesn't match any fingerprints", fingerprints=fingerprints, error=True)
       candidate = "mock"
+  else:
+    if car_model is None:
+      params.put("CarModel", candidate)
 
   if get_branch() == "origin/FrogPilot-Development" and serial_id[:3] != "cff":
     candidate = "mock"

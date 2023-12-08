@@ -103,7 +103,7 @@ class VCruiseHelper:
     self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
     self.softHoldMode = Params().get_int("SoftHoldMode")
 
-  def _params_update():
+  def _params_update(self):
     self.params_count += 1
     if self.params_count == 10:
       self.autoNaviSpeedBumpSpeed = float(self.params.get_int("AutoNaviSpeedBumpSpeed"))
@@ -134,7 +134,7 @@ class VCruiseHelper:
   def update_v_cruise(self, CS, enabled, is_metric, reverse_cruise_increase, controls):
     self.v_cruise_kph_last = self.v_cruise_kph
 
-    self._params_update
+    self._params_update()
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
