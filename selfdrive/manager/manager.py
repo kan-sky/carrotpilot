@@ -91,6 +91,7 @@ def manager_init() -> None:
     ("StopAccelApply", "50"),
     ("AChangeCost", "200"), 
     ("AChangeCostStart", "40"), 
+    ("TrafficStopMode", "1"),         
     ("CruiseSpeedUnit", "10"),      
     ("LiveSteerRatioApply", "100"),      
     ("LiveTorqueCache", "0"),      
