@@ -1,5 +1,21 @@
 #!/usr/bin/bash
 
+if [ ! -f "./boot_finish" ]; then
+  echo "staring personal booting process..."
+  mount -o rw,remount /system
+
+  chmod 755 ./selfdrive/apilot.py
+  pip install scipy
+  
+  sed -i -e 's/\r$//' ./selfdrive/manager/*.py
+
+  touch ./boot_finish
+
+else
+  chmod 644 ./boot_finish
+  mount -o ro,remount /system
+fi
+
 if [ -z "$BASEDIR" ]; then
   BASEDIR="/data/openpilot"
 fi
