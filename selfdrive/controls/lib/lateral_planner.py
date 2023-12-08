@@ -276,11 +276,21 @@ class LateralPlanner:
 
     #plan_send.lateralPlan.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
     #plan_send.lateralPlan.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
-    lateralPlan.laneWidthLeft = float(self.DH.lane_width_left)
-    lateralPlan.laneWidthRight = float(self.DH.lane_width_right)
+    #lateralPlan.laneWidthLeft = float(self.DH.lane_width_left)
+    #lateralPlan.laneWidthRight = float(self.DH.lane_width_right)
     
     self.x_sol = self.lat_mpc.x_sol
     lateralPlan.latDebugText = self.latDebugText
 
     pm.send('lateralPlan', plan_send)
-    
+
+
+    # FrogPilot lateral variables
+    frogpilot_plan_send = messaging.new_message('frogpilotLateralPlan')
+    frogpilot_plan_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'modelV2'])
+    frogpilotLateralPlan = frogpilot_plan_send.frogpilotLateralPlan
+
+    frogpilotLateralPlan.laneWidthLeft = float(self.DH.lane_width_left)
+    frogpilotLateralPlan.laneWidthRight = float(self.DH.lane_width_right)
+
+    pm.send('frogpilotLateralPlan', frogpilot_plan_send)
