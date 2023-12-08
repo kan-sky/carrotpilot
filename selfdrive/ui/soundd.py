@@ -2,7 +2,7 @@ import math
 import numpy as np
 import time
 import wave
-#from scipy.signal import resample
+from scipy.signal import resample
 
 from typing import Dict, Optional, Tuple
 
@@ -92,8 +92,23 @@ class Soundd:
       assert wavefile.getsampwidth() == 2
       #assert wavefile.getframerate() == SAMPLE_RATE
 
+      actual_sample_rate = wavefile.getframerate()
+
+      nchannels = wavefile.getnchannels()
+      assert nchannels in [1,2]
+
       length = wavefile.getnframes()
-      self.loaded_sounds[sound] = np.frombuffer(wavefile.readframes(length), dtype=np.int16).astype(np.float32) / (2**16/2)
+      frames = wavefile.readframes(length)
+      samples = np.frombuffer(frames, dtype=np.int16)
+
+      if nchannels == 2:
+        samples = samples[0::2] / 2 + samples[1::2] / 2
+
+      if actual_sample_rate != SAMPLE_RATE:
+        num_samples = int(len(samples) * SAMPLE_RATE / actual_sample_rate)
+        samples = resample(samples, num_samples)
+
+      self.loaded_sounds[sound] = samples.astype(np.float32) / (2**16/2)
 
   def get_sound_data(self, frames): # get "frames" worth of data from the current alert sound, looping when required
 
