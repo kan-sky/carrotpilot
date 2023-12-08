@@ -278,6 +278,7 @@ class LongitudinalMpc:
     self.trafficStopDistanceAdjust = 1.8
     self.aChangeCost = 200
     self.aChangeCostStart = 40
+    self.trafficStopMode = 1
     self.tFollowSpeedAdd = 0.0
     self.tFollowSpeedAddM = 0.0
     self.lo_timer = 0 
@@ -583,6 +584,8 @@ class LongitudinalMpc:
       self.lo_timer = 0
     elif self.lo_timer == 20:
       pass
+    elif self.lo_timer == 80:
+      self.trafficStopMode = int(Params().get("TrafficStopMode", encoding="utf8"))
     elif self.lo_timer == 100:
       self.tFollowSpeedAdd = float(Params().get_int("TFollowSpeedAdd")) / 100.
       self.tFollowSpeedAddM = float(Params().get_int("TFollowSpeedAddM")) / 100.
@@ -663,7 +666,7 @@ class LongitudinalMpc:
     else: #XState.lead, XState.cruise, XState.e2eCruise
       if self.status:
         self.xState = XState.lead
-      elif self.trafficState == TrafficState.red and not carstate.gasPressed:
+      elif self.trafficState == TrafficState.red and not carstate.gasPressed and self.trafficStopMode == 0:
         self.xState = XState.e2eStop
         self.stopDist = self.xStop
       else:

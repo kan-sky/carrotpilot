@@ -250,6 +250,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     { "StartAccelApply", PERSISTENT },
     { "AChangeCost", PERSISTENT },
     { "AChangeCostStart", PERSISTENT },
+    { "TrafficStopMode", PERSISTENT },
     { "CruiseSpeedUnit", PERSISTENT },
     { "LiveSteerRatioApply", PERSISTENT },
     { "LiveTorqueCache", PERSISTENT },
