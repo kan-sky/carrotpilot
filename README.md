@@ -5,35 +5,36 @@
 What is carrotpilot?
 ------
 CarrotPilot is based on FrogPilot. I've added various UI elements and features to FrogPilot's functionality.
+당근파일럿은 FrogPilot을 기반으로 한다. 나는 FrogPilot에 APILOT의 다양한 UI와 기능을 추가하였다.
 
 Why carrot?
 ------
-In Korea, there's a humorous and casual way of saying 'of course' using the word for 'carrot,' which is 'dang-geun' in Korean. This is because 'dang-geun' (carrot) sounds very similar to 'dang-yeon-ha-da', which means 'of course.' It's a playful pun commonly used in everyday conversation among Koreans. So, if you hear someone responding with 'dang-geun,' they are affirmatively saying 'of course' in a light-hearted way.
+In Korea, there's a humorous and casual way of saying 'of course' using the word for 'carrot,' which is 'dang-geun' in Korean. This is because 'dang-geun' (carrot) sounds very similar to 'dang-yeon-ha-da', which means 'of course.' It's a playful pun commonly used in everyday conversation among Koreans. So, if you hear someone responding with 'dang-geun,' they are affirmatively saying 'of course' in a light-hearted way. (한국말로 "당근"은 "당연하다"라는 표현으로 많이 사용한다. 당근파일럿에서는 "필요한 기능은 당연히 있다!" 라는 의미로 당근파일럿을 개발하였다.)
 
 What is the useful features of CarrotPilot? 
 ------
 **Radar Tracks: HKG cars only**
-  - If you only turn on the "EnableRadarTracks" in the Toggle menu, it will be activated when the ignition is turned on.
+  - If you only turn on the "EnableRadarTracks" in the Toggle menu, it will be activated when the ignition is turned on.(레이더트랙을 지원하는 차량의 경우, 시동시 자체 활성화하는 기능이 있다.)
 
 **SCC Wiring Modification Support: HKG cars only**
-  - If the C-CAN wiring of the SCC modules is bypassed and connected to BUS2, long control using radar is supported.
+  - If the C-CAN wiring of the SCC modules is bypassed and connected to BUS2, long control using radar is supported.(레이더(SCC)모듈의 배선을 개조하여 BUS2에 연결한 경우, 롱컨을 지원한다.)
     
 **APM: APILOT feature**
-  - APM is ApilotManager.
-  - APM is for Android Phone/Tablet.
-  - In CarrotPilot, all settings other than those for FrogPilot can only be used through APM.
+  - APM is ApilotManager. (APM은 ApilotManger을 말한다.)
+  - APM is for Android Phone/Tablet.  (APM은 안드로이드 폰이나 태블릿에서 작동한다)
+  - The features of CarrotPilot can be configured remotely via APM (당근의 기능은 APM으로 원격설정이 가능하다.)
     
 **APN: Korea navigation only, APILOT feature**
-  - When navigatgion is connected, you can use APN.
-  - It's a feature that automatically recuces speed in response to speed cameras and speed bumps for accident prevention.
+  - When navigatgion is connected, you can use APN. (APM이 설치된 폰에 특정 네비게이션을 설치하면 APN모드를 사용할 수 있다)
+  - It's a feature that automatically recuces speed in response to speed cameras and speed bumps for accident prevention. (오파의 NOO활성화 및 사고방지턱, 과속카메라에 대해 속도조절이 된다)
     
 **APILOT UI: APM, APILOT feature**
-  - You can experience a variety of APILOT UIs using APM.
-  - Path UI: When long control is turned off or on, and depending on whether it's in lane mode or laneless mode, it's possible to specify different shapes and colors for the path. Above all, the moving path shape looks cool.
-  - Debug plotting: It's a plotting tool for tuning long control and steering control. 
+  - You can experience a variety of APILOT UIs using APM. (APILOT의 다이내믹한 UI를 경험할 수 있다)
+  - Path UI: When long control is turned off or on, and depending on whether it's in lane mode or laneless mode, it's possible to specify different shapes and colors for the path. Above all, the moving path shape looks cool. (레인모드, 레인리스모드, 크루즈OFF에 대한 패쓰경로표시 방식 및 색상을 변경할 수 있다)
+  - Debug plotting: It's a plotting tool for tuning long control and steering control. (튜닝을 위하여 차량의 주행상황, 레이더등의 그래프를 지원한다)
     
 **APILOT Traffic Stop/Go Mode: APILOT feature**
-  - If you turn off the ConditionalExperimental Setting in FrogPilot, you can experience the APILOT Traffic Stop/Go Mode in CarrotPilot.
+  - If you turn off the ConditionalExperimental Setting in FrogPilot, you can experience the APILOT Traffic Stop/Go Mode in CarrotPilot. (개구리파일럿기능의 ConditionalExperimental 을 Off하면 Apilot의 신호정지/출발 기능을 경험할 수 있다)
 
 **Custom Acceleration Based on Speed: APM**
   - In APM, you can fine-tune the accleration based on driving speed.
@@ -53,6 +54,36 @@ What is the useful features of CarrotPilot?
 **Voice Recognition: APM, Korean only, APILOT feature, under construction!**
   - The connected APM supports voice recognition. It allows for lane changes and speed control using voice commands.
 
+**HKG차량을 위한 설정방법**
+  * Setting - Carrot(당근)
+    * Start(시작) : 차량에 맞게 설정
+    * 나머지는 APILOT과 거의 동일함.
+  * Setting - Control
+    * Adjustable Personalites : Wheel
+    * Always on Lateral/No disengage : ON
+    * Enable AOL On Cruise Main : ON
+    * Conditional Experimental Mode : OFF
+    * Custom Driving Personalities : ON (변경하고 싶으면)
+    * Fire the Babysitter : ON (OFF하고, DM을 끄면 banned 될수 있음)
+    * Lateral Tuning: 맘대로
+    * Longitudinal Tuning: ON
+      * Acceleration Profile : Normal (이렇게 해야 apilot기능 사용가능)
+      * Increase Stopping Distance : Off
+      * Aggressive Acceleration With Lead : Off
+      * Smoother Braking Behind Lead : Off
+    * Model Selector: NLP
+    * Map Turn Speed Control : Off
+    * Nudgeless Lane Change : Instant
+    * Pause Lateral On Turn Signal : Off
+    * Speed Limit Controller : Off
+    * Turn Desires : On
+    * Vision Turn Speed Control : On
+      * Curve Dection Sensitivity: 120
+      * Turn Speed Aggressiveness : 90
+  * Setting - Navigation (맘대로)
+    * ip주소:8082로 접속하여 Public/Secret Mapbox Key를 입력한다.
+  * Setting - Vehicles (맘대로)
+  * Setting - Visuals (맘대로)
 ---
 
 ![openpilot on the comma 3X](https://i.imgur.com/6l2qbf5.png)

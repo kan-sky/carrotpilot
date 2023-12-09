@@ -29,4 +29,5 @@ private:
   QStringList models;
 
   Params params;
+  Params paramsMemory{"/dev/shm/params"};
 };

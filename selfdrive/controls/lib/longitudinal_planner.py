@@ -264,7 +264,7 @@ class LongitudinalPlanner:
       # Use the speed limit if its not being overridden
       if not self.override_slc:
         if 0 < desired_speed_limit < v_cruise:
-          self.slc_target = round(desired_speed_limit)
+          self.slc_target = desired_speed_limit
       else:
         self.slc_target = self.overridden_speed
     else:

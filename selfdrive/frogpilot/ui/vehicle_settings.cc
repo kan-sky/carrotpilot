@@ -129,6 +129,7 @@ void FrogPilotVehiclesPanel::setToggles() {
       ToggleControl *toggle = new ToggleControl(tr(title), description, "", value);
       QObject::connect(toggle, &ToggleControl::toggleFlipped, [this, param](bool state) {
         params.putBool(param, state);
+        paramsMemory.putBool("FrogPilotTogglesUpdated", true);
       });
       addItem(toggle);
       return toggle;
