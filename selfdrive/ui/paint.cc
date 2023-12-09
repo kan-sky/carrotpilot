@@ -1981,7 +1981,7 @@ void ui_nvg_init(UIState *s) {
   {"ic_radar_vision", "../assets/images/radar_vision.png"},
   {"ic_radar_no", "../assets/images/no_radar.png"},
   {"ic_steer_momo", "../assets/img_chffr_wheel.png"},
-  {"ic_steer_red", "../assets/iimg_chffr_wheel.png"},
+  {"ic_steer_red", "../assets/img_chffr_wheel.png"},
   {"ic_steer_green", "../assets/img_chffr_wheel.png"},
   {"ic_steer_yellow", "../assets/img_chffr_wheel.png"},
   {"ic_lane_change_l", "../assets/images/lane_change_l.png"},
