@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QPushButton>
+#include <QSoundEffect>
 
 #include "omx_encoder.h"
 #include "blocking_queue.h"
@@ -28,13 +29,17 @@ protected:
   void paintEvent(QPaintEvent *event) override;
 
 private:
+
+  QSoundEffect soundStart;
+  QSoundEffect soundStop;
+
   void applyColor();
   void closeEncoder();
   void encoding_thread_func();
   void initializeEncoder();
   void openEncoder(const char *filename);
-  void start();
-  void stop();
+  void start(bool sound);
+  void stop(bool sound);
 
   bool recording;
   int frame;
