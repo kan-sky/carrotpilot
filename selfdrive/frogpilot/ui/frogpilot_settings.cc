@@ -206,14 +206,13 @@ ParamControl *FrogPilotPanel::createParamControl(const QString &key, const QStri
       {"AggressiveAcceleration", "This will make openpilot driving more aggressively behind lead vehicles!"},
       {"AlwaysOnLateralMain", "This is very experimental and isn't guaranteed to work. If you run into any issues please report it in the FrogPilot Discord!"},
       {"SmoothBraking", "This will modify openpilot's braking behavior!"},
-      {"TSS2Tune", "This will modify openpilot's acceleration and braking behavior!"}
     };
     if (parameterWarnings.contains(key) && params.getBool(key.toStdString())) {
       ConfirmationDialog::toggleAlert("WARNING: " + parameterWarnings[key], "I understand the risks.", parent);
     }
 
     static const QSet<QString> parameterReboots = {
-      "AlwaysOnLateral", "AlwaysOnLateralMain", "FireTheBabysitter", "NoLogging", "NNFF", "TSS2Tune",
+      "AlwaysOnLateral", "AlwaysOnLateralMain", "FireTheBabysitter", "NoLogging", "NNFF",
     };
     if (parameterReboots.contains(key)) {
       if (ConfirmationDialog::toggle("Reboot required to take effect.", "Reboot Now", parent)) {

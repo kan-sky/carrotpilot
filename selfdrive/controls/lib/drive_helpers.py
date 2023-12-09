@@ -150,7 +150,7 @@ class VCruiseHelper:
         #self.update_button_timers(CS, enabled)
       else:
         self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
-        self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
+        self.v_cruise_cluster_kph = self.v_cruise_kph_set = CS.cruiseState.speedCluster * CV.MS_TO_KPH
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
@@ -274,7 +274,7 @@ class VCruiseHelper:
   def _update_v_cruise_apilot(self, CS, controls):
     self._update_lead(controls)
     self.v_ego_kph_set = int(CS.vEgoCluster * CV.MS_TO_KPH + 0.5)
-    if self.v_cruise_kph_set == V_CRUISE_UNSET:
+    if self.v_cruise_kph_set > 200:
       self.v_cruise_kph_set = V_CRUISE_INITIAL
     v_cruise_kph = self.v_cruise_kph_set    
     v_cruise_kph = self._update_cruise_buttons(CS, v_cruise_kph, controls)
@@ -368,6 +368,7 @@ class VCruiseHelper:
     gas_tok = False
     if CS.gasPressed:
       self.gas_pressed_count = 1 if self.gas_pressed_count < 0 else self.gas_pressed_count + 1
+      self.softHoldActive = 0
     else:
       gas_tok = True if 0 < self.gas_pressed_count < 60 else False
       self.gas_pressed_count = -1 if self.gas_pressed_count > 0 else self.gas_pressed_count - 1
@@ -399,7 +400,6 @@ class VCruiseHelper:
           button_type = ButtonType.decelCruise
         elif not self.long_pressed and b.type == ButtonType.gapAdjustCruise:
           button_type = ButtonType.gapAdjustCruise
-          print("############################## gap Pressed...")
 
         self.long_pressed = False
         self.button_cnt = 0
@@ -420,7 +420,6 @@ class VCruiseHelper:
       elif self.button_prev == ButtonType.gapAdjustCruise:
         button_type = ButtonType.gapAdjustCruise
         self.button_cnt = 0
-        print("############################## gapLong Pressed...")
 
     button_kph = clip(button_kph, self.cruiseSpeedMin, V_CRUISE_MAX)
 
@@ -435,7 +434,7 @@ class VCruiseHelper:
           else:
             v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
         elif button_type == ButtonType.decelCruise:
-          if v_cruise_kph > self.v_ego_kph_set - 5:
+          if v_cruise_kph > self.v_ego_kph_set + 2:
             v_cruise_kph = self.v_ego_kph_set
           else:
             #v_cruise_kph = button_kph
@@ -463,6 +462,13 @@ class VCruiseHelper:
         if 0 < self.lead_dRel < CS.vEgo * 0.8 and self.autoCancelFromGasMode > 0:
           self.cruiseActivate = -1
           print("Cruise Deactivate from gas.. too close leadCar!")
+        elif self.autoCancelFromGasMode > 0:
+          if self.v_ego_kph_set < self.autoResumeFromGasSpeed:
+            print("Cruise Deactivate from gas pressed");
+            self.cruiseActivate = -1
+          if controls.experimental_mode and self.autoCancelFromGasMode == 2:
+            print("Cruise Deactivate from gas pressed: experimental mode");
+            self.cruiseActivate = -1
       elif self.v_ego_kph_set > self.autoResumeFromGasSpeed > 0:
         if self.cruiseActivate <= 0:
           print("Cruise Activate from Speed")
@@ -471,15 +477,6 @@ class VCruiseHelper:
       if not controls.enabled and self.v_ego_kph_set < 70.0 and controls.experimental_mode and Params().get_bool("AutoResumeFromBrakeReleaseTrafficSign"):
         print("Cruise Activate from TrafficSign")
         self.cruiseActivate = 1
-
-    if self.gas_pressed_count == -1 and not gas_tok:
-      if self.autoCancelFromGasMode > 0:
-        if self.v_ego_kph_set < self.autoResumeFromGasSpeed:
-          print("Cruise Deactivate from gas pressed");
-          self.cruiseActivate = -1
-        if controls.experimental_mode and self.autoCancelFromGasMode == 2:
-          print("Cruise Deactivate from gas pressed: experimental mode");
-          self.cruiseActivate = -1
 
     if self.gas_pressed_count > 0 and self.v_ego_kph_set > v_cruise_kph:
       v_cruise_kph = self.v_ego_kph_set

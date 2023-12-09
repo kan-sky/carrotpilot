@@ -548,9 +548,9 @@ void Primeless::createMapboxKeyControl(ButtonControl *&control, const QString &l
 }
 
 void Primeless::updateStep() {
-  currentStep = setupCompleted ? "../assets/images/setup_completed.png" : 
-                (mapboxPublicKeySet && mapboxSecretKeySet) ? "../assets/images/both_keys_set.png" :
-                mapboxPublicKeySet ? "../assets/images/public_key_set.png" : "../assets/images/no_keys_set.png";
+  currentStep = setupCompleted ? "../frogpilot/navigation/navigation_training/setup_completed.png" : 
+                (mapboxPublicKeySet && mapboxSecretKeySet) ? "../frogpilot/navigation/navigation_training/both_keys_set.png" :
+                mapboxPublicKeySet ? "../frogpilot/navigation/navigation_training/public_key_set.png" : "../frogpilot/navigation/navigation_training/no_keys_set.png";
 
   pixmap.load(currentStep);
   imageLabel->setPixmap(pixmap.scaledToWidth(1500, Qt::SmoothTransformation));

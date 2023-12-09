@@ -115,9 +115,6 @@ class LongitudinalPlanner:
     self.v_target = MIN_TARGET_V
 
   #ajouatom
-    self.myDrivingMode = 3 # general mode
-    self.mySafeModeFactor = 0.8
-    self.myEcoModeFactor = 0.8
     self.cruiseMaxVals1 = 1.6
     self.cruiseMaxVals2 = 1.2
     self.cruiseMaxVals3 = 1.0
@@ -132,8 +129,6 @@ class LongitudinalPlanner:
       self.personality = log.LongitudinalPersonality.standard
 
     # ajouatom
-    #self.mySafeModeFactor = float(self.params.get_int("MySafeModeFactor")) / 100.
-    #self.myEcoModeFactor = float(self.params.get_int("MyEcoModeFactor")) / 100.
     self.cruiseMaxVals1 = float(self.params.get_int("CruiseMaxVals1")) / 100.
     self.cruiseMaxVals2 = float(self.params.get_int("CruiseMaxVals2")) / 100.
     self.cruiseMaxVals3 = float(self.params.get_int("CruiseMaxVals3")) / 100.
@@ -191,16 +186,8 @@ class LongitudinalPlanner:
       if self.acceleration_profile == 1:
         accel_limits = [get_min_accel_eco_tune(v_ego), get_max_accel_eco_tune(v_ego)]
       elif self.acceleration_profile == 2:      
-        if self.myDrivingMode in [1]: # apilot eco mode
-          myMaxAccel = clip(self.get_max_accel(v_ego)*self.myEcoModeFactor, 0, ACCEL_MAX)
-        elif self.myDrivingMode in [2]: # apilot safe mode
-          myMaxAccel = clip(self.get_max_accel(v_ego)*self.myEcoModeFactor*mySafeModeFactor, 0, ACCEL_MAX)
-        elif self.myDrivingMode in [3,4]: # apilot general
-          myMaxAccel = clip(self.get_max_accel(v_ego), 0, ACCEL_MAX)
-        else:
-          myMaxAccel = self.get_max_accel(v_ego)
+        myMaxAccel = clip(self.get_max_accel(v_ego)*self.mpc.mySafeFactor, 0.05, ACCEL_MAX)
         accel_limits = [A_CRUISE_MIN, myMaxAccel]      
-        #accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
       elif self.acceleration_profile == 3:
         accel_limits = [get_min_accel_sport_tune(v_ego), get_max_accel_sport_tune(v_ego)]
       accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)

@@ -504,6 +504,8 @@ class CarStateBase(ABC):
     self.personality_profile = self.params.get_int("LongitudinalPersonality")
     self.previous_personality_profile = self.params.get_int("LongitudinalPersonality")
 
+    self.cruise_gap_count = 0 # ajouatom
+
   def update_speed_kf(self, v_ego_raw):
     if abs(v_ego_raw - self.v_ego_kf.x[0][0]) > 2.0:  # Prevent large accelerations when car starts at non zero speed
       self.v_ego_kf.x = [[v_ego_raw], [0.0]]

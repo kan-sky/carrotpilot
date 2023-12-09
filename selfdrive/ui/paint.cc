@@ -985,22 +985,34 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
     //auto controls_state = sm["controlsState"].getControlsState();
     //const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
     // 타겟좌측 : 갭표시
-    int myDrivingMode = Params().getInt("AccelerationProfile"); //HW: controls_state.getMyDrivingMode();
     //int active = controls_state.getActive();
     float gap = Params().getInt("LongitudinalPersonality")+1;// lp.getCruiseGap();
     //float tFollow = 1.0;// HW: lp.getTFollow();
     int gap1 = gap;// controls_state.getLongCruiseGap(); // car_state.getCruiseGap();
 #ifdef __TEST
-    myDrivingMode = 3;
+    drivingMode = 3;
 #endif
     char strDrivingMode[128];
-    switch (myDrivingMode)
-    {
-    case 1: strcpy(strDrivingMode, "ECO"); break;
-    case 2: strcpy(strDrivingMode, "NOR"); break;
-    case 3: strcpy(strDrivingMode, "SPT"); break;
-    default:
-        strcpy(strDrivingMode, "ERR"); break;
+    int drivingMode = Params().getInt("AccelerationProfile"); //HW: controls_state.getMyDrivingMode();
+    if (drivingMode == 2) { // apilot driving mode
+        int myDrivingMode = Params().getInt("MyDrivingMode");
+        switch (myDrivingMode) {
+        case 1: strcpy(strDrivingMode, tr("ECO").toStdString().c_str()); break;
+        case 2: strcpy(strDrivingMode, tr("SAFE").toStdString().c_str()); break;
+        case 3: strcpy(strDrivingMode, tr("NORM").toStdString().c_str()); break;
+        case 4: strcpy(strDrivingMode, tr("HIGH").toStdString().c_str()); break;
+        default: strcpy(strDrivingMode, tr("ERRM").toStdString().c_str()); break;
+        }
+    }
+    else { // frogpilot mode..
+        switch (drivingMode)
+        {
+        case 1: strcpy(strDrivingMode, "ECO"); break;
+        case 2: strcpy(strDrivingMode, "NOR"); break;
+        case 3: strcpy(strDrivingMode, "SPT"); break;
+        default:
+            strcpy(strDrivingMode, "ERR"); break;
+        }
     }
 
     int dxGap = -128 - 10 - 40;
@@ -1012,9 +1024,9 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
 
         ui_draw_text(s, x + dxGap + 15, y + 120.0, strDrivingMode, 30, COLOR_WHITE, BOLD);
     }
-    static int _myDrivingMode = 0;
-    if (_myDrivingMode != myDrivingMode) ui_draw_text_a(s, x + dxGap + 15, y + 120, strDrivingMode, 30, COLOR_WHITE, BOLD);
-    _myDrivingMode = myDrivingMode;
+    static char _strDrivingMode[128]="";
+    if (strcmp(strDrivingMode, _strDrivingMode)) ui_draw_text_a(s, x + dxGap + 15, y + 120, strDrivingMode, 30, COLOR_WHITE, BOLD);
+    strcpy(_strDrivingMode, strDrivingMode);
     dxGap -= 60;
     if (s->show_gap_info > 0) {
 #ifdef __TEST
@@ -1968,10 +1980,10 @@ void ui_nvg_init(UIState *s) {
   {"ic_radar", "../assets/images/radar_red.png"},
   {"ic_radar_vision", "../assets/images/radar_vision.png"},
   {"ic_radar_no", "../assets/images/no_radar.png"},
-  {"ic_steer_momo", "../assets/img_chffr_wheel.png"},
-  {"ic_steer_red", "../assets/img_chffr_wheel.png"},
-  {"ic_steer_green", "../assets/img_chffr_wheel.png"},
-  {"ic_steer_yellow", "../assets/img_chffr_wheel.png"},
+  {"ic_steer_momo", "../assets/images/steer_momo.png"},
+  {"ic_steer_red", "../assets/images/steer_red.png"},
+  {"ic_steer_green", "../assets/images/steer_green.png"},
+  {"ic_steer_yellow", "../assets/images/steer_yellow.png"},
   {"ic_lane_change_l", "../assets/images/lane_change_l.png"},
   {"ic_lane_change_r", "../assets/images/lane_change_r.png"},
   {"ic_lane_change_inhibit", "../assets/images/lane_change_inhibit.png"},

@@ -68,14 +68,14 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
   selectMakeButton = new ButtonControl(tr("Select Make"), tr("SELECT"));
   brandSelection = QString::fromStdString(params.get("CarBrand"));
   connect(selectMakeButton, &ButtonControl::clicked, [this]() {
-    std::string current = params.get("CarBrand");
+    std::string currentBrand = params.get("CarBrand");
     QStringList makes = {
       "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler", "Dodge", "Ford", "GM", "GMC", 
       "Genesis", "Honda", "Hyundai", "Infiniti", "Jeep", "Kia", "Lexus", "Lincoln", "MAN", "Mazda", 
       "Mercedes", "Nissan", "Ram", "SEAT", "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo", "?koda"
     };
 
-    brandSelection = MultiOptionDialog::getSelection(tr("Select a Make"), makes, QString::fromStdString(current), this);
+    brandSelection = MultiOptionDialog::getSelection(tr("Select a Make"), makes, QString::fromStdString(currentBrand), this);
     if (!brandSelection.isEmpty()) {
       params.put("CarBrand", brandSelection.toStdString());
       selectMakeButton->setValue(brandSelection);
@@ -88,8 +88,8 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
 
   selectModelButton = new ButtonControl(tr("Select Model"), tr("SELECT"));
   connect(selectModelButton, &ButtonControl::clicked, [this]() {
-    std::string current = params.get("CarModel");
-    QString modelSelection = MultiOptionDialog::getSelection(tr("Select a Model"), models, QString::fromStdString(current), this);
+    std::string currentModel = params.get("CarModel");
+    QString modelSelection = MultiOptionDialog::getSelection(tr("Select a Model"), models, QString::fromStdString(currentModel), this);
     if (!modelSelection.isEmpty()) {
       params.put("CarModel", modelSelection.toStdString());
       selectModelButton->setValue(modelSelection);
@@ -112,15 +112,16 @@ void FrogPilotVehiclesPanel::setToggles() {
   const bool gm = brandSelection == "Buick" || brandSelection == "Cadillac" || brandSelection == "Chevrolet"|| brandSelection == "GM"|| brandSelection == "GMC";
   const bool toyota = brandSelection == "Lexus" || brandSelection == "Toyota";
 
-  static bool toyotaTogglesAdded = false;
   static bool gmTogglesAdded = false;
+  static bool toyotaTogglesAdded = false;
+
+  if(evTableToggle) evTableToggle->setEnabled(gm);
+  if(longPitchToggle) longPitchToggle->setEnabled(gm);
+  if(lowerVoltToggle) lowerVoltToggle->setEnabled(gm);
 
   if(lockDoorsToggle) lockDoorsToggle->setEnabled(toyota);
   if(sngHackToggle) sngHackToggle->setEnabled(toyota);
   if(tss2TuneToggle) tss2TuneToggle->setEnabled(toyota);
-
-  if(evTableToggle) evTableToggle->setEnabled(gm);
-  if(lowerVoltToggle) lowerVoltToggle->setEnabled(gm);
 
   std::function<ToggleControl*(const char*, const char*, const char*)> addToggle = 
     [&](const char *param, const char *title, const char *description) {
@@ -133,7 +134,18 @@ void FrogPilotVehiclesPanel::setToggles() {
       return toggle;
   };
 
-  if (toyota && !toyotaTogglesAdded) {
+  if (gm && !gmTogglesAdded) {
+    evTableToggle = addToggle("EVTable", "EV Lookup Tables", 
+                              "Smoothens out the gas and brake controls for EV vehicles.");
+
+    longPitchToggle = addToggle("LongPitch", "Long Pitch Compensation", 
+                          "Reduces speed and acceleration error for greater passenger comfort and improved vehicle efficiency.");
+
+    lowerVoltToggle = addToggle("LowerVolt", "Lower Volt Enable Speed", 
+                                "Lowers the Volt's minimum enable speed in order to enable openpilot at any speed.");
+
+    gmTogglesAdded = true;
+  } else if (toyota && !toyotaTogglesAdded) {
     lockDoorsToggle = addToggle("LockDoors", "Lock Doors In Drive", 
                                 "Automatically locks the doors when in drive and unlocks when in park.");
 
@@ -144,16 +156,5 @@ void FrogPilotVehiclesPanel::setToggles() {
                                "Tuning profile based on the tuning profile from DragonPilot for TSS2 vehicles.");
 
     toyotaTogglesAdded = true;
-  } else if (gm && !gmTogglesAdded) {
-    evTableToggle = addToggle("EVTable", "EV Lookup Tables", 
-                              "Smoothens out the gas and brake controls for EV vehicles.");
-
-    longPitch = addToggle("LongPitch", "Long Pitch Compensation", 
-                          "Reduces speed and acceleration error for greater passenger comfort and improved vehicle efficiency.");
-
-    lowerVoltToggle = addToggle("LowerVolt", "Lower Volt Enable Speed", 
-                                "Lowers the Volt's minimum enable speed in order to enable openpilot at any speed.");
-
-    gmTogglesAdded = true;
   }
 }

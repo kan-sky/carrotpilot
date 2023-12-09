@@ -699,10 +699,12 @@ class Controls:
     if not self.joystick_mode:
 
       # SoftHold functions: for HKG only ## ajouatom
-      if self.FPCC.alwaysOnLateral and not self.events.contains(ET.NO_ENTRY) and CS.vEgo < 0.5:  
-        pass
+      if self.FPCC.alwaysOnLateral and not self.events.contains(ET.NO_ENTRY):
+        if CS.vEgo > 0.5:  
+          self.v_cruise_helper.softHoldActive = 0
       else:
         self.v_cruise_helper.softHoldActive = 0
+        self.v_cruise_helper.cruiseActivate = 0
       CC.hudControl.softHold = self.v_cruise_helper.softHoldActive
 
       # accel PID loop

@@ -11,7 +11,7 @@ from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CAN_G
                                                    CANFD_CAR, EV_CAR, HYBRID_CAR, Buttons, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.common.realtime import DT_CTRL
-from openpilot.common.params import put_bool_nonblocking, put_int_nonblocking
+from openpilot.common.params import Params, put_bool_nonblocking, put_int_nonblocking
 
 PREV_BUTTON_SAMPLES = 8
 CLUSTER_SAMPLE_RATE = 20  # frames
@@ -251,22 +251,24 @@ class CarState(CarStateBase):
       ret.speedLimitDistance = 0
 
     ## ajouatom: wheel gap distance setting
-    if self.personalities_via_wheel:
-      # Sync with the onroad UI button
-      if self.params_memory.get_bool("PersonalityChangedViaUI"):
-        self.personality_profile = self.params.get_int("LongitudinalPersonality")
-        self.previous_personality_profile = self.personality_profile
-        self.params_memory.put_bool("PersonalityChangedViaUI", False)
+    self.cruise_gap_count =  self.cruise_gap_count + 1 if self.prev_cruise_buttons == Buttons.GAP_DIST else 0
+    if self.cruise_buttons[-1] == Buttons.GAP_DIST and self.cruise_gap_count >= 70:
+      if self.cruise_gap_count == 70:
+        put_int_nonblocking("MyDrivingMode", Params().get_int("MyDrivingMode") % 4 + 1) # 1,2,3,4 (1:eco, 2:safe, 3:normal, 4:high speed)
+    elif self.prev_cruise_buttons == Buttons.GAP_DIST and self.cruise_buttons[-1] == Buttons.NONE and self.cruise_gap_count < 70:
+      if self.personalities_via_wheel:
+        # Sync with the onroad UI button
+        if self.params_memory.get_bool("PersonalityChangedViaUI"):
+          self.personality_profile = self.params.get_int("LongitudinalPersonality")
+          self.previous_personality_profile = self.personality_profile
+          self.params_memory.put_bool("PersonalityChangedViaUI", False)
 
-      self.distance_button = self.cruise_buttons[-1] == 3
-      if self.distance_button and not self.distance_previously_pressed:
         self.personality_profile = (self.previous_personality_profile + 2) % 3
-      self.distance_previously_pressed = self.distance_button
 
-      if self.personality_profile != self.previous_personality_profile:
-        put_int_nonblocking("LongitudinalPersonality", self.personality_profile)
-        self.params_memory.put_bool("PersonalityChangedViaWheel", True)
-        self.previous_personality_profile = self.personality_profile
+        if self.personality_profile != self.previous_personality_profile:
+          put_int_nonblocking("LongitudinalPersonality", self.personality_profile)
+          self.params_memory.put_bool("PersonalityChangedViaWheel", True)
+          self.previous_personality_profile = self.personality_profile
 
     # Check for cruise control button press
     if self.prev_main_buttons == 0 and self.main_buttons[-1] != 0:

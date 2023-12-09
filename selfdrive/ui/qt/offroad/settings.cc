@@ -490,27 +490,27 @@ CarrotPanel::CarrotPanel(QWidget* parent) : QWidget(parent) {
     QHBoxLayout* select_layout = new QHBoxLayout();
     select_layout->setSpacing(30);
 
-    QPushButton* cruise_btn = new QPushButton("Cruise");
+    QPushButton* cruise_btn = new QPushButton(tr("Cruise"));
     cruise_btn->setObjectName("cruise_btn");
     QObject::connect(cruise_btn, &QPushButton::clicked, this, [this]() {this->togglesCarrot(0); });
 
-    QPushButton* latLong_btn = new QPushButton("Lat/Long");
+    QPushButton* latLong_btn = new QPushButton(tr("Tuning"));
     latLong_btn->setObjectName("latLong_btn");
     QObject::connect(latLong_btn, &QPushButton::clicked, this, [this]() {this->togglesCarrot(1); });
 
-    QPushButton* disp_btn = new QPushButton("Disp");
+    QPushButton* disp_btn = new QPushButton(tr("Disp"));
     disp_btn->setObjectName("disp_btn");
     QObject::connect(disp_btn, &QPushButton::clicked, this, [this]() {this->togglesCarrot(2); });
 
-    QPushButton* path_btn = new QPushButton("Path");
+    QPushButton* path_btn = new QPushButton(tr("Path"));
     path_btn->setObjectName("path_btn");
     QObject::connect(path_btn, &QPushButton::clicked, this, [this]() {this->togglesCarrot(3); });
 
-    QPushButton* start_btn = new QPushButton("Start");
+    QPushButton* start_btn = new QPushButton(tr("Start"));
     start_btn->setObjectName("start_btn");
     QObject::connect(start_btn, &QPushButton::clicked, this, [this]() {this->togglesCarrot(4); });
 
-    QPushButton* speed_btn = new QPushButton("Speed");
+    QPushButton* speed_btn = new QPushButton(tr("Speed"));
     speed_btn->setObjectName("speed_btn");
     QObject::connect(speed_btn, &QPushButton::clicked, this, [this]() {this->togglesCarrot(5); });
 
@@ -534,6 +534,9 @@ CarrotPanel::CarrotPanel(QWidget* parent) : QWidget(parent) {
     cruiseToggles->addItem(new CValueControl("CruiseSpeedMin", "Cruise Speed: Lower limit(10)", "Cruise control MIN speed", "../assets/offroad/icon_road.png", 5, 50, 1));
     //cruiseToggles->addItem(new CValueControl("TFollowSpeedAddM", "GAP: Additinal TFs 40km/h(0)x0.01s", "Speed-dependent additinal max(100km/h) TFs", "../assets/offroad/icon_road.png", -100, 200, 5));
     cruiseToggles->addItem(new CValueControl("TFollowSpeedAdd", "GAP: Additinal TFs 100Km/h(0)x0.01s", "Speed-dependent additinal max(100km/h) TFs", "../assets/offroad/icon_road.png", -100, 200, 5));
+    cruiseToggles->addItem(new CValueControl("MyDrivingMode", "DRIVEMODE: Select", "1:ECO,2:SAFE,3:NORMAL,4:HIGH", "../assets/offroad/icon_road.png", 1, 4, 1));
+    cruiseToggles->addItem(new CValueControl("MyEcoModeFactor", "DRIVEMODE: ECO Accel ratio(80%)", "Acceleartion ratio in ECO mode", "../assets/offroad/icon_road.png", 10, 95, 5));
+    cruiseToggles->addItem(new CValueControl("MySafeModeFactor", "DRIVEMODE: SAFE ratio(80%)", "Accel/StopDistance/DecelRatio/Gap control ratio", "../assets/offroad/icon_road.png", 10, 90, 10));
 
     latLongToggles = new ListWidget(this);
     latLongToggles->addItem(new CValueControl("UseLaneLineSpeed", "UseLaneLine Speed KPH(0)", "Above set speed: laneline. Below: laneless mode.", "../assets/offroad/icon_shell.png", 0, 200, 5));

@@ -161,7 +161,7 @@ Ignition: {self.simulator_state.ignition} Engaged: {self.simulator_state.is_enga
       if self.simulator_state.is_engaged:
         throttle_op = clip(self.simulated_car.sm['carControl'].actuators.accel / 1.6, 0.0, 1.0)
         brake_op = clip(-self.simulated_car.sm['carControl'].actuators.accel / 4.0, 0.0, 1.0)
-        steer_op = self.simulated_car.sm['carControl'].actuators.steeringAngleDeg
+        steer_op = self.simulated_car.sm['carControl'].actuators.steeringAngleDeg * 1.8        
 
         self.past_startup_engaged = True
       elif not self.past_startup_engaged and controlsState.engageable:

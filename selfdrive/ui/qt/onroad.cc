@@ -455,13 +455,9 @@ MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
   setEnabled(false);
 }
 
-void MapSettingsButton::updateState(bool compass) {
-  y_offset = !compass ? 10 : 0;
-}
-
 void MapSettingsButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2 + y_offset), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
 }
 
 
@@ -544,7 +540,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // hide map settings button for alerts and flip for right hand DM
   if (map_settings_btn->isEnabled()) {
-    map_settings_btn->setVisible(!hideBottomIcons && (compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
+    map_settings_btn->setVisible(!hideBottomIcons && compass);
     main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | (compass ? Qt::AlignTop : Qt::AlignBottom));
   }
 }
@@ -1264,7 +1260,7 @@ void AnnotatedCameraWidget::updateFrogPilotWidgets(QPainter &p) {
 
   map_settings_btn_bottom->setEnabled(map_settings_btn->isEnabled());
   if (map_settings_btn_bottom->isEnabled()) {
-    map_settings_btn_bottom->setVisible(!hideBottomIcons && !(compass && onroadAdjustableProfiles || !compass && !onroadAdjustableProfiles));
+    map_settings_btn_bottom->setVisible(!hideBottomIcons && !compass);
     bottom_layout->setAlignment(map_settings_btn_bottom, rightHandDM ? Qt::AlignLeft : Qt::AlignRight);
   }
 

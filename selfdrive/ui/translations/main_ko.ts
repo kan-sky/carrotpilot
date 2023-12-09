@@ -643,6 +643,10 @@ This may take up to a minute.</source>
         <source>Software</source>
         <translation>소프트웨어</translation>
     </message>
+    <message>
+      <source>Carrot</source>
+      <translation>당근</translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
@@ -1185,4 +1189,94 @@ This may take up to a minute.</source>
         <translation>삭제</translation>
     </message>
 </context>
+  <context>
+    <name>DrawApilot</name>
+    <message>
+      <source>MANUAL</source>
+      <translation>수동운전</translation>
+    </message>
+    <message>
+      <source>CRUISE</source>
+      <translation>정속주행</translation>
+    </message>
+    <message>
+      <source>E2ECRUISE</source>
+      <translation>E2E주행</translation>
+    </message>
+    <message>
+      <source>CRUISE READY</source>
+      <translation>크루즈준비</translation>
+    </message>
+    <message>
+      <source>SIGN DETECTED</source>
+      <translation>신호감지</translation>
+    </message>
+    <message>
+      <source>ECO</source>
+      <translation>연비</translation>
+    </message>
+    <message>
+      <source>SAFE</source>
+      <translation>안전</translation>
+    </message>
+    <message>
+      <source>NORM</source>
+      <translation>일반</translation>
+    </message>
+    <message>
+      <source>HIGH</source>
+      <translation>고속</translation>
+    </message>
+    <message>
+      <source>Start</source>
+      <translation>시작</translation>
+    </message>
+    <message>
+      <source>Cruise</source>
+      <translation>크루즈</translation>
+    </message>
+    <message>
+      <source>Speed</source>
+      <translation>속도</translation>
+    </message>
+    <message>
+      <source>Tuning</source>
+      <translation>튜닝</translation>
+    </message>
+    <message>
+      <source>Disp</source>
+      <translation>화면</translation>
+    </message>
+    <message>
+      <source>Path</source>
+      <translation>패쓰</translation>
+    </message>
+  </context>
+  <context>
+    <name>CommunityPanel</name>
+    <message>
+      <source>SpeedCameraControl(1)</source>
+      <translation>과속카메라작동방법(1)</translation>
+    </message>
+    <message>
+      <source>0:Not used, 1:NDA</source>
+      <translation>0:사용안함, 1:NDA</translation>
+    </message>
+    <message>
+      <source>SpeedCameraDecelStart(22s)</source>
+      <translation>과속카메라감속 시작 시간(22초)</translation>
+    </message>
+    <message>
+      <source>SpeedCameraDecelEnd(6s)</source>
+      <translation>과속카메라감속 완료 시간(6초)</translation>
+    </message>
+    <message>
+      <source>CRUISE READY</source>
+      <translation>크루즈준비</translation>
+    </message>
+    <message>
+      <source>SIGN DETECTED</source>
+      <translation>신호감지</translation>
+    </message>
+  </context>
 </TS>
