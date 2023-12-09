@@ -280,6 +280,8 @@ class LongitudinalPlanner:
           self.slc_target = round(desired_speed_limit)
       else:
         self.slc_target = self.overridden_speed
+    else:
+      self.slc_target = v_cruise
 
     # Pfeiferj's Vision Turn Controller
     if self.vision_turn_controller and prev_accel_constraint and v_ego > 5:
@@ -304,8 +306,9 @@ class LongitudinalPlanner:
       self.v_offset = max(0, int(v_cruise - self.v_target))
     else:
       self.v_offset = 0
+      self.v_target = v_cruise
 
-    #v_cruise = min(v_cruise, self.slc_target, self.v_target)
+    v_cruise = min(v_cruise, self.slc_target if self.slc_target > 0 else v_cruise, self.v_target if self.v_target > 0 else v_cruise)
     #print("min = {},{},{}".format(v_cruise, self.slc_target, self.v_target))
 
 

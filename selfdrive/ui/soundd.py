@@ -99,6 +99,7 @@ class Soundd:
     self.params_memory = Params("/dev/shm/params")
 
     self.update_frogpilot_params()
+    self.soundVolumeAdjust = 1.0
 
     self.load_sounds()
 
@@ -206,7 +207,7 @@ class Soundd:
 
         if sm.updated['microphone'] and self.current_alert == AudibleAlert.none: # only update volume filter when not playing alert
           self.spl_filter_weighted.update(sm["microphone"].soundPressureWeightedDb)
-          self.current_volume = max(self.calculate_volume(float(self.spl_filter_weighted.x)) - self.silent_mode, 0)
+          self.current_volume = max(self.calculate_volume(float(self.spl_filter_weighted.x)) - self.silent_mode, 0) * self.soundVolumeAdjust
 
         self.get_audible_alert(sm)
 
@@ -214,9 +215,11 @@ class Soundd:
 
         assert stream.active
 
-    # Update FrogPilot parameters
-    if self.params_memory.get_bool("FrogPilotTogglesUpdated"):
-      self.update_frogpilot_params()
+        # Update FrogPilot parameters
+        if self.params_memory.get_bool("FrogPilotTogglesUpdated"):
+          self.update_frogpilot_params()
+
+        self.soundVolumeAdjust = float(self.params.get_int("SoundVolumeAdjust"))/100.
 
   def update_frogpilot_params(self):
     self.silent_mode = self.params.get_bool("SilentMode")

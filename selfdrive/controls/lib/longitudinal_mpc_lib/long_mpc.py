@@ -413,7 +413,7 @@ class LongitudinalMpc:
     self.max_a = max_a
 
   def update(self, carstate, radarstate, model, v_cruise, x, v, a, j, have_lead, aggressive_acceleration, increased_stopping_distance, smoother_braking, custom_personalities, aggressive_follow, standard_follow, relaxed_follow, personality=log.LongitudinalPersonality.standard):
-  
+    #self.debugLongText = "v_cruise ={:.1f}".format(v_cruise)
     self.update_params()
     t_follow = get_T_FOLLOW(custom_personalities, aggressive_follow, standard_follow, relaxed_follow, personality)
     v_ego = self.x0[1]
@@ -442,7 +442,8 @@ class LongitudinalMpc:
       t_follow = t_follow / t_follow_offset
 
     if v_ego >= self.v_ego_prev:
-      t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 40, 100], [t_follow, t_follow + self.tFollowSpeedAddM, t_follow + self.tFollowSpeedAdd]) 
+      #t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 40, 100], [t_follow, t_follow + self.tFollowSpeedAddM, t_follow + self.tFollowSpeedAdd]) 
+      t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 100], [t_follow, t_follow + self.tFollowSpeedAdd]) 
     self.v_ego_prev = v_ego
 
     # LongitudinalPlan variables for onroad driving insights
@@ -460,7 +461,7 @@ class LongitudinalMpc:
 
     self.params[:,0] = ACCEL_MIN if not self.reset_state else a_ego
     self.params[:,1] = self.max_a if not self.reset_state else a_ego
-    
+
     if not self.conditional_experimental_mode:
       v_cruise, stop_x, self.mode = self.update_apilot(carstate, radarstate, model, v_cruise)
     else:
@@ -615,7 +616,7 @@ class LongitudinalMpc:
     self.stopSignCount = self.stopSignCount + 1 if stopSign else 0
     self.startSignCount = self.startSignCount + 1 if startSign and not stopSign else 0
 
-    if self.stopSignCount * DT_MDL > 0.0:
+    if self.stopSignCount * DT_MDL > 0.5:
       self.trafficState = TrafficState.red
     elif self.startSignCount * DT_MDL > 0.15:
       self.trafficState = TrafficState.green
@@ -638,6 +639,7 @@ class LongitudinalMpc:
     stop_x = self.xStop
 
     self.check_model_stopping(v, v_ego, self.xStop, y)
+    
 
     if self.xState == XState.e2eStop:
       if carstate.gasPressed:
@@ -666,7 +668,7 @@ class LongitudinalMpc:
     else: #XState.lead, XState.cruise, XState.e2eCruise
       if self.status:
         self.xState = XState.lead
-      elif self.trafficState == TrafficState.red and not carstate.gasPressed and self.trafficStopMode == 0:
+      elif self.trafficState == TrafficState.red and not carstate.gasPressed and self.trafficStopMode > 0:
         self.xState = XState.e2eStop
         self.stopDist = self.xStop
       else:

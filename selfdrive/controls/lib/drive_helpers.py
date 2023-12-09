@@ -50,6 +50,7 @@ CRUISE_INTERVAL_SIGN = {
   ButtonType.decelCruise: -1,
 }
 
+
 class VCruiseHelper:
   def __init__(self, CP, is_metric):
     self.CP = CP
@@ -102,6 +103,7 @@ class VCruiseHelper:
     self.autoCurveSpeedFactorIn = float(int(Params().get("AutoCurveSpeedFactorIn", encoding="utf8")))*0.01
     self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
     self.softHoldMode = Params().get_int("SoftHoldMode")
+    self.cruiseSpeedMin = Params().get_int("CruiseSpeedMin")
 
   def _params_update(self):
     self.params_count += 1
@@ -118,6 +120,7 @@ class VCruiseHelper:
       self.autoCruiseControl = Params().get_int("AutoCruiseControl")
       self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
       self.softHoldMode = Params().get_int("SoftHoldMode")
+      self.cruiseSpeedMin = Params().get_int("CruiseSpeedMin")
     elif self.params_count == 30:
       self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
       self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
@@ -126,6 +129,7 @@ class VCruiseHelper:
       self.autoCurveSpeedFactor = float(int(Params().get("AutoCurveSpeedFactor", encoding="utf8")))*0.01
       self.autoCurveSpeedFactorIn = float(int(Params().get("AutoCurveSpeedFactorIn", encoding="utf8")))*0.01
       self.params_count = 0
+    
     
   @property
   def v_cruise_initialized(self):
@@ -205,7 +209,7 @@ class VCruiseHelper:
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
       self.v_cruise_kph = max(self.v_cruise_kph, CS.vEgo * CV.MS_TO_KPH)
 
-    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
+    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), self.cruiseSpeedMin, V_CRUISE_MAX)
 
   def update_button_timers(self, CS, enabled):
     # increment timer for buttons still pressed
@@ -323,7 +327,7 @@ class VCruiseHelper:
           elif v_cruise_kph > 30:
             v_cruise_kph -= 10
         else:
-          v_cruise_kph = clip(int(msg.xArg), V_CRUISE_MIN, V_CRUISE_MAX)
+          v_cruise_kph = clip(int(msg.xArg), self.cruiseSpeedMin, V_CRUISE_MAX)
       #elif msg.xCmd == "CRUISE":
       #  if msg.xArg == "ON":
       #    longActiveUser = 1
@@ -395,6 +399,7 @@ class VCruiseHelper:
           button_type = ButtonType.decelCruise
         elif not self.long_pressed and b.type == ButtonType.gapAdjustCruise:
           button_type = ButtonType.gapAdjustCruise
+          print("############################## gap Pressed...")
 
         self.long_pressed = False
         self.button_cnt = 0
@@ -415,8 +420,9 @@ class VCruiseHelper:
       elif self.button_prev == ButtonType.gapAdjustCruise:
         button_type = ButtonType.gapAdjustCruise
         self.button_cnt = 0
+        print("############################## gapLong Pressed...")
 
-    button_kph = clip(button_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+    button_kph = clip(button_kph, self.cruiseSpeedMin, V_CRUISE_MAX)
 
     if button_type != 0 and controls.enabled:
       if self.long_pressed:
@@ -504,7 +510,7 @@ class VCruiseHelper:
         print("Cancel auto Cruise = ", self.cruiseActivate)
       self.cruiseActivate = 0
       self.softHoldActive = 0
-    v_cruise_kph = clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+    v_cruise_kph = clip(v_cruise_kph, self.cruiseSpeedMin, V_CRUISE_MAX)
     return v_cruise_kph
 
   def v_cruise_speed_up(self, v_cruise_kph):
@@ -515,7 +521,7 @@ class VCruiseHelper:
         if v_cruise_kph < speed:
           v_cruise_kph = speed
           break
-    return clip(v_cruise_kph, V_CRUISE_MIN, V_CRUISE_MAX)
+    return clip(v_cruise_kph, self.cruiseSpeedMin, V_CRUISE_MAX)
 
   def decelerate_for_speed_camera(self, safe_speed, safe_dist, prev_apply_speed, decel_rate, left_dist):
     if left_dist <= safe_dist:

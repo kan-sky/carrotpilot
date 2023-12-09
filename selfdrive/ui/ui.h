@@ -205,6 +205,7 @@ typedef struct UIScene {
   bool show_fps;
   bool speed_limit_controller;
   bool speed_limit_overridden;
+  bool tethering_enabled;
   bool turn_signal_left;
   bool turn_signal_right;
   bool unlimited_road_ui_length;

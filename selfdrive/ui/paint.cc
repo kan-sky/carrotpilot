@@ -332,7 +332,7 @@ static NVGcolor get_tpms_color(float tpms) {
 
 static const char *get_tpms_text(float tpms) {
     if (tpms < 5 || tpms > 60)
-        return "35";// "  -";
+        return "  -";
 
 
     static char str[32];

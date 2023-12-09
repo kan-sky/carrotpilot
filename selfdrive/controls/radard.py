@@ -61,8 +61,9 @@ class Track:
     self.K_C = kalman_params.C
     self.K_K = kalman_params.K
     self.kf = KF1D([[v_lead], [0.0]], self.K_A, self.K_C, self.K_K)
-    self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K)
+    #self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K)
     self.dRel = 0
+    self.vLat = 0.0
     self.vision_prob = 0.0
 
   def update(self, d_rel: float, y_rel: float, v_rel: float, v_lead: float, measured: float, a_rel: float, aLeadTau: float, a_ego: float):
@@ -71,7 +72,7 @@ class Track:
     if abs(self.dRel - d_rel) > 3.0: # 3M이상 차이날때 초기화
       self.cnt = 0
       self.kf = KF1D([[v_lead], [0.0]], self.K_A, self.K_C, self.K_K)
-      self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K) 
+      #self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K) 
     # relative values, copy
     self.dRel = d_rel   # LONG_DIST
     self.yRel = y_rel   # -LAT_DIST
@@ -83,9 +84,9 @@ class Track:
     # computed velocity and accelerations
     if self.cnt > 0:
       self.kf.update(self.vLead)
-      self.kf_y.update(self.yRel)
+      #self.kf_y.update(self.yRel)
 
-    self.vLat = float(self.kf_y.x[1][0])
+    #self.vLat = float(self.kf_y.x[1][0])
 
     self.vLeadK = float(self.kf.x[SPEED][0])
     self.aLeadK = float(self.kf.x[ACCEL][0])

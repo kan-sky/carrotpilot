@@ -106,9 +106,10 @@ private:
 
     ListWidget* cruiseToggles;
     ListWidget* latLongToggles;
-    ListWidget* accelsToggles;
     ListWidget* pathToggles;
     ListWidget* dispToggles;
+    ListWidget* startToggles;
+    ListWidget* speedToggles;
 
     void togglesCarrot(int widgetIndex);
 

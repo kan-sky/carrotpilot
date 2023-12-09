@@ -26,7 +26,6 @@ QStringList getCarNames(const QString &dirPath, const QString &carBrand) {
   brandMap["lincoln"] = "ford";
   brandMap["man"] = "volkswagen";
   brandMap["mazda"] = "mazda";
-  brandMap["mercedes"] = "gm";
   brandMap["nissan"] = "nissan";
   brandMap["ram"] = "chrysler";
   brandMap["seat"] = "volkswagen";
@@ -34,7 +33,6 @@ QStringList getCarNames(const QString &dirPath, const QString &carBrand) {
   brandMap["tesla"] = "tesla";
   brandMap["toyota"] = "toyota";
   brandMap["volkswagen"] = "volkswagen";
-  brandMap["volvo"] = "gm";
   brandMap["skoda"] = "volkswagen";
 
   QStringList names;
@@ -66,15 +64,7 @@ QStringList getCarNames(const QString &dirPath, const QString &carBrand) {
   return names;
 }
 
-FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(QWidget *parent) : QFrame(parent) {
-  mainLayout = new QStackedLayout(this);
-
-  vehiclesWidget = new QWidget();
-  QVBoxLayout *vehiclesLayout = new QVBoxLayout(vehiclesWidget);
-  vehiclesLayout->setMargin(40);
-
-  carSelectionList = new ListWidget(this);
-
+FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWidget(parent) {
   selectMakeButton = new ButtonControl(tr("Select Make"), tr("SELECT"));
   brandSelection = QString::fromStdString(params.get("CarBrand"));
   connect(selectMakeButton, &ButtonControl::clicked, [this]() {
@@ -90,11 +80,11 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(QWidget *parent) : QFrame(parent)
       params.put("CarBrand", brandSelection.toStdString());
       selectMakeButton->setValue(brandSelection);
       setModels();
-      updateToggles();
+      setToggles();
     }
   });
-  carSelectionList->addItem(selectMakeButton);
   selectMakeButton->setValue(brandSelection);
+  addItem(selectMakeButton);
 
   selectModelButton = new ButtonControl(tr("Select Model"), tr("SELECT"));
   connect(selectModelButton, &ButtonControl::clicked, [this]() {
@@ -105,80 +95,65 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(QWidget *parent) : QFrame(parent)
       selectModelButton->setValue(modelSelection);
     }
   });
-  carSelectionList->addItem(selectModelButton);
   selectModelButton->setValue(QString::fromStdString(params.get("CarModel")));
-
-  gmToggles = new ListWidget(this);
-
-  const bool evTable = params.getBool("EVTable");
-  evTableToggle = new ToggleControl(tr("EV Lookup Tables"), "Smoothens out the gas and brake controls for EV vehicles.", "", evTable);
-  QObject::connect(evTableToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    params.putBool("EVTable", state);
-  });
-  gmToggles->addItem(evTableToggle);
-
-  const bool lowerVolt = params.getBool("LowerVolt");
-  lowerVoltToggle = new ToggleControl(tr("Lower Volt Enable Speed"), "Lowers the Volt's minimum enable speed in order to enable openpilot at any speed.", "", lowerVolt);
-  QObject::connect(lowerVoltToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    params.putBool("LowerVolt", state);
-  });
-  gmToggles->addItem(lowerVoltToggle);
-
-  toyotaToggles = new ListWidget(this);
-
-  const bool lockDoors = params.getBool("LockDoors");
-  lockDoorsToggle = new ToggleControl(tr("Lock Doors In Drive"), "Automatically locks the doors when in drive and unlocks when in park.", "", lockDoors);
-  QObject::connect(lockDoorsToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    params.putBool("LockDoors", state);
-  });
-  toyotaToggles->addItem(lockDoorsToggle);
-
-  const bool sngHack = params.getBool("SNGHack");
-  sngHackToggle = new ToggleControl(tr("Stop and Go Hack"), "Enable the 'Stop and Go' hack for vehicles without stock stop and go functionality.", "", sngHack);
-  QObject::connect(sngHackToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    params.putBool("SNGHack", state);
-  });
-  toyotaToggles->addItem(sngHackToggle);
-
-  const bool tss2Tune = params.getBool("TSS2Tune");
-  tss2TuneToggle = new ToggleControl(tr("TSS2 Tune"), "Tuning profile based on the tuning profile from DragonPilot for TSS2 vehicles.", "", tss2Tune);
-  QObject::connect(tss2TuneToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    params.putBool("TSS2Tune", state);
-  });
-  toyotaToggles->addItem(tss2TuneToggle);
-
-  vehiclesLayout->addWidget(new ScrollView(carSelectionList, vehiclesWidget));
-  vehiclesLayout->addWidget(new ScrollView(gmToggles, this));
-  vehiclesLayout->addWidget(new ScrollView(toyotaToggles, this));
-  vehiclesWidget->setLayout(vehiclesLayout);
-  mainLayout->addWidget(vehiclesWidget);
-  mainLayout->setCurrentWidget(vehiclesWidget);
+  addItem(selectModelButton);
 
   setModels();
-  updateToggles();
+  setToggles();
 }
 
 void FrogPilotVehiclesPanel::setModels() {
   std::string carBrand = params.get("CarBrand");
-  QString dirPath = "/data/openpilot/selfdrive/car";
+  QString dirPath = "../../selfdrive/car";
   models = getCarNames(dirPath, QString::fromStdString(carBrand));
 }
 
-void FrogPilotVehiclesPanel::updateToggles() {
-  const bool GM = (brandSelection == "Buick" || brandSelection == "Cadillac" || brandSelection == "Chevrolet" || brandSelection == "GM" || brandSelection == "GMC");
-  const bool Toyota = (brandSelection == "Lexus" || brandSelection == "Toyota");
+void FrogPilotVehiclesPanel::setToggles() {
+  const bool gm = brandSelection == "Buick" || brandSelection == "Cadillac" || brandSelection == "Chevrolet"|| brandSelection == "GM"|| brandSelection == "GMC";
+  const bool toyota = brandSelection == "Lexus" || brandSelection == "Toyota";
 
-  gmToggles->setVisible(GM);
-  toyotaToggles->setVisible(Toyota);
+  static bool toyotaTogglesAdded = false;
+  static bool gmTogglesAdded = false;
 
-  mainLayout->removeWidget(gmToggles);
-  mainLayout->removeWidget(toyotaToggles);
+  if(lockDoorsToggle) lockDoorsToggle->setEnabled(toyota);
+  if(sngHackToggle) sngHackToggle->setEnabled(toyota);
+  if(tss2TuneToggle) tss2TuneToggle->setEnabled(toyota);
 
-  if (GM) {
-    mainLayout->addWidget(gmToggles);
-    mainLayout->setCurrentWidget(gmToggles);
-  } else if (Toyota) {
-    mainLayout->addWidget(toyotaToggles);
-    mainLayout->setCurrentWidget(toyotaToggles);
+  if(evTableToggle) evTableToggle->setEnabled(gm);
+  if(lowerVoltToggle) lowerVoltToggle->setEnabled(gm);
+
+  std::function<ToggleControl*(const char*, const char*, const char*)> addToggle = 
+    [&](const char *param, const char *title, const char *description) {
+      bool value = params.getBool(param);
+      ToggleControl *toggle = new ToggleControl(tr(title), description, "", value);
+      QObject::connect(toggle, &ToggleControl::toggleFlipped, [this, param](bool state) {
+        params.putBool(param, state);
+      });
+      addItem(toggle);
+      return toggle;
+  };
+
+  if (toyota && !toyotaTogglesAdded) {
+    lockDoorsToggle = addToggle("LockDoors", "Lock Doors In Drive", 
+                                "Automatically locks the doors when in drive and unlocks when in park.");
+
+    sngHackToggle = addToggle("SNGHack", "Stop and Go Hack", 
+                              "Enable the 'Stop and Go' hack for vehicles without stock stop and go functionality.");
+
+    tss2TuneToggle = addToggle("TSS2Tune", "TSS2 Tune", 
+                               "Tuning profile based on the tuning profile from DragonPilot for TSS2 vehicles.");
+
+    toyotaTogglesAdded = true;
+  } else if (gm && !gmTogglesAdded) {
+    evTableToggle = addToggle("EVTable", "EV Lookup Tables", 
+                              "Smoothens out the gas and brake controls for EV vehicles.");
+
+    longPitch = addToggle("LongPitch", "Long Pitch Compensation", 
+                          "Reduces speed and acceleration error for greater passenger comfort and improved vehicle efficiency.");
+
+    lowerVoltToggle = addToggle("LowerVolt", "Lower Volt Enable Speed", 
+                                "Lowers the Volt's minimum enable speed in order to enable openpilot at any speed.");
+
+    gmTogglesAdded = true;
   }
 }

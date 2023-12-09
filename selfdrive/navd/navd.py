@@ -72,8 +72,6 @@ class RouteEngine:
     self.nav_condition = False
     self.noo_condition = False
 
-    self.conditional_navigation = False
-    self.send_frogpilot_navigation()
     self.update_frogpilot_params()
 
   def update(self):
