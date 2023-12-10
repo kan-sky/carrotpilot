@@ -29,7 +29,7 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
     "CF_Lkas_LdwsOpt_USM",
   ]}
   values["CF_Lkas_LdwsSysState"] = sys_state
-  values["CF_Lkas_SysWarning"] = 0 # ajouatom: ����ǿ� �ȳ�������..   #3 if sys_warning else 0
+  values["CF_Lkas_SysWarning"] = 0 # ajouatom: 계기판에 안나오게함..   #3 if sys_warning else 0
   values["CF_Lkas_LdwsLHWarning"] = left_lane_depart
   values["CF_Lkas_LdwsRHWarning"] = right_lane_depart
   values["CR_Lkas_StrToqReq"] = apply_steer
@@ -129,13 +129,27 @@ def create_clu11_button(packer, frame, clu11, button, car_fingerprint):
   bus = 2 if car_fingerprint in CAMERA_SCC_CAR else 0
   return packer.make_can_msg("CLU11", bus, values)
 
-def create_lfahda_mfc(packer, enabled, hda_set_speed=0):
+def create_lfahda_mfc(packer, CC, blinking_signal):
   values = {
-    "LFA_Icon_State": 2 if enabled else 0,
-    "HDA_Active": 1 if hda_set_speed else 0,
-    "HDA_Icon_State": 2 if hda_set_speed else 0,
-    "HDA_VSetReq": hda_set_speed,
+    "LFA_Icon_State": 2 if CC.latActive else 1 if CC.enabled else 0,
+    "HDA_Active": 1 if CC.enabled else 0,
+    "HDA_Icon_State": 2 if CC.enabled else 0,
+    "HDA_VSetReq": 1 if CC.enabled else 0,
+    "HDA_USM" : 2,
+    "HDA_Icon_Wheel" : 1 if CC.latActive else 0,
+    "HDA_Chime" : 1 if CC.latActive else 0,
   }
+#    "LFA_Icon_State": 3 if CC.latOverride else 2 if CC.latActive else 1 if CC.latEnabled else 0,
+#    "HDA_Active": 1 if CC.activeHda > 0 else 0,
+#    "HDA_Icon_State": 0 if CC.activeHda > 1 and blinking_signal else 2 if CC.activeHda > 0 else 0,
+#    "HDA_VSetReq": 1 if CC.activeHda > 0 else 0, #enabled,
+#    "HDA_USM" : 2,
+#    "HDA_Icon_Wheel" : 1 if CC.latActive else 0,
+#    "HDA_Chime" : 1 if CC.latEnabled else 0,
+  # VAL_ 1157 LFA_Icon_State 0 "no_wheel" 1 "white_wheel" 2 "green_wheel" 3 "green_wheel_blink";
+  # VAL_ 1157 LFA_SysWarning 0 "no_message" 1 "switching_to_hda" 2 "switching_to_scc" 3 "lfa_error" 4 "check_hda" 5 "keep_hands_on_wheel_orange" 6 "keep_hands_on_wheel_red";
+  # VAL_ 1157 HDA_Icon_State 0 "no_hda" 1 "white_hda" 2 "green_hda";
+  # VAL_ 1157 HDA_SysWarning 0 "no_message" 1 "driving_convenience_systems_cancelled" 2 "highway_drive_assist_system_cancelled";
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
 def create_acc_commands_mix_scc(CP, packer, enabled, accel, upper_jerk, lower_jerk, idx, hud_control, set_speed, stopping, CC, CS, softHoldMode, cb_upper, cb_lower, cruise_available):

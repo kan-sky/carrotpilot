@@ -991,8 +991,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.WARNING: Alert(
       "Turn Exceeds Steering Limit",
       "JESUS TAKE THE WHEEL!!",
-      AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.warningSoft, 2.),
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },
 
   FrogPilotEventName.greenLight: {
@@ -1036,8 +1036,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.WARNING: Alert(
       "Turn Exceeds Steering Limit",
       "IE Has Stopped Responding...",
-      AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.firefox, 2.),
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },
   EventName.laneChangeRoadEdge: {
     ET.WARNING: Alert(

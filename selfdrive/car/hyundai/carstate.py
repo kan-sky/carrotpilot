@@ -252,11 +252,11 @@ class CarState(CarStateBase):
 
     ## ajouatom: wheel gap distance setting
     self.cruise_gap_count =  self.cruise_gap_count + 1 if self.prev_cruise_buttons == Buttons.GAP_DIST else 0
-    if self.cruise_buttons[-1] == Buttons.GAP_DIST and self.cruise_gap_count >= 70:
-      if self.cruise_gap_count == 70:
-        put_int_nonblocking("MyDrivingMode", Params().get_int("MyDrivingMode") % 4 + 1) # 1,2,3,4 (1:eco, 2:safe, 3:normal, 4:high speed)
-    elif self.prev_cruise_buttons == Buttons.GAP_DIST and self.cruise_buttons[-1] == Buttons.NONE and self.cruise_gap_count < 70:
-      if self.personalities_via_wheel:
+    if self.personalities_via_wheel:
+      if self.cruise_buttons[-1] == Buttons.GAP_DIST and self.cruise_gap_count >= 70:
+        if self.cruise_gap_count == 70:
+          put_int_nonblocking("MyDrivingMode", Params().get_int("MyDrivingMode") % 4 + 1) # 1,2,3,4 (1:eco, 2:safe, 3:normal, 4:high speed)
+      elif self.prev_cruise_buttons == Buttons.GAP_DIST and self.cruise_buttons[-1] == Buttons.NONE and self.cruise_gap_count < 70:
         # Sync with the onroad UI button
         if self.params_memory.get_bool("PersonalityChangedViaUI"):
           self.personality_profile = self.params.get_int("LongitudinalPersonality")

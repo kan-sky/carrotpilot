@@ -23,11 +23,11 @@ class SpeedLimitController:
 
   @property
   def offset(self) -> float:
-    if self.speed_limit < 15.6464:
+    if self.speed_limit < 15:
       return self.offset1
-    elif self.speed_limit < 24.5872:
+    elif self.speed_limit < 24:
       return self.offset2
-    elif self.speed_limit < 29.0576:
+    elif self.speed_limit < 29:
       return self.offset3
     else:
       return self.offset4

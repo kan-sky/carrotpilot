@@ -132,9 +132,9 @@ class LatControlTorque(LatControl):
     if self.paramsCount > 30:
       self.paramsCount = 0
     elif self.paramsCount == 10:
-      self.lateralTorqueCustom = int(Params().get("LateralTorqueCustom", encoding="utf8"))
-      self.lateralTorqueAccelFactor = float(int(Params().get("LateralTorqueAccelFactor", encoding="utf8")))*0.001
-      self.lateralTorqueFriction = float(int(Params().get("LateralTorqueFriction", encoding="utf8")))*0.001
+      self.lateralTorqueCustom = Params().get_int("LateralTorqueCustom")
+      self.lateralTorqueAccelFactor = float(Params().get_int("LateralTorqueAccelFactor"))*0.001
+      self.lateralTorqueFriction = float(Params().get_int("LateralTorqueFriction"))*0.001
       if self.lateralTorqueCustom > 0:
         self.torque_params.latAccelFactor = self.lateralTorqueAccelFactor
         self.torque_params.friction = self.lateralTorqueFriction

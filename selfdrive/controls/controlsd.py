@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import os
 import math
-import random
-import threading
 import time
 from typing import SupportsFloat
 
@@ -88,8 +86,7 @@ class Controls:
     mute_dm = fire_the_babysitter and self.params.get_bool("MuteDM")
 
     self.random_event_triggered = False
-    self.reset_event_thread = None
-    self.stop_thread = False
+    self.random_event_timer = 0
 
     ignore = self.sensor_packets + ['testJoystick']
     if SIMULATION:
@@ -171,7 +168,6 @@ class Controls:
       self.params.remove("ExperimentalMode")
 
     self.CC = car.CarControl.new_message()
-
     self.CS_prev = car.CarState.new_message()
     self.AM = AlertManager()
     self.events = Events()
@@ -236,13 +232,6 @@ class Controls:
     self.prof = Profiler(False)  # off by default
 
     self.update_frogpilot_params()
-
-  def reset_random_event(self):
-    while not self.stop_thread:
-      time.sleep(2)
-      self.params_memory.remove("CurrentRandomEvent")
-      self.random_event_triggered = False
-      break
 
   def set_initial_state(self):
     if REPLAY:
@@ -452,7 +441,7 @@ class Controls:
 
     # Check for FCW
     stock_long_is_braking = self.enabled and not self.CP.openpilotLongitudinalControl and CS.aEgo < -1.5
-    model_fcw = self.sm['modelV2'].meta.hardBrakePredicted and not stock_long_is_braking # and not CS.brakePressed
+    model_fcw = self.sm['modelV2'].meta.hardBrakePredicted and not CS.brakePressed and not stock_long_is_braking
     planner_fcw = self.sm['longitudinalPlan'].fcw and self.enabled
     if planner_fcw or model_fcw:
       self.events.add(EventName.fcw)
@@ -538,8 +527,13 @@ class Controls:
 
         #ajouatom
     if not self.enabled and self.v_cruise_helper.cruiseActivate > 0 and not self.events.contains(ET.NO_ENTRY): #ajouatom
-      self.events.add(EventName.buttonEnable)
-      print("CruiseActivate: Button Enable")
+      gear = car.CarState.GearShifter
+      drivingGear = CS.gearShifter not in (gear.neutral, gear.park, gear.reverse, gear.unknown)
+      if drivingGear:
+        self.events.add(EventName.buttonEnable)
+        print("CruiseActivate: Button Enable")
+      else:
+        self.v_cruise_helper.cruiseActivate = 0
     if self.enabled and self.v_cruise_helper.cruiseActivate < 0:
       self.events.add(EventName.buttonCancel)
       print("CruiseActivate: Button Cancel")
@@ -626,11 +620,6 @@ class Controls:
       self.current_alert_types.append(ET.WARNING)
 
   def state_control(self, CS):
-    # Trigger a random event if the conditions are met on the 10th interval
-    if self.sm.frame % 10 == 0:
-      self.random_event_triggered = True
-      threading.Thread(target=self.reset_random_event, args=()).start()
-
     """Given the state, this function returns a CarControl packet"""
 
     # Update VehicleModel
@@ -653,6 +642,14 @@ class Controls:
     lat_plan = self.sm['lateralPlan']
     long_plan = self.sm['longitudinalPlan']
     frogpilot_long_plan = self.sm['frogpilotLongitudinalPlan']
+
+    # Reset the Random Event flag
+    if self.random_event_triggered:
+      self.random_event_timer += 1
+      if self.random_event_timer >= 450:
+        self.random_event_triggered = False
+        self.random_event_timer = 0
+        self.params_memory.remove("CurrentRandomEvent")
 
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
@@ -761,16 +758,11 @@ class Controls:
         turning = abs(lac_log.desiredLateralAccel) > 1.0
         good_speed = CS.vEgo > 5
         max_torque = abs(self.last_actuators.steer) > 0.99
-        if undershooting and turning and good_speed and max_torque:
-          if self.random_event_triggered:
-            if self.reset_event_thread and self.reset_event_thread.is_alive():
-              self.stop_thread = True
-              self.reset_event_thread.join()
+        if undershooting and turning and good_speed and max_torque and not self.random_event_triggered:
+          if self.sm.frame % 10000 == 0:
             lac_log.active and self.events.add(RandomEventName.firefoxSteerSaturated)
             self.params_memory.put_int("CurrentRandomEvent", 1)
-            self.stop_thread = False
-            self.reset_event_thread = threading.Thread(target=self.reset_random_event)
-            self.reset_event_thread.start()
+            self.random_event_triggered = True
           else:
             lac_log.active and self.events.add(FrogPilotEventName.frogSteerSaturated if self.frog_sounds else EventName.steerSaturated)
       elif lac_log.saturated:

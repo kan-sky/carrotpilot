@@ -59,6 +59,8 @@ class CarController:
     
     self.jerkStartLimit = 2.0
     self.softHoldMode = 1
+    self.blinking_signal = False #������ ����̿� 1Hz
+    self.blinking_frame = int(1.0 / DT_CTRL)
     self.jerk_count = 0
     self.activateCruise = 0
     self.button_wait = 12
@@ -98,6 +100,10 @@ class CarController:
     sys_warning, sys_state, left_lane_warning, right_lane_warning = process_hud_alert(CC.enabled, self.car_fingerprint,
                                                                                       hud_control)
 
+    if self.frame % self.blinking_frame == 0:
+      self.blinking_signal = True
+    elif self.frame % self.blinking_frame == self.blinking_frame / 2:
+      self.blinking_signal = False
     can_sends = []
 
     # *** common hyundai stuff ***
@@ -199,7 +205,7 @@ class CarController:
 
       # 20 Hz LFA MFA message
       if self.frame % 5 == 0 and self.CP.flags & HyundaiFlags.SEND_LFA.value:
-        can_sends.append(hyundaican.create_lfahda_mfc(self.packer, CC.enabled))
+        can_sends.append(hyundaican.create_lfahda_mfc(self.packer, CC, self.blinking_signal))
 
       sccBus = 2 if self.CP.flags & HyundaiFlags.SCC_BUS2.value else 0
       # 5 Hz ACC options

@@ -81,6 +81,8 @@ class VCruiseHelper:
     self.curvatureFilter = StreamingMovingAverage(20)
     self.softHold_count = 0
     self.cruiseActiveReady = 0
+    self.autoCruiseCancelState = False
+    self.xIndex = 0
     self.apilotEventWait = 0
     self.apilotEventPrev = 0
 
@@ -118,16 +120,16 @@ class VCruiseHelper:
       self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
       self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
       self.autoCruiseControl = Params().get_int("AutoCruiseControl")
-      self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
+      self.cruiseOnDist = float(Params().get_int("CruiseOnDist")) / 100.
       self.softHoldMode = Params().get_int("SoftHoldMode")
       self.cruiseSpeedMin = Params().get_int("CruiseSpeedMin")
     elif self.params_count == 30:
       self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
       self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
     elif self.params_count >= 100:
-      self.autoCurveSpeedCtrlUse = int(Params().get("AutoCurveSpeedCtrlUse"))
-      self.autoCurveSpeedFactor = float(int(Params().get("AutoCurveSpeedFactor", encoding="utf8")))*0.01
-      self.autoCurveSpeedFactorIn = float(int(Params().get("AutoCurveSpeedFactorIn", encoding="utf8")))*0.01
+      self.autoCurveSpeedCtrlUse = Params().get_int("AutoCurveSpeedCtrlUse")
+      self.autoCurveSpeedFactor = float(Params().get_int("AutoCurveSpeedFactor"))*0.01
+      self.autoCurveSpeedFactorIn = float(Params().get_int("AutoCurveSpeedFactorIn"))*0.01
       self.params_count = 0
     
     
@@ -278,7 +280,7 @@ class VCruiseHelper:
       self.v_cruise_kph_set = V_CRUISE_INITIAL
     v_cruise_kph = self.v_cruise_kph_set    
     v_cruise_kph = self._update_cruise_buttons(CS, v_cruise_kph, controls)
-    #v_cruise_kph = self.update_apilot_cmd(controls, v_cruise_kph)
+    v_cruise_kph = self.update_apilot_cmd(controls, v_cruise_kph)
     v_cruise_kph_apply = self.cruise_control_speed(v_cruise_kph)
     apn_limit_kph = self.update_speed_apilot(CS, controls, self.v_cruise_kph)
     v_cruise_kph_apply = min(v_cruise_kph_apply, apn_limit_kph)
@@ -312,7 +314,7 @@ class VCruiseHelper:
     #controls.debugText2 = 'CURVE={:5.1f},curvature={:5.4f},mode={:3.1f}'.format(self.turnSpeed_prev, curvature, self.drivingModeIndex)
     return turnSpeed
 
-  def update_apilot_cmd(self, controls, v_cruise_kph, longActiveUser):
+  def update_apilot_cmd(self, controls, v_cruise_kph):
     msg = controls.sm['roadLimitSpeed']
     #print(msg.xCmd, msg.xArg, msg.xIndex)
 
@@ -348,7 +350,7 @@ class VCruiseHelper:
       #      v_cruise_kph = 20
       elif msg.xCmd == "LANECHANGE":
         pass
-    return v_cruise_kph, longActiveUser
+    return v_cruise_kph
 
   def _update_cruise_buttons(self, CS, v_cruise_kph, controls):
 
@@ -427,6 +429,8 @@ class VCruiseHelper:
       if self.long_pressed:
         if button_type in [ButtonType.accelCruise, ButtonType.decelCruise]:
           v_cruise_kph = button_kph
+        elif button_type == ButtonType.gapAdjustCruise:
+          print("gapAdjustCruise")
       else:
         if button_type == ButtonType.accelCruise:
           if self.softHoldActive > 0:
@@ -440,11 +444,20 @@ class VCruiseHelper:
             #v_cruise_kph = button_kph
             self.cruiseActiveReady = 1
             self.cruiseActivate = -1
+            controls.events.add(EventName.audioPrompt)
             print("cruiseActivateReady")
+        elif button_type == ButtonType.cancel:
+          print("************* cancel button pressed..")
     elif button_type != 0 and not controls.enabled:
       self.cruiseActivate = 0
 
     if self.brake_pressed_count > 0 or self.gas_pressed_count > 0 or button_type in [ButtonType.cancel, ButtonType.accelCruise, ButtonType.decelCruise]:
+      if button_type == ButtonType.cancel:
+        self.autoCruiseCancelState = not self.autoCruiseCancelState
+        controls.events.add(EventName.audioPrompt)
+        print("autoCruiseCancelSate = {}".format(self.autoCruiseCancelState))
+      elif button_type != 0:
+        self.autoCruiseCancelState = False
     #  self.softHoldActive = 0
       if self.cruiseActivate > 0:
         self.cruiseActivate = 0
@@ -458,17 +471,15 @@ class VCruiseHelper:
         v_cruise_kph = self.v_ego_kph_set
         self.cruiseActivate = 1
     elif self.gas_pressed_count == -1:
-      if controls.enabled:
-        if 0 < self.lead_dRel < CS.vEgo * 0.8 and self.autoCancelFromGasMode > 0:
-          self.cruiseActivate = -1
-          print("Cruise Deactivate from gas.. too close leadCar!")
-        elif self.autoCancelFromGasMode > 0:
-          if self.v_ego_kph_set < self.autoResumeFromGasSpeed:
-            print("Cruise Deactivate from gas pressed");
-            self.cruiseActivate = -1
-          if controls.experimental_mode and self.autoCancelFromGasMode == 2:
-            print("Cruise Deactivate from gas pressed: experimental mode");
-            self.cruiseActivate = -1
+      if 0 < self.lead_dRel < CS.vEgo * 0.8 and self.autoCancelFromGasMode > 0:
+        self.cruiseActivate = -1
+        print("Cruise Deactivate from gas.. too close leadCar!")
+      elif self.autoCancelFromGasMode > 0 and self.v_ego_kph_set < self.autoResumeFromGasSpeed:
+        print("Cruise Deactivate from gas pressed");
+        self.cruiseActivate = -1
+      elif self.xState == 3 and self.autoCancelFromGasMode == 2:
+        print("Cruise Deactivate from gas pressed: traffic stopping");
+        self.cruiseActivate = -1
       elif self.v_ego_kph_set > self.autoResumeFromGasSpeed > 0:
         if self.cruiseActivate <= 0:
           print("Cruise Activate from Speed")
@@ -502,7 +513,7 @@ class VCruiseHelper:
           print("cruiseOnDist Activate")
           self.cruiseActivate = 1
 
-    if self.autoCruiseControl < 1:
+    if self.autoCruiseControl < 1 or self.autoCruiseCancelState:
       if self.cruiseActivate != 0:
         print("Cancel auto Cruise = ", self.cruiseActivate)
       self.cruiseActivate = 0
