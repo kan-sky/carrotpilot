@@ -70,21 +70,21 @@ void ScreenRecorder::openEncoder(const char *filename) {
 }
 
 void ScreenRecorder::closeEncoder() {
-  if (encoder) {
+  if (encoder)
     encoder->encoder_close();
-  }
 }
 
 void ScreenRecorder::toggle() {
-  if (!recording) {
+
+  if(!recording)
     start(true);
-  } else {
+  else
     stop(true);
-  }
 }
 
 void ScreenRecorder::start(bool sound) {
-  if (recording) return;
+  if(recording)
+    return;
 
   char filename[64];
   const time_t t = time(NULL);
@@ -128,13 +128,13 @@ void ScreenRecorder::encoding_thread_func() {
 }
 
 void ScreenRecorder::stop(bool sound) {
-  if (!recording) return;
+  if(recording) {
+    recording = false;
+    update();
 
-  recording = false;
-  update();
   closeEncoder();
   image_queue.clear();
-  if (encoding_thread.joinable()) {
+  if(encoding_thread.joinable())
     encoding_thread.join();
 
   if(sound)
@@ -143,24 +143,22 @@ void ScreenRecorder::stop(bool sound) {
 }
 
 void ScreenRecorder::update_screen() {
-  if (!uiState()->scene.started) {
-    if (recording) {
-      stop(true);
+
+  if(recording) {
+
+    if(milliseconds() - started > 1000*60*3) {
+      stop(false);
+      start(false);
+      return;
     }
-    return;
-  }
-  if (!recording) return;
 
-  if (milliseconds() - started > 1000 * 60 * 3) {
-    stop(false);
-    start(false);
-    return;
+    applyColor();
+
+    if(rootWidget != nullptr) {
+      QPixmap pixmap = rootWidget->grab();
+      image_queue.push(pixmap.toImage());
+    }
   }
 
-  applyColor();
-  if (rootWidget != nullptr) {
-    const QPixmap pixmap = rootWidget->grab();
-    image_queue.push(pixmap.toImage());
-  }
   frame++;
 }

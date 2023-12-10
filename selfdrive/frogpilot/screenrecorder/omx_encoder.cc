@@ -42,11 +42,11 @@ int ABGRToNV12(const uint8_t* src_abgr,
   if (!src_abgr || !dst_y || !dst_uv || width <= 0 || height == 0) {
     return -1;
   }
-if (height < 0) {  // Negative height means invert the image.
-  height = -height;
-  src_abgr = src_abgr + (height - 1) * src_stride_abgr;
-  src_stride_abgr = -src_stride_abgr;
-}
+  if (height < 0) {  // Negative height means invert the image.
+    height = -height;
+    src_abgr = src_abgr + (height - 1) * src_stride_abgr;
+    src_stride_abgr = -src_stride_abgr;
+  }
 #if defined(HAS_ABGRTOYROW_SSSE3) && defined(HAS_ABGRTOUVROW_SSSE3)
   if (TestCpuFlag(kCpuHasSSSE3)) {
     ABGRToUVRow = ABGRToUVRow_Any_SSSE3;
@@ -321,6 +321,8 @@ OmxEncoder::OmxEncoder(const char* path, int width, int height, int fps, int bit
   if (err != OMX_ErrorNone) {
     LOGE("error getting codec: %x", err);
   }
+  assert(err == OMX_ErrorNone);
+  // printf("handle: %p\n", this->handle);
 
   // setup input port
 
