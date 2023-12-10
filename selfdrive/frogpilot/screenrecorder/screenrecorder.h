@@ -2,6 +2,7 @@
 
 #include <QPushButton>
 #include <QSoundEffect>
+#include <QUrl>
 
 #include "omx_encoder.h"
 #include "blocking_queue.h"
@@ -32,6 +33,7 @@ private:
 
   QSoundEffect soundStart;
   QSoundEffect soundStop;
+  QUrl soundPath;
 
   void applyColor();
   void closeEncoder();

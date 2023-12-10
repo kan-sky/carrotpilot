@@ -29,8 +29,8 @@ void ScreenRecorder::initializeEncoder() {
   const std::string path = "/data/media/0/videos";
   encoder = std::make_unique<OmxEncoder>(path.c_str(), recording_width, recording_height, 60, 2 * 1024 * 1024, false, false);
 
-  soundStart.setSource(QUrl::fromLocalFile("../../assets/sounds/start_record.wav"));
-  soundStop.setSource(QUrl::fromLocalFile("../../assets/sounds/stop_record.wav"));
+  soundStart.setSource(soundPath.fromLocalFile("selfdrive/assets/sounds/start_record.wav"));
+  soundStop.setSource(soundPath.fromLocalFile("selfdrive/assets/sounds/stop_record.wav"));
 
   soundStart.setVolume(0.5f);
   soundStop.setVolume(0.5f);
