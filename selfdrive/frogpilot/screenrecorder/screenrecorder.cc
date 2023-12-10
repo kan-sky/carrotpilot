@@ -2,6 +2,7 @@
 
 #include "selfdrive/frogpilot/screenrecorder/screenrecorder.h"
 #include "selfdrive/ui/qt/util.h"
+#include <QUrl>
 
 static long long milliseconds() {
   struct timespec t;
@@ -20,6 +21,12 @@ ScreenRecorder::ScreenRecorder(QWidget *parent) : QPushButton(parent), image_que
 
   rgb_scale_buffer = std::make_unique<uint8_t[]>(recording_width * recording_height * 4);
 
+  soundStart.setSource(QUrl::fromLocalFile("selfdrive/assets/sounds/start_record.wav"));
+  soundStop.setSource(QUrl::fromLocalFile("selfdrive/assets/sounds/stop_record.wav"));
+
+  soundStart.setVolume(0.5f);
+  soundStop.setVolume(0.5f);
+
   connect(this, &QPushButton::released, this, &ScreenRecorder::toggle);
 
   initializeEncoder();
@@ -28,12 +35,6 @@ ScreenRecorder::ScreenRecorder(QWidget *parent) : QPushButton(parent), image_que
 void ScreenRecorder::initializeEncoder() {
   const std::string path = "/data/media/0/videos";
   encoder = std::make_unique<OmxEncoder>(path.c_str(), recording_width, recording_height, 60, 2 * 1024 * 1024, false, false);
-
-  soundStart.setSource(soundPath.fromLocalFile("selfdrive/assets/sounds/start_record.wav"));
-  soundStop.setSource(soundPath.fromLocalFile("selfdrive/assets/sounds/stop_record.wav"));
-
-  soundStart.setVolume(0.5f);
-  soundStop.setVolume(0.5f);
 }
 
 ScreenRecorder::~ScreenRecorder() {
