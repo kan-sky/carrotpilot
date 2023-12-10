@@ -128,7 +128,9 @@ class Soundd:
       actual_sample_rate = wavefile.getframerate()
 
       nchannels = wavefile.getnchannels()
+      print("nchannels=", nchannels, ",sound=", sound_list[sound])
       assert nchannels in [1,2]
+      print("loading...")
 
       length = wavefile.getnframes()
       frames = wavefile.readframes(length)

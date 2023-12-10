@@ -1066,14 +1066,14 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       "신호가바뀌었어요.",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.trafficSignChanged, 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.trafficSignChanged, 1.),
   },
   EventName.autoHold: {
     ET.WARNING: Alert(
       "소프트 오토홀드",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.autoHold, 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.autoHold, 1.),
   },
   EventName.trafficError: {
      ET.WARNING: EngagementAlert(AudibleAlert.trafficError),

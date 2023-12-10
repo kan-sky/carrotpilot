@@ -48,8 +48,18 @@ What is the useful features of CarrotPilot?
   - If the speed exceeds the set speed, it automatically switches to lane mode. This method uses lat_mpc
     
 **Automatic Engage: HKG car only, APILOT feature**
-  - SOFTHOLD: It's a feature that corresponds to the Autohold function.
-  - Auto Engage: If the gas pedal is pressed and the speed exceeds the set speed, Enage automatically activates
+  * Setting - Carrot - Cruise (설정/당근/크루즈)
+    * (HKG) Auto Cruise Control : 1
+  * Setting - APM - Cruise
+    * BrakeCruiseON: Stopping, Traffic(브레이크해제 크루즈ON)
+    * GasCruise ON: Speed (엑셀 크루즈ON:속도)
+      * If the gas pedal is pressed and the speed exceeds the set speed, Enage automatically activates
+    * GasCruise OFF: Mode (엑셀 크루즈OFF:모드)
+      * 1: When the speed is lower than the Gas Cruise ON speed, turning off the cruise control when the gas pedal is pressed. (엑셀크루즈ON속도보다 낮은속도로 주행중에 엑셀을 밟으면 크루즈를 끈다)
+      * 2: Including item 1, and also turning off the cruise control when the gas pedal is pressed during deceleration due to traffic light detection. (1번항목포함하고, 신호감속중 엑셀을 밟으면 크루즈를 끈다)    
+    * CruiseOnDist(0cm) (크루즈ON거리)
+      * If driving without pressing either the brake or gas pedal, and the distance detected by the radar falls within the set value, then the cruise control is activated. But, if the value is negative, only a warning is issued." (브레이크/엑셀을 모두 밟지 않고 주행하다가 레이더거리가 설정값 이내에 들어오면 크루즈를 켠다. 단, 음수의 경우에는 경고만 한다)
+  * SOFTHOLD: It's a feature that corresponds to the Autohold function. (오토홀드의 기능을 대신하는 기능)  
 
 **Voice Recognition: APM, Korean only, APILOT feature, under construction!**
   - The connected APM supports voice recognition. It allows for lane changes and speed control using voice commands.

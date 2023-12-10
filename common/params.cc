@@ -209,7 +209,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Version", PERSISTENT},
     {"VisionRadarToggle", PERSISTENT},
     {"WheeledBody", PERSISTENT},
-    {"StopDistance", PERSISTENT},
     { "ShowDebugUI", PERSISTENT },
     { "ShowDateTime", PERSISTENT },
     { "ShowHudMode", PERSISTENT },

@@ -83,6 +83,7 @@ class VCruiseHelper:
     self.cruiseActiveReady = 0
     self.autoCruiseCancelState = False
     self.xIndex = 0
+    self.frame = 0
     self.apilotEventWait = 0
     self.apilotEventPrev = 0
 
@@ -108,6 +109,7 @@ class VCruiseHelper:
     self.cruiseSpeedMin = Params().get_int("CruiseSpeedMin")
 
   def _params_update(self):
+    self.frame += 1
     self.params_count += 1
     if self.params_count == 10:
       self.autoNaviSpeedBumpSpeed = float(self.params.get_int("AutoNaviSpeedBumpSpeed"))
@@ -241,10 +243,10 @@ class VCruiseHelper:
     self.v_cruise_cluster_kph = self.v_cruise_kph
 
   def _make_event(self, controls, event_name, waiting = 20):
-    elapsed_time = (controls.sm.frame - self.sendEvent_frame)*DT_CTRL
+    elapsed_time = (self.frame - self.sendEvent_frame)*DT_CTRL
     if elapsed_time > self.apilotEventWait:
       controls.events.add(event_name)
-      self.sendEvent_frame = controls.sm.frame
+      self.sendEvent_frame = self.frame
       self.apilotEventPrev = event_name
       self.apilotEventWait = waiting
 

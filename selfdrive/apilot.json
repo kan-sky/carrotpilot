@@ -28,19 +28,6 @@
       "unit": 1
     },
     {
-      "group": "정지",
-      "name": "StopDistance",
-      "title": "정지거리(550cm)",
-      "descr": "선행차와 정지하는 거리를 입력합니다.",
-      "egroup": "STOP",
-      "etitle": "StopDistance(550cm)",
-      "edescr": "Adjust stop distance",
-      "min": 200,
-      "max": 1000,
-      "default": 550,
-      "unit": 50
-    },
-    {
       "group": "조향튜닝",
       "name": "LiveTorqueCache",
       "title": "LiveTorqueCache(0)",
@@ -134,7 +121,7 @@
     {
       "group": "가속설정",
       "name": "MyEcoModeFactor",
-      "title": "연비가속비율(80%)",
+      "title": "연비가속비율(60%)",
       "descr": "일반모드대비 가속비율을 지정합니다.",
       "egroup": "ACCEL",
       "etitle": "EcoAccelRatio(80%)",
