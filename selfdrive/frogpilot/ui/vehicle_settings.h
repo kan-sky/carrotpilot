@@ -17,13 +17,13 @@ private:
   ButtonControl *selectMakeButton;
   ButtonControl *selectModelButton;
 
-  ToggleControl *lockDoorsToggle=0;
-  ToggleControl *sngHackToggle=0;
-  ToggleControl *tss2TuneToggle=0;
+  ToggleControl *lockDoorsToggle;
+  ToggleControl *sngHackToggle;
+  ToggleControl *tss2TuneToggle;
 
-  ToggleControl *evTableToggle=0;
-  ToggleControl *longPitchToggle=0;
-  ToggleControl *lowerVoltToggle=0;
+  ToggleControl *evTableToggle;
+  ToggleControl *longPitchToggle;
+  ToggleControl *lowerVoltToggle;
 
   QString brandSelection;
   QStringList models;
