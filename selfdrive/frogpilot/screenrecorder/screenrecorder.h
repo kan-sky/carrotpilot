@@ -29,17 +29,13 @@ protected:
   void paintEvent(QPaintEvent *event) override;
 
 private:
-
-  QSoundEffect soundStart;
-  QSoundEffect soundStop;
-
   void applyColor();
   void closeEncoder();
   void encoding_thread_func();
   void initializeEncoder();
   void openEncoder(const char *filename);
-  void start(bool sound);
-  void stop(bool sound);
+  void start();
+  void stop();
 
   bool recording;
   int frame;

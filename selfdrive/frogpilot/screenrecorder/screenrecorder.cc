@@ -2,7 +2,6 @@
 
 #include "selfdrive/frogpilot/screenrecorder/screenrecorder.h"
 #include "selfdrive/ui/qt/util.h"
-#include <QUrl>
 
 static long long milliseconds() {
   struct timespec t;
@@ -21,12 +20,6 @@ ScreenRecorder::ScreenRecorder(QWidget *parent) : QPushButton(parent), image_que
 
   rgb_scale_buffer = std::make_unique<uint8_t[]>(recording_width * recording_height * 4);
 
-  soundStart.setSource(QUrl::fromLocalFile("selfdrive/assets/sounds/start_record.wav"));
-  soundStop.setSource(QUrl::fromLocalFile("selfdrive/assets/sounds/stop_record.wav"));
-
-  soundStart.setVolume(0.5f);
-  soundStop.setVolume(0.5f);
-
   connect(this, &QPushButton::released, this, &ScreenRecorder::toggle);
 
   initializeEncoder();
@@ -38,7 +31,7 @@ void ScreenRecorder::initializeEncoder() {
 }
 
 ScreenRecorder::~ScreenRecorder() {
-  stop(false);
+  stop();
 }
 
 void ScreenRecorder::applyColor() {
@@ -78,12 +71,12 @@ void ScreenRecorder::closeEncoder() {
 void ScreenRecorder::toggle() {
 
   if(!recording)
-    start(true);
+    start();
   else
-    stop(true);
+    stop();
 }
 
-void ScreenRecorder::start(bool sound) {
+void ScreenRecorder::start() {
   if(recording)
     return;
 
@@ -106,9 +99,6 @@ void ScreenRecorder::start(bool sound) {
 
   update();
   started = milliseconds();
-
-  if(sound)
-      soundStart.play();
 }
 
 void ScreenRecorder::encoding_thread_func() {
@@ -128,7 +118,7 @@ void ScreenRecorder::encoding_thread_func() {
   }
 }
 
-void ScreenRecorder::stop(bool sound) {
+void ScreenRecorder::stop() {
   if(recording) {
     recording = false;
     update();
@@ -137,9 +127,6 @@ void ScreenRecorder::stop(bool sound) {
   image_queue.clear();
   if(encoding_thread.joinable())
     encoding_thread.join();
-
-  if(sound)
-      soundStop.play();
   }
 }
 
@@ -148,8 +135,8 @@ void ScreenRecorder::update_screen() {
   if(recording) {
 
     if(milliseconds() - started > 1000*60*3) {
-      stop(false);
-      start(false);
+      stop();
+      start();
       return;
     }
 
