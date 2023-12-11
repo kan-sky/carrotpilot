@@ -46,11 +46,9 @@ Desire = log.LateralPlan.Desire
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 EventName = car.CarEvent.EventName
+FrogPilotEventName = custom.FrogPilotEvents
 ButtonType = car.CarState.ButtonEvent.Type
 SafetyModel = car.CarParams.SafetyModel
-
-FrogPilotEventName = custom.FrogPilotEvents
-RandomEventName = custom.RandomEvents
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 CSID_MAP = {"1": EventName.roadCameraError, "2": EventName.wideRoadCameraError, "0": EventName.driverCameraError}
@@ -84,9 +82,6 @@ class Controls:
 
     fire_the_babysitter = self.params.get_bool("FireTheBabysitter")
     mute_dm = fire_the_babysitter and self.params.get_bool("MuteDM")
-
-    self.random_event_triggered = False
-    self.random_event_timer = 0
 
     ignore = self.sensor_packets + ['testJoystick']
     if SIMULATION:
@@ -643,14 +638,6 @@ class Controls:
     long_plan = self.sm['longitudinalPlan']
     frogpilot_long_plan = self.sm['frogpilotLongitudinalPlan']
 
-    # Reset the Random Event flag
-    if self.random_event_triggered:
-      self.random_event_timer += 1
-      if self.random_event_timer >= 450:
-        self.random_event_triggered = False
-        self.random_event_timer = 0
-        self.params_memory.remove("CurrentRandomEvent")
-
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
 
@@ -758,13 +745,8 @@ class Controls:
         turning = abs(lac_log.desiredLateralAccel) > 1.0
         good_speed = CS.vEgo > 5
         max_torque = abs(self.last_actuators.steer) > 0.99
-        if undershooting and turning and good_speed and max_torque and not self.random_event_triggered:
-          if self.sm.frame % 10000 == 0:
-            lac_log.active and self.events.add(RandomEventName.firefoxSteerSaturated)
-            self.params_memory.put_int("CurrentRandomEvent", 1)
-            self.random_event_triggered = True
-          else:
-            lac_log.active and self.events.add(FrogPilotEventName.frogSteerSaturated if self.frog_sounds else EventName.steerSaturated)
+        if undershooting and turning and good_speed and max_torque:
+          lac_log.active and self.events.add(FrogPilotEventName.frogSteerSaturated if self.frog_sounds else EventName.steerSaturated)
       elif lac_log.saturated:
         dpath_points = lat_plan.dPathPoints
         if len(dpath_points):
@@ -1031,7 +1013,6 @@ class Controls:
     self.frog_sounds = self.custom_sounds == 1
 
     self.pause_lateral_on_signal = self.params.get_bool("PauseLateralOnSignal")
-    self.random_events = self.params.get_bool("RandomEvents")
     self.reverse_cruise_increase = self.params.get_bool("ReverseCruise")
 
 def main():
