@@ -30,6 +30,14 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
   versionLbl = new LabelControl(tr("Current Version"), "");
   addItem(versionLbl);
 
+  // update scheduler
+  std::vector<QString> scheduleOptions{tr("Manually"), tr("Daily"), tr("Weekly"), tr("Monthly")};
+  ButtonParamControl *preferredSchedule = new ButtonParamControl("UpdateSchedule", tr("Update Scheduler"),
+                                          tr("Choose the frequency for automatically updating FrogPilot."),
+                                          "",
+                                          scheduleOptions);
+  addItem(preferredSchedule);
+
   // download update btn
   downloadBtn = new ButtonControl(tr("Download"), tr("CHECK"));
   connect(downloadBtn, &ButtonControl::clicked, [=]() {

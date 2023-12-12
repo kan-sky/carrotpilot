@@ -165,7 +165,7 @@ class CarState(CarStateBase):
       ret.cruiseState.enabled = pt_cp.vl["ECMCruiseControl"]["CruiseActive"] != 0
 
     # Driving personalities function - Credit goes to Mangomoose!
-    if self.personalities_via_wheel:
+    if self.personalities_via_wheel and ret.cruiseState.available:
       # Sync with the onroad UI button
       if self.params_memory.get_bool("PersonalityChangedViaUI"):
         self.personality_profile = self.params.get_int("LongitudinalPersonality")

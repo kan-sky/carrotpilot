@@ -898,8 +898,8 @@ void AnnotatedCameraWidget::drawDriverState(QPainter &painter, const UIState *s)
   int offset = UI_BORDER_SIZE + btn_size / 2;
   offset += alwaysOnLateral || conditionalExperimental || roadNameUI ? 25 : 0;
   int x = rightHandDM ? width() - offset : offset;
-  int y = height() - offset;
   x += onroadAdjustableProfiles ? 250 : 0;
+  int y = height() - offset;
   float opacity = dmActive ? 0.65 : 0.2;
   drawIcon(painter, QPoint(x, y), dm_img, blackColor(70), opacity);
 
@@ -1258,12 +1258,6 @@ void AnnotatedCameraWidget::updateFrogPilotWidgets(QPainter &p) {
     }
   }
 
-  map_settings_btn_bottom->setEnabled(map_settings_btn->isEnabled());
-  if (map_settings_btn_bottom->isEnabled()) {
-    map_settings_btn_bottom->setVisible(!hideBottomIcons && !compass);
-    bottom_layout->setAlignment(map_settings_btn_bottom, rightHandDM ? Qt::AlignLeft : Qt::AlignRight);
-  }
-
   const bool enableCompass = compass && !hideBottomIcons;
   compass_img->setVisible(enableCompass);
   if (enableCompass) {
@@ -1281,6 +1275,12 @@ void AnnotatedCameraWidget::updateFrogPilotWidgets(QPainter &p) {
       personality_btn->checkUpdate();
     }
     bottom_layout->setAlignment(personality_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft));
+  }
+
+  map_settings_btn_bottom->setEnabled(map_settings_btn->isEnabled());
+  if (map_settings_btn_bottom->isEnabled()) {
+    map_settings_btn_bottom->setVisible(!hideBottomIcons && !compass);
+    bottom_layout->setAlignment(map_settings_btn_bottom, rightHandDM ? Qt::AlignLeft : Qt::AlignRight);
   }
 
   // Update the turn signal animation images upon toggle change

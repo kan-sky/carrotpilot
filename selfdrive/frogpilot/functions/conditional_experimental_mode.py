@@ -29,6 +29,7 @@ class ConditionalExperimentalMode:
 
     self.curvature_count = 0
     self.previous_ego_speed = 0
+    self.previous_lead_speed = 0
     self.previous_status_bar = 0
     self.status_value = 0
     self.stop_light_count = 0
@@ -125,11 +126,12 @@ class ConditionalExperimentalMode:
     return False
 
   def stop_sign_and_light(self, carState, lead, lead_distance, modelData, v_ego, v_lead):
-    following_lead = lead and lead_distance > v_ego
+    following_lead = lead and lead_distance > v_ego and v_lead >= self.previous_lead_speed
     model_check = len(modelData.orientation.x) == len(modelData.position.x) == TRAJECTORY_SIZE
     model_stopping = model_check and modelData.position.x[-1] < interp(v_ego * 3.6, STOP_SIGN_BP, STOP_SIGN_DISTANCE)
     red_light_detected = self.stop_light_count >= THRESHOLD
     turning = abs(carState.steeringAngleDeg) >= TURN_ANGLE
+    self.previous_lead_speed = v_lead
 
     if not turning or red_light_detected:
       if not following_lead and model_stopping:

@@ -232,7 +232,7 @@ class LongitudinalPlanner:
       self.previously_driving |= enabled
       self.previously_driving &= frogpilotCarControl.drivingGear
 
-      stopped_for_light = ConditionalExperimentalMode.stop_sign_and_light(carState, False, radarState.leadOne.dRel, modelData, v_ego, v_lead) and carState.standstill
+      stopped_for_light = ConditionalExperimentalMode.stop_sign_and_light(carState, False, 0, modelData, v_ego, 0) and carState.standstill
 
       self.green_light = not stopped_for_light and self.stopped_for_light_previously and self.previously_driving and not carState.gasPressed
 

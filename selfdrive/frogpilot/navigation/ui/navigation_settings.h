@@ -85,6 +85,7 @@ private:
   void hideEvent(QHideEvent *event);
   void removeMaps(QWidget *parent);
   void setMaps();
+  void updateDownloadedLabel();
   void updateState();
   void updateStatuses();
   void updateVisibility(bool visibility);
@@ -97,6 +98,7 @@ private:
   ButtonControl *redownloadOfflineMapsButton;
   ButtonControl *removeOfflineMapsButton;
 
+  LabelControl *lastMapsDownload;
   LabelControl *offlineMapsSize;
   LabelControl *offlineMapsStatus;
   LabelControl *offlineMapsETA;
