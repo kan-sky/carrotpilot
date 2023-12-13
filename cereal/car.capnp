@@ -450,23 +450,21 @@ struct CarControl {
       promptRepeat @7;
       promptDistracted @8;
 
-      firefox @9;
+      longEngaged @9;
+      longDisengaged @10;
 
-      longEngaged @10;
-      longDisengaged @11;
-
-      trafficSignGreen @12;
-      trafficSignChanged @13;
-      laneChange @14;
-      stopping @15;
-      autoHold @16;
-      engage2 @17;
-      disengage2 @18;
-      trafficError @19;
-      bsdWarning @20;
-      speedDown @21;
-      stopStop @22;
-      audioTurn @23;
+      trafficSignGreen @11;
+      trafficSignChanged @12;
+      laneChange @13;
+      stopping @14;
+      autoHold @15;
+      engage2 @16;
+      disengage2 @17;
+      trafficError @18;
+      bsdWarning @19;
+      speedDown @20;
+      stopStop @21;
+      audioTurn @22;
       
     }
   }

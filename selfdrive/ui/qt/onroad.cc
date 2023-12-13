@@ -372,7 +372,6 @@ ExperimentalButton::ExperimentalButton(QWidget *parent) : experimental_mode(fals
     {4, loadPixmap("../frogpilot/assets/wheel_images/rocket.png", {img_size, img_size})},
     {5, loadPixmap("../frogpilot/assets/wheel_images/hyundai.png", {img_size, img_size})},
     {6, loadPixmap("../frogpilot/assets/wheel_images/stalin.png", {img_size, img_size})},
-    {7, loadPixmap("../frogpilot/assets/wheel_images/firefox.png", {img_size, img_size})}
   };
   engage_img = wheelImages[0];
 }
@@ -400,20 +399,13 @@ void ExperimentalButton::updateState(const UIState &s, bool leadInfo) {
   }
 
   // FrogPilot variables
-  firefoxRandomEventTriggered = scene.current_random_event == 1;
   rotatingWheel = scene.rotating_wheel;
   wheelIcon = (s.show_mode == 0)?scene.wheel_icon:0;
 
   y_offset = leadInfo ? 10 : 0;
 
-  if (firefoxRandomEventTriggered) {
-    static int rotationDegree = 0;
-    rotationDegree = (rotationDegree + 36) % 360;
-    steeringAngleDeg = rotationDegree;
-    wheelIcon = 7;
-    update();
   // Update the icon so the steering wheel rotates in real time
-  } else if (rotatingWheel && steeringAngleDeg != scene.steering_angle_deg) {
+  if (rotatingWheel && steeringAngleDeg != scene.steering_angle_deg) {
     steeringAngleDeg = scene.steering_angle_deg;
     update();
   }
@@ -436,7 +428,7 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
       QColor(0, 0, 0, 166));
 
   if (!scene.show_driver_camera) {
-    if (rotatingWheel || firefoxRandomEventTriggered) {
+    if (rotatingWheel) {
       drawIconRotate(p, QPoint(btn_size / 2, btn_size / 2 + y_offset), img, background_color, (isDown() || (!engageable && !scene.always_on_lateral_active)) ? 0.6 : 1.0, steeringAngleDeg);
     } else {
       drawIcon(p, QPoint(btn_size / 2, btn_size / 2 + y_offset), img, background_color, (isDown() || (!engageable && !scene.always_on_lateral_active)) ? 0.6 : 1.0);
@@ -1024,7 +1016,6 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   const cereal::ModelDataV2::Reader &model = sm["modelV2"].getModelV2();
   const cereal::RadarState::Reader &radar_state = sm["radarState"].getRadarState();
 
-  updateFrogPilotVariables();
   // draw camera frame
   {
     std::lock_guard lk(frame_lock);
@@ -1116,6 +1107,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
         painter.endNativePainting();
         updateFrogPilotWidgets(painter);
     }
+
   }
 
   double cur_draw_t = millis_since_boot();
@@ -1134,14 +1126,14 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   m.setDrawTimeMillis(cur_draw_t - start_draw_t);
   pm->send("uiDebug", msg);
   ui_update_params(uiState());
-  updateFrogPilotVariables();
+  // Update FrogPilot widgets
+  updateFrogPilotWidgets(painter);
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);
 
   ui_update_params(uiState());
-  updateFrogPilotVariables();
   prev_draw_t = millis_since_boot();
 }
 
@@ -1203,41 +1195,40 @@ void AnnotatedCameraWidget::initializeFrogPilotWidgets() {
   });
   record_timer->start(1000 / UI_FREQ);
 }
-void AnnotatedCameraWidget::updateFrogPilotVariables() {
-    accelerationPath = scene.acceleration_path;
-    adjacentPath = scene.adjacent_path;
-    alwaysOnLateral = scene.always_on_lateral_active;
-    blindSpotLeft = scene.blind_spot_left;
-    blindSpotRight = scene.blind_spot_right;
-    cameraView = scene.camera_view;
-    compass = scene.compass;
-    conditionalExperimental = scene.conditional_experimental;
-    conditionalSpeed = scene.conditional_speed;
-    conditionalSpeedLead = scene.conditional_speed_lead;
-    conditionalStatus = scene.conditional_status;
-    customColors = scene.custom_colors;
-    desiredFollow = scene.desired_follow;
-    experimentalMode = scene.experimental_mode;
-    laneWidthLeft = scene.lane_width_left;
-    laneWidthRight = scene.lane_width_right;
-    leadInfo = scene.lead_info;
-    mapOpen = scene.map_open;
-    muteDM = scene.mute_dm;
-    obstacleDistance = scene.obstacle_distance;
-    obstacleDistanceStock = scene.obstacle_distance_stock;
-    onroadAdjustableProfiles = scene.personalities_via_screen;
-    roadNameUI = scene.road_name_ui;
-    showDriverCamera = scene.show_driver_camera;
-    slcOverridden = scene.speed_limit_overridden;
-    slcSpeedLimit = scene.speed_limit;
-    slcSpeedLimitOffset = scene.speed_limit_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH);
-    stoppedEquivalence = scene.stopped_equivalence;
-    stoppedEquivalenceStock = scene.stopped_equivalence_stock;
-    turnSignalLeft = scene.turn_signal_left;
-    turnSignalRight = scene.turn_signal_right;
-    vtscOffset = 0.1 * scene.vtsc_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * vtscOffset;
-}
+
 void AnnotatedCameraWidget::updateFrogPilotWidgets(QPainter &p) {
+  accelerationPath = scene.acceleration_path;
+  adjacentPath = scene.adjacent_path;
+  alwaysOnLateral = scene.always_on_lateral_active;
+  blindSpotLeft = scene.blind_spot_left;
+  blindSpotRight = scene.blind_spot_right;
+  cameraView = scene.camera_view;
+  compass = scene.compass;
+  conditionalExperimental = scene.conditional_experimental;
+  conditionalSpeed = scene.conditional_speed;
+  conditionalSpeedLead = scene.conditional_speed_lead;
+  conditionalStatus = scene.conditional_status;
+  customColors = scene.custom_colors;
+  desiredFollow = scene.desired_follow;
+  experimentalMode = scene.experimental_mode;
+  laneWidthLeft = scene.lane_width_left;
+  laneWidthRight = scene.lane_width_right;
+  leadInfo = scene.lead_info;
+  mapOpen = scene.map_open;
+  muteDM = scene.mute_dm;
+  obstacleDistance = scene.obstacle_distance;
+  obstacleDistanceStock = scene.obstacle_distance_stock;
+  onroadAdjustableProfiles = scene.personalities_via_screen;
+  roadNameUI = scene.road_name_ui;
+  showDriverCamera = scene.show_driver_camera;
+  slcOverridden = scene.speed_limit_overridden;
+  slcSpeedLimit = scene.speed_limit;
+  slcSpeedLimitOffset = scene.speed_limit_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH);
+  stoppedEquivalence = scene.stopped_equivalence;
+  stoppedEquivalenceStock = scene.stopped_equivalence_stock;
+  turnSignalLeft = scene.turn_signal_left;
+  turnSignalRight = scene.turn_signal_right;
+  vtscOffset = 0.1 * scene.vtsc_offset * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * vtscOffset;
 
   if (!showDriverCamera) {
     if (leadInfo) {
