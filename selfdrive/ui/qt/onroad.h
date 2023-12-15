@@ -81,6 +81,7 @@ private:
   bool engageable;
 
   // FrogPilot variables
+  bool firefoxRandomEventTriggered;
   bool rotatingWheel;
   int steeringAngleDeg;
   int wheelIcon;
@@ -170,6 +171,7 @@ private:
   void drawTurnSignals(QPainter &p);
   void initializeFrogPilotWidgets();
   void updateFrogPilotWidgets(QPainter &p);
+  void updateFrogPilotVariables();
 
   // FrogPilot variables
   bool accelerationPath;

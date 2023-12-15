@@ -46,9 +46,11 @@ Desire = log.LateralPlan.Desire
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 EventName = car.CarEvent.EventName
-FrogPilotEventName = custom.FrogPilotEvents
 ButtonType = car.CarState.ButtonEvent.Type
 SafetyModel = car.CarParams.SafetyModel
+
+FrogPilotEventName = custom.FrogPilotEvents
+RandomEventName = custom.RandomEvents
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 CSID_MAP = {"1": EventName.roadCameraError, "2": EventName.wideRoadCameraError, "0": EventName.driverCameraError}
@@ -82,6 +84,9 @@ class Controls:
 
     fire_the_babysitter = self.params.get_bool("FireTheBabysitter")
     mute_dm = fire_the_babysitter and self.params.get_bool("MuteDM")
+
+    self.random_event_triggered = False
+    self.random_event_timer = 0
 
     ignore = self.sensor_packets + ['testJoystick']
     if SIMULATION:
@@ -638,6 +643,14 @@ class Controls:
     lat_plan = self.sm['lateralPlan']
     long_plan = self.sm['longitudinalPlan']
     frogpilot_long_plan = self.sm['frogpilotLongitudinalPlan']
+
+    # Reset the Random Event flag
+    if self.random_event_triggered:
+      self.random_event_timer += 1
+      if self.random_event_timer >= 400:
+        self.random_event_triggered = False
+        self.random_event_timer = 0
+        self.params_memory.remove("CurrentRandomEvent")
 
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
