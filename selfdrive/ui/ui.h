@@ -214,6 +214,7 @@ typedef struct UIScene {
   int conditional_speed;
   int conditional_speed_lead;
   int conditional_status;
+  int current_random_event;
   int custom_colors;
   int custom_signals;
   int screen_brightness;

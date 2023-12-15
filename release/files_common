@@ -341,6 +341,7 @@ selfdrive/modeld/fill_model_msg.py
 selfdrive/modeld/get_model_metadata.py
 selfdrive/modeld/navmodeld.py
 selfdrive/modeld/dmonitoringmodeld.py
+selfdrive/modeld/carrotmodeld.py
 selfdrive/modeld/constants.py
 selfdrive/modeld/modeld
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QPushButton>
-#include <QSoundEffect>
 
 #include "omx_encoder.h"
 #include "blocking_queue.h"
