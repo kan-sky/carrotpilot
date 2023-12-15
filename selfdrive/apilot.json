@@ -121,7 +121,7 @@
     {
       "group": "가속설정",
       "name": "MyEcoModeFactor",
-      "title": "연비가속비율(60%)",
+      "title": "연비가속비율(80%)",
       "descr": "일반모드대비 가속비율을 지정합니다.",
       "egroup": "ACCEL",
       "etitle": "EcoAccelRatio(80%)",
@@ -246,6 +246,32 @@
       "min": 0,
       "max": 1000,
       "default": 10,
+      "unit": 5
+    },
+    {
+      "group": "주행튜닝",
+      "name": "ALeadTau",
+      "title": "ALeadTaux0.01(150)",
+      "descr": "값이 작아지면 선행차 가속도에 민감해짐",
+      "egroup": "LONG",
+      "etitle": "ALeadTaux0.01(150)",
+      "edescr": "",
+      "min": 0,
+      "max": 500,
+      "default": 150,
+      "unit": 5
+    },
+    {
+      "group": "주행튜닝",
+      "name": "ALeadTauStart",
+      "title": "ALeadTauStartx0.01(50)",
+      "descr": "값이 작아지면 선행차 가속도에 민감해짐",
+      "egroup": "LONG",
+      "etitle": "ALeadTauStartx0.01(150)",
+      "edescr": "",
+      "min": 5,
+      "max": 80,
+      "default": 50,
       "unit": 5
     },
     {

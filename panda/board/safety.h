@@ -522,7 +522,14 @@ int ROUND(float val) {
 bool longitudinal_accel_checks(int desired_accel, const LongitudinalLimits limits) {
   bool accel_valid = get_longitudinal_allowed() && !max_limit_check(desired_accel, limits.max_accel, limits.min_accel);
   bool accel_inactive = desired_accel == limits.inactive_accel;
-  return !(accel_valid || accel_inactive);
+  //return !(accel_valid || accel_inactive);
+  bool ret = !(accel_valid || accel_inactive);
+  if (ret) {
+      print("[longitudinal_accel_checks]");
+      putui((uint32_t)limits.min_accel); print("<"); putui((uint32_t)desired_accel); print("<"); putui((uint32_t)limits.max_accel);
+      print("\n");
+  }
+  return ret;
 }
 
 bool longitudinal_speed_checks(int desired_speed, const LongitudinalLimits limits) {
