@@ -46,9 +46,11 @@ Desire = log.LateralPlan.Desire
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 EventName = car.CarEvent.EventName
-FrogPilotEventName = custom.FrogPilotEvents
 ButtonType = car.CarState.ButtonEvent.Type
 SafetyModel = car.CarParams.SafetyModel
+
+FrogPilotEventName = custom.FrogPilotEvents
+RandomEventName = custom.RandomEvents
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 CSID_MAP = {"1": EventName.roadCameraError, "2": EventName.wideRoadCameraError, "0": EventName.driverCameraError}
@@ -83,6 +85,9 @@ class Controls:
     fire_the_babysitter = self.params.get_bool("FireTheBabysitter")
     mute_dm = fire_the_babysitter and self.params.get_bool("MuteDM")
 
+    self.random_event_triggered = False
+    self.random_event_timer = 0
+
     ignore = self.sensor_packets + ['testJoystick']
     if SIMULATION:
       ignore += ['driverCameraState', 'managerState']
@@ -107,8 +112,7 @@ class Controls:
     else:
       self.CI, self.CP, self.CS = CI, CI.CP, CI.CS
 
-    self.joystick_enabled = self.params.get_bool("JoystickDebugMode")
-    self.joystick_mode = self.joystick_enabled or self.CP.notCar
+    self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 
     # set alternative experiences from parameters
     self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
@@ -218,9 +222,6 @@ class Controls:
         set_offroad_alert("Offroad_NoFirmware", True)
     elif self.CP.passive:
       self.events.add(EventName.dashcamMode, static=True)
-    elif self.joystick_mode:
-      self.events.add(EventName.joystickDebug, static=True)
-      self.startup_event = None
 
     # controlsd is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
@@ -242,6 +243,11 @@ class Controls:
     """Compute onroadEvents from carState"""
 
     self.events.clear()
+
+    # Add joystick event, static on cars, dynamic on nonCars
+    if self.joystick_mode:
+      self.events.add(EventName.joystickDebug)
+      self.startup_event = None
 
     # Add startup event
     if self.startup_event is not None:
@@ -411,7 +417,7 @@ class Controls:
     else:
       self.logged_comm_issue = None
 
-    if not (self.CP.notCar and self.joystick_enabled):
+    if not (self.CP.notCar and self.joystick_mode):
       if not self.sm['lateralPlan'].mpcSolutionValid:
         self.events.add(EventName.plannerError)
       if not self.sm['liveLocationKalman'].posenetOK:
@@ -637,6 +643,14 @@ class Controls:
     lat_plan = self.sm['lateralPlan']
     long_plan = self.sm['longitudinalPlan']
     frogpilot_long_plan = self.sm['frogpilotLongitudinalPlan']
+
+    # Reset the Random Event flag
+    if self.random_event_triggered:
+      self.random_event_timer += 1
+      if self.random_event_timer >= 400:
+        self.random_event_triggered = False
+        self.random_event_timer = 0
+        self.params_memory.remove("CurrentRandomEvent")
 
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
@@ -965,6 +979,8 @@ class Controls:
         self.experimental_mode = self.sm['frogpilotLongitudinalPlan'].conditionalExperimental
       else:
         self.experimental_mode = self.params.get_bool("ExperimentalMode") or self.params_memory.get_bool("SLCExperimentalMode")
+    if self.CP.notCar:
+      self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 
     # Sample data from sockets and get a carState
     CS = self.data_sample()
