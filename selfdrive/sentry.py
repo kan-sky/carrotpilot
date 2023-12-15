@@ -48,7 +48,7 @@ def save_exception(exc_text):
     os.makedirs(CRASHES_DIR)
 
   files = [
-    os.path.join(CRASHES_DIR, datetime.now().strftime('%d-%m-%Y--%H-%M-%S.log')),
+    os.path.join(CRASHES_DIR, datetime.now().strftime('%Y-%m-%d--%H-%M-%S.log')),
     os.path.join(CRASHES_DIR, 'error.txt')
   ]
 

@@ -135,15 +135,15 @@ def get_nav_active():
 
 def get_public_token():
   token = params.get("MapboxPublicKey", encoding='utf8')
-  return token
+  return token.strip() if token is not None else None
 
 def get_app_token():
   token = params.get("MapboxSecretKey", encoding='utf8')
-  return token
+  return token.strip() if token is not None else None
 
 def get_gmap_key():
   token = params.get("GMapKey", encoding='utf8')
-  return token
+  return token.strip() if token is not None else None
 
 def get_SearchInput():
   SearchInput = params.get_int("SearchInput")

@@ -139,8 +139,8 @@ void FrogPilotNavigationPanel::checkIfUpdateMissed() {
     return;
   }
 
-  std::time_t t = std::time(nullptr);
-  std::tm *now = std::localtime(&t);
+  std::time_t currentTime = std::time(nullptr);
+  std::tm *now = std::localtime(&currentTime);
 
   std::tm lastUpdate = {};
   sscanf(lastMapsUpdate.c_str(), "%d-%d-%d", &lastUpdate.tm_year, &lastUpdate.tm_mon, &lastUpdate.tm_mday);
@@ -148,18 +148,12 @@ void FrogPilotNavigationPanel::checkIfUpdateMissed() {
   lastUpdate.tm_mon -= 1;
 
   std::time_t lastUpdateTime = std::mktime(&lastUpdate);
+  std::tm *lastUpdateDay = std::localtime(&lastUpdateTime);
 
   if (schedule == 1) {
-    bool isTodaySunday = (now->tm_wday == 0);
-    std::tm *lastUpdateDay = std::localtime(&lastUpdateTime);
-    bool wasLastUpdateSunday = (lastUpdateDay->tm_wday == 0);
-
-    schedulePending = (isTodaySunday && !wasLastUpdateSunday) || (now->tm_wday > lastUpdateDay->tm_wday);
+    schedulePending = (now->tm_wday == 0 && lastUpdateDay->tm_wday != 0) || (now->tm_wday > lastUpdateDay->tm_wday);
   } else if (schedule == 2) {
-    bool isTodayFirstOfMonth = (now->tm_mday == 1);
-    bool wasLastUpdateFirstOfMonth = (lastUpdate.tm_mday == 1);
-
-    schedulePending = (isTodayFirstOfMonth && !wasLastUpdateFirstOfMonth) || (now->tm_mon != lastUpdate.tm_mon);
+    schedulePending = (now->tm_mday == 1 && lastUpdate.tm_mday != 1) || (now->tm_mon != lastUpdate.tm_mon);
   }
 }
 

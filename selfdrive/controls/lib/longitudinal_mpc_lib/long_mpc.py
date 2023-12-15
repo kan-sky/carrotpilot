@@ -289,7 +289,7 @@ class LongitudinalMpc:
     self.xStopFilter = StreamingMovingAverage(3)
     self.xStopFilter2 = StreamingMovingAverage(15)
     self.vFilter = StreamingMovingAverage(10)
-    self.t_follow = get_T_FOLLOW()
+    self.t_follow_prev = get_T_FOLLOW()
     self.stop_distance = STOP_DISTANCE
     self.fakeCruiseDistance = 0.0
     self.comfort_brake = COMFORT_BRAKE
@@ -422,6 +422,8 @@ class LongitudinalMpc:
     #self.debugLongText = "v_cruise ={:.1f}".format(v_cruise)
     self.update_params()
     t_follow = get_T_FOLLOW(custom_personalities, aggressive_follow, standard_follow, relaxed_follow, personality)
+    t_follow = max(0.6, t_follow * (2.0 - self.mySafeFactor)) 
+
     v_ego = self.x0[1]
     a_ego = self.x0[2]
     self.trafficState = TrafficState.off
@@ -435,6 +437,14 @@ class LongitudinalMpc:
     self.stop_distance = STOP_DISTANCE
     applyStopDistance = self.stop_distance  * (2.0 - self.mySafeFactor)
     
+    if v_ego >= self.v_ego_prev:
+      #t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 40, 100], [t_follow, t_follow + self.tFollowSpeedAddM, t_follow + self.tFollowSpeedAdd]) 
+      t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 100], [t_follow, t_follow + self.tFollowSpeedAdd])
+      self.t_follow_prev = t_follow
+    else:
+      t_follow = self.t_follow_prev
+
+    self.v_ego_prev = v_ego
 
     # Offset by FrogAi for FrogPilot for a more natural takeoff with a lead
     if aggressive_acceleration:
@@ -447,13 +457,6 @@ class LongitudinalMpc:
       distance_factor = np.maximum(1, lead_xv_0[:,0] - (lead_xv_0[:,1] * t_follow))
       t_follow_offset = np.clip((v_ego - lead_xv_0[:,1]) - COMFORT_BRAKE, 1, distance_factor)
       t_follow = t_follow / t_follow_offset
-
-    if v_ego >= self.v_ego_prev:
-      #t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 40, 100], [t_follow, t_follow + self.tFollowSpeedAddM, t_follow + self.tFollowSpeedAdd]) 
-      t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 100], [t_follow, t_follow + self.tFollowSpeedAdd]) 
-      
-    self.t_follow = max(0.6, self.t_follow * (2.0 - self.mySafeFactor)) 
-    self.v_ego_prev = v_ego
 
     # LongitudinalPlan variables for onroad driving insights
     self.safe_obstacle_distance = float(np.mean(get_safe_obstacle_distance(v_ego, t_follow))) if have_lead else 0
@@ -473,6 +476,7 @@ class LongitudinalMpc:
 
     if not self.conditional_experimental_mode:
       v_cruise, stop_x, self.mode = self.update_apilot(carstate, radarstate, model, v_cruise)
+      self.debugLongText = "XState({}),tf={:.2f},tf_d={:.1f},stop_x={:.1f},stopDist={:.1f},Traffic={}".format(str(self.xState), t_follow, t_follow*v_ego+6.0, stop_x, self.stopDist, str(self.trafficState))
     else:
       stop_x = 1000.0
       self.xState = XState.e2eCruise
@@ -689,6 +693,7 @@ class LongitudinalMpc:
     else: #XState.lead, XState.cruise, XState.e2eCruise
       if self.status:
         self.xState = XState.lead
+      #elif self.trafficState == TrafficState.red and not carstate.gasPressed and self.myDrivingMode != 4 and self.trafficStopMode > 0:
       elif self.trafficState == TrafficState.red and self.myDrivingMode != 4 and self.trafficStopMode > 0:
         self.xState = XState.e2eStop
         self.stopDist = self.xStop
@@ -710,7 +715,7 @@ class LongitudinalMpc:
       stop_dist = v_ego ** 2 / (2.5 * 2)
       self.stopDist = self.stopDist if self.stopDist > stop_dist else stop_dist
       stop_x = 0.0
-    self.debugLongText = "XState({}),stop_x={:.1f},stopDist={:.1f},Traffic={}".format(str(self.xState), stop_x, self.stopDist, str(self.trafficState))
+    #self.debugLongText = "XState({}),stop_x={:.1f},stopDist={:.1f},Traffic={}".format(str(self.xState), stop_x, self.stopDist, str(self.trafficState))
     #번호를 읽을때는 self.xState.value
     return v_cruise, stop_x + self.stopDist, mode
 

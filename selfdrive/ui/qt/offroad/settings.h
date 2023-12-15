@@ -93,6 +93,15 @@ private:
 
   Params params;
   ParamWatcher *fs_watch;
+
+  // FrogPilot variables
+  void automaticUpdate();
+
+  int deviceShutdown;
+  int schedule;
+  int time;
+
+  //ParamValueControl *updateTime;
 };
 class CarrotPanel : public QWidget {
     Q_OBJECT
