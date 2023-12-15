@@ -61,18 +61,18 @@ class Track:
     self.K_C = kalman_params.C
     self.K_K = kalman_params.K
     self.kf = KF1D([[v_lead], [0.0]], self.K_A, self.K_C, self.K_K)
-    self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K)
+    #self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K)
     self.dRel = 0
     self.vLat = 0.0
     self.vision_prob = 0.0
 
-  def update(self, d_rel: float, y_rel: float, v_rel: float, v_lead: float, measured: float, a_rel: float, aLeadTau: float, aLeadTauStart: float, a_ego: float):
+  def update(self, d_rel: float, y_rel: float, v_rel: float, v_lead: float, measured: float, a_rel: float, aLeadTau: float, a_ego: float):
 
     #apilot: changed radar target
     if abs(self.dRel - d_rel) > 3.0: # 3M이상 차이날때 초기화
       self.cnt = 0
       self.kf = KF1D([[v_lead], [0.0]], self.K_A, self.K_C, self.K_K)
-      self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K) 
+      #self.kf_y = KF1D([[y_rel], [0.0]], self.K_A, self.K_C, self.K_K) 
     # relative values, copy
     self.dRel = d_rel   # LONG_DIST
     self.yRel = y_rel   # -LAT_DIST
@@ -84,9 +84,9 @@ class Track:
     # computed velocity and accelerations
     if self.cnt > 0:
       self.kf.update(self.vLead)
-      self.kf_y.update(self.yRel)
+      #self.kf_y.update(self.yRel)
 
-    self.vLat = float(self.kf_y.x[1][0])
+    #self.vLat = float(self.kf_y.x[1][0])
 
     self.vLeadK = float(self.kf.x[SPEED][0])
     self.aLeadK = float(self.kf.x[ACCEL][0])
@@ -102,7 +102,7 @@ class Track:
     #  self.aLeadTau = aLeadTau
     #else:
     #  self.aLeadTau = min(self.aLeadTau * 0.9, aLeadTau_apply)
-    if abs(self.aLeadK) < aLeadTauStart:
+    if abs(self.aLeadK) < 0.5:
       self.aLeadTau = aLeadTau
     else:
       self.aLeadTau *= 0.9
@@ -220,13 +220,8 @@ def match_vision_to_track(v_ego: float, lead: capnp._DynamicStructReader, tracks
   else:
     return None
 
-global_vision_aLeadTau = 1.5
 
 def get_RadarState_from_vision(lead_msg: capnp._DynamicStructReader, v_ego: float, model_v_ego: float):
-  global global_vision_aLeadTau
-  if global_vision_aLeadTau > 0.3 :
-    global_vision_aLeadTau *= 0.9
-
   lead_v_rel_pred = lead_msg.v[0] - model_v_ego
   return {
     "dRel": float(lead_msg.x[0] - RADAR_TO_CAMERA),
@@ -235,7 +230,7 @@ def get_RadarState_from_vision(lead_msg: capnp._DynamicStructReader, v_ego: floa
     "vLead": float(v_ego + lead_v_rel_pred),
     "vLeadK": float(v_ego + lead_v_rel_pred),
     "aLeadK": float(lead_msg.a[0]), #0.0,
-    "aLeadTau": global_vision_aLeadTau, #0.3,
+    "aLeadTau": 0.3,
     "fcw": False,
     "modelProb": float(lead_msg.prob),
     "status": True,
@@ -246,7 +241,6 @@ def get_RadarState_from_vision(lead_msg: capnp._DynamicStructReader, v_ego: floa
 
 def get_lead(v_ego: float, ready: bool, tracks: Dict[int, Track], lead_msg: capnp._DynamicStructReader,
              model_v_ego: float, low_speed_override: bool = True, mixRadarInfo=0) -> Dict[str, Any]:
-  global global_vision_aLeadTau
   ## SCC레이더는 일단 보관하고 리스트에서 삭제...
   track_scc = tracks.get(0)
   #if track_scc is not None:  
@@ -273,7 +267,6 @@ def get_lead(v_ego: float, ready: bool, tracks: Dict[int, Track], lead_msg: capn
   lead_dict = {'status': False}
   if track is not None:
     lead_dict = track.get_RadarState2(lead_msg.prob, lead_msg, mixRadarInfo)
-    global_vision_aLeadTau = _LEAD_ACCEL_TAU # 레이더 -> 비젼 전환시, 순간적인 비젼 accel값의 변화로 인한 주행충격을 방지하기 위함. (시험)
   elif (track is None) and ready and (lead_msg.prob > .5):
     lead_dict = get_RadarState_from_vision(lead_msg, v_ego, model_v_ego)
 
@@ -435,14 +428,12 @@ class RadarD:
     self.showRadarInfo = True
     self.mixRadarInfo = 0
     self.aLeadTau = 1.5
-    self.aLeadTauStart = 0.5
     self.a_ego = 0.0
 
   def update(self, sm: messaging.SubMaster, rr: Optional[car.RadarData]):
     #self.showRadarInfo = int(Params().get("ShowRadarInfo"))
     #self.mixRadarInfo = int(Params().get("MixRadarInfo"))
-    self.aLeadTau = float(Params().get_int("ALeadTau")) / 100. 
-    self.aLeadTauStart = float(Params().get_int("ALeadTauStart")) / 100. 
+    #self.aLeadTau = float(Params().get_int("ALeadTau")) / 100. 
 
     self.current_time = 1e-9*max(sm.logMonoTime.values())
 
@@ -478,7 +469,7 @@ class RadarD:
       # create the track if it doesn't exist or it's a new track
       if ids not in self.tracks:
         self.tracks[ids] = Track(ids, v_lead, rpt[1], self.kalman_params)
-      self.tracks[ids].update(rpt[0], rpt[1], rpt[2], v_lead, rpt[3], rpt[4], self.aLeadTau, self.aLeadTauStart, self.a_ego)
+      self.tracks[ids].update(rpt[0], rpt[1], rpt[2], v_lead, rpt[3], rpt[4], self.aLeadTau, self.a_ego)
 
     # *** publish radarState ***
     self.radar_state_valid = sm.all_checks() and len(radar_errors) == 0

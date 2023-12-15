@@ -22,7 +22,7 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(QWidget *parent) : FrogPilotPanel
     {"FireTheBabysitter", "Fire the Babysitter", "Disable some of openpilot's 'Babysitter Protocols'.", "../frogpilot/assets/toggle_icons/icon_babysitter.png"},
     {"LateralTune", "Lateral Tuning", "Change the way openpilot steers.", "../frogpilot/assets/toggle_icons/icon_lateral_tune.png"},
     {"LongitudinalTune", "Longitudinal Tuning", "Change the way openpilot accelerates and brakes.", "../frogpilot/assets/toggle_icons/icon_longitudinal_tune.png"},
-    {"Model", "Model Selector (Requires Reboot)", "Select your preferred openpilot model.\n\nBD = Blue Diamond (Default)\nFV = Farmville\nNLP = New Lemon Pie", "../assets/offroad/icon_calibration.png"},
+    {"Model", "Model Selector (Requires Reboot)", "Select your preferred openpilot model.\n\nFV = Farmville(Default)\nNLP = New Lemon Pie\nBD = Blue Diamond", "../assets/offroad/icon_calibration.png"},
     {"MTSCEnabled", "Map Turn Speed Control", "When enabled, the car will slow down when it predicts a lateral acceleration greater than 2.0 m/s^2.", "../frogpilot/assets/toggle_icons/icon_speed_map.png"},
     {"NudgelessLaneChange", "Nudgeless Lane Change", "Switch lanes without having to nudge the steering wheel.", "../frogpilot/assets/toggle_icons/icon_lane.png"},
     {"PauseLateralOnSignal", "Pause Lateral On Turn Signal", "Pauses lateral control when a turn signal is active.", "../frogpilot/assets/toggle_icons/icon_pause_lane.png"},
@@ -138,7 +138,6 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(QWidget *parent) : FrogPilotPanel(p
     {"CustomUI", "Custom UI", "Customize the UI to your liking.", "../assets/offroad/icon_road.png"},
     {"DriverCamera", "Driver Camera On Reverse", "Displays the driver camera when in reverse.", "../assets/img_driver_face_static.png"},
     {"GreenLightAlert", "Green Light Alert", "Displays an alert when a light turns from red to green.", "../frogpilot/assets/toggle_icons/icon_green_light.png"},
-    {"RandomEvents", "Random Events", "A fun random mode that has a small chance of random events happening when certain conditions are met. i.e. Steering saturated event, braking too hard, fast acceleration, etc.", "../frogpilot/assets/toggle_icons/icon_random.png"},
     {"RotatingWheel", "Rotating Steering Wheel", "The steering wheel in top right corner of the onroad UI rotates alongside your physical steering wheel.", "../frogpilot/assets/toggle_icons/icon_rotate.png"},
     {"ScreenBrightness", "Screen Brightness", "Choose a custom screen brightness level or use the default 'Auto' brightness setting.", "../frogpilot/assets/toggle_icons/icon_light.png"},
     {"SilentMode", "Silent Mode", "Disables all openpilot sounds for a completely silent experience.", "../frogpilot/assets/toggle_icons/icon_mute.png"},
@@ -262,7 +261,7 @@ QFrame *FrogPilotPanel::whiteHorizontalLine(QWidget *parent) const {
   return line;
 }
 
-QWidget *FrogPilotPanel::createDualParamControl(ParamValueControlOld *control1, ParamValueControlOld *control2) {
+QWidget *FrogPilotPanel::createDualParamControl(ParamValueControl *control1, ParamValueControl *control2) {
   QWidget *mainControl = new QWidget(this);
   QHBoxLayout *layout = new QHBoxLayout();
 
@@ -422,7 +421,6 @@ void FrogPilotPanel::setParams() {
     {"PathEdgeWidth", "20"},
     {"PathWidth", "61"},
     {"PauseLateralOnSignal", "0"},
-    {"RandomEvents", FrogsGoMoo ? "1" : "0"},
     {"RelaxedFollow", "30"},
     {"RelaxedJerk", "50"},
     {"RoadEdgesWidth", "2"},

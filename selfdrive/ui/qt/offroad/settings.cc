@@ -251,20 +251,8 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(translateBtn);
 
-  // Delete driving footage button
-  const auto deleteFootageBtn = new ButtonControl(tr("Delete Driving Data"), tr("DELETE"), tr("This button provides a swift and secure way to permanently delete all "
-    "stored driving footage and data from your device. Ideal for maintaining privacy or freeing up space.")
-  );
-  connect(deleteFootageBtn, &ButtonControl::clicked, [this]() {
-    if (!ConfirmationDialog::confirm(tr("Are you sure you want to permanently delete all of your driving footage and data?"), tr("Delete"), this)) return;
-    std::thread([&] {
-      std::system("rm -rf /data/media/0/realdata");
-    }).detach();
-  });
-  addItem(deleteFootageBtn);
-
   // Panda flashing button
-  const auto flashPandaBtn = new ButtonControl(tr("Flash Panda"), tr("FLASH"), "Use this button to troubleshoot and update the Panda device's firmware.");
+  const auto flashPandaBtn = new ButtonControl(tr("Flash Panda"), tr("FLASH"), "");
   connect(flashPandaBtn, &ButtonControl::clicked, [this]() {
     if (!ConfirmationDialog::confirm(tr("Are you sure you want to flash the Panda?"), tr("Flash"), this)) return;
     QProcess process;
