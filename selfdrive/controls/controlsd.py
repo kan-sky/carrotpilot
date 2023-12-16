@@ -135,7 +135,10 @@ class Controls:
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
     passive = self.params.get_bool("Passive") or not openpilot_enabled_toggle
-
+    # screen recording
+    self.start_record = self.params.get_bool("StartRecord")
+    self.stop_record = self.params.get_bool("StopRecord")
+ 
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
 
@@ -228,6 +231,10 @@ class Controls:
     self.prof = Profiler(False)  # off by default
 
     self.update_frogpilot_params()
+
+  def reset(self):
+    self.start_record = put_bool_nonblocking("StartRecord", False)
+    self.stop_record = put_bool_nonblocking("StopRecord", False)
 
   def set_initial_state(self):
     if REPLAY:
@@ -470,6 +477,13 @@ class Controls:
     if self.sm['frogpilotLongitudinalPlan'].greenLight:
       self.events.add(FrogPilotEventName.greenLight)
 
+    if self.start_record == 1:
+      self.events.add(EventName.startingRecord)
+    elif self.stop_record == 1:
+      self.events.add(EventName.stoppingRecord)
+    else:
+      self.reset()
+ 
   def data_sample(self):
     """Receive data from sockets and update carState"""
 
@@ -974,6 +988,7 @@ class Controls:
     self.prof.checkpoint("Ratekeeper", ignore=True)
 
     self.is_metric = self.params.get_bool("IsMetric")
+
     if self.CP.openpilotLongitudinalControl:
       if self.conditional_experimental_mode:
         self.experimental_mode = self.sm['frogpilotLongitudinalPlan'].conditionalExperimental
@@ -989,6 +1004,9 @@ class Controls:
 
     self.update_events(CS)
     cloudlog.timestamp("Events updated")
+
+    # screen recording
+    self.screen_record(CS)
 
     if not self.CP.passive and self.initialized:
       # Update control state

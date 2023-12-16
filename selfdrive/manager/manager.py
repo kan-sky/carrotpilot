@@ -125,6 +125,8 @@ def manager_init() -> None:
     ("LateralTorqueFriction", "5"),       
     ("CruiseOnDist", "0"),
     ("SteerRatioApply", "145"),
+    ("StartRecord", "0"),
+    ("StopRecord", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

@@ -133,6 +133,8 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     audioTurn @131;
     trafficSignGreen @132;
     trafficSignChanged @133;
+    startingRecord @134;
+    stoppingRecord @135;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
@@ -467,7 +469,8 @@ struct CarControl {
       speedDown @21;
       stopStop @22;
       audioTurn @23;
-      
+      startRecord @24;
+      stopRecord @25;      
     }
   }
 
