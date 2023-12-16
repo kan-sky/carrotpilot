@@ -2,6 +2,7 @@
 
 #include "selfdrive/frogpilot/screenrecorder/screenrecorder.h"
 #include "selfdrive/ui/qt/util.h"
+#include "common/params.h"
 
 static long long milliseconds() {
   struct timespec t;
@@ -31,7 +32,7 @@ void ScreenRecorder::initializeEncoder() {
 }
 
 ScreenRecorder::~ScreenRecorder() {
-  stop();
+  stop(false);
 }
 
 void ScreenRecorder::applyColor() {
@@ -71,13 +72,13 @@ void ScreenRecorder::closeEncoder() {
 
 void ScreenRecorder::toggle() {
   if (!recording) {
-    start();
+    start(true);
   } else {
-    stop();
+    stop(true);
   }
 }
 
-void ScreenRecorder::start() {
+void ScreenRecorder::start(bool sound) {
   if (recording) return;
 
   char filename[64];
@@ -99,6 +100,10 @@ void ScreenRecorder::start() {
 
   update();
   started = milliseconds();
+
+  if(sound)
+      Params().putBool("StopRecord", false);
+      Params().putBool("StartRecord", true);
 }
 
 void ScreenRecorder::encoding_thread_func() {
@@ -118,7 +123,7 @@ void ScreenRecorder::encoding_thread_func() {
   }
 }
 
-void ScreenRecorder::stop() {
+void ScreenRecorder::stop(bool sound) {
   if (!recording) return;
 
   recording = false;
@@ -127,21 +132,25 @@ void ScreenRecorder::stop() {
   image_queue.clear();
   if (encoding_thread.joinable()) {
     encoding_thread.join();
+
+  if(sound)
+      Params().putBool("StartRecord", false);
+      Params().putBool("StopRecord", true);
   }
 }
 
 void ScreenRecorder::update_screen() {
   if (!uiState()->scene.started) {
     if (recording) {
-      stop();
+      stop(true);
     }
     return;
   }
   if (!recording) return;
 
   if (milliseconds() - started > 1000 * 60 * 3) {
-    stop();
-    start();
+    stop(false);
+    start(false);
     return;
   }
 

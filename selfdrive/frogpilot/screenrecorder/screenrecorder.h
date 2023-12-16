@@ -33,8 +33,8 @@ private:
   void encoding_thread_func();
   void initializeEncoder();
   void openEncoder(const char *filename);
-  void start();
-  void stop();
+  void start(bool sound);
+  void stop(bool sound);
 
   bool recording;
   int frame;
