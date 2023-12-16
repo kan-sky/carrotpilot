@@ -135,10 +135,14 @@ class Controls:
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
     passive = self.params.get_bool("Passive") or not openpilot_enabled_toggle
+
     # screen recording
-    self.start_record = self.params.get_bool("StartRecord")
-    self.stop_record = self.params.get_bool("StopRecord")
- 
+    self.readParamCount = 0
+    self.start_record = False #self.params.get_bool("StartRecord")
+    self.stop_record = False #self.params.get_bool("StopRecord")
+    self.screen_record_start_sound_alert = False
+    self.screen_record_stop_sound_alert = False
+
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
 
@@ -208,6 +212,7 @@ class Controls:
     self.desired_curvature_rate = 0.0
     self.experimental_mode = False
     self.v_cruise_helper = VCruiseHelper(self.CP, self.is_metric)
+
     self.recalibrating_seen = False
     self.nn_alert_shown = False
 
@@ -235,6 +240,28 @@ class Controls:
   def reset(self):
     self.start_record = put_bool_nonblocking("StartRecord", False)
     self.stop_record = put_bool_nonblocking("StopRecord", False)
+    self.screen_record_start_sound_alert = False
+    self.screen_record_stop_sound_alert = False
+
+  def update_params(self):
+    events = Events()
+    self.readParamCount += 1
+    if self.readParamCount > 50:
+      self.readParamCount = 0
+    elif self.readParamCount == 10:
+      self.start_record = Params().get_bool("StartRecord")
+      if self.start_record:
+        print("start_record2=", self.start_record)
+        events.add(car.CarEvent.EventName.startingRecord)
+        self.screen_record_start_sound_alert = True
+    elif self.readParamCount == 20:
+      self.stop_record = Params().get_bool("StopRecord")
+      if self.stop_record:
+        print("stop_record2=", self.stop_record)
+        events.add(car.CarEvent.EventName.stoppingRecord)
+        self.screen_record_stop_sound_alert = True
+    elif self.readParamCount == 30:
+      self.reset()
 
   def set_initial_state(self):
     if REPLAY:
@@ -248,6 +275,8 @@ class Controls:
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
+    # screen recording
+    self.update_params()
 
     self.events.clear()
 
@@ -284,10 +313,10 @@ class Controls:
     if (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator) or \
       (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or \
       (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
-      self.events.add(EventName.pedalPressed)
-
-    if CS.brakePressed and CS.standstill:
-      self.events.add(EventName.preEnableStandstill)
+      #self.events.add(EventName.pedalPressed)
+      pass
+    #if CS.brakePressed and CS.standstill:
+    #  self.events.add(EventName.preEnableStandstill)
 
     if CS.gasPressed:
       self.events.add(EventName.gasPressedOverride)
@@ -377,20 +406,20 @@ class Controls:
     # All events here should at least have NO_ENTRY and SOFT_DISABLE.
     num_events = len(self.events)
 
-    not_running = {p.name for p in self.sm['managerState'].processes if not p.running and p.shouldBeRunning}
-    if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
-      self.events.add(EventName.processNotRunning)
-      if not_running != self.not_running_prev:
-        cloudlog.event("process_not_running", not_running=not_running, error=True)
-      self.not_running_prev = not_running
-    else:
-      if not SIMULATION and not self.rk.lagging:
-        if not self.sm.all_alive(self.camera_packets):
-          self.events.add(EventName.cameraMalfunction)
-        elif not self.sm.all_freq_ok(self.camera_packets):
-          self.events.add(EventName.cameraFrameRate)
-    if not REPLAY and self.rk.lagging:
-      self.events.add(EventName.controlsdLagging)
+    #not_running = {p.name for p in self.sm['managerState'].processes if not p.running and p.shouldBeRunning}
+    #if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
+    #  self.events.add(EventName.processNotRunning)
+    #  if not_running != self.not_running_prev:
+    #    cloudlog.event("process_not_running", not_running=not_running, error=True)
+    #  self.not_running_prev = not_running
+    #else:
+    #  if not SIMULATION and not self.rk.lagging:
+    #    if not self.sm.all_alive(self.camera_packets):
+    #      self.events.add(EventName.cameraMalfunction)
+    #    elif not self.sm.all_freq_ok(self.camera_packets):
+    #      self.events.add(EventName.cameraFrameRate)
+    #if not REPLAY and self.rk.lagging:
+    #  self.events.add(EventName.controlsdLagging)
     if len(self.sm['radarState'].radarErrors) or (not self.rk.lagging and not self.sm.all_checks(['radarState'])):
       self.events.add(EventName.radarFault)
     if not self.sm.valid['pandaStates']:
@@ -477,13 +506,14 @@ class Controls:
     if self.sm['frogpilotLongitudinalPlan'].greenLight:
       self.events.add(FrogPilotEventName.greenLight)
 
-    if self.start_record == 1:
+    # events for screen recording
+    if self.screen_record_start_sound_alert:
+      print("start_sound_bool=", self.screen_record_start_sound_alert)
       self.events.add(EventName.startingRecord)
-    elif self.stop_record == 1:
+    if self.screen_record_stop_sound_alert:
+      print("stop_sound_bool=", self.screen_record_stop_sound_alert)
       self.events.add(EventName.stoppingRecord)
-    else:
-      self.reset()
- 
+
   def data_sample(self):
     """Receive data from sockets and update carState"""
 
@@ -1004,9 +1034,6 @@ class Controls:
 
     self.update_events(CS)
     cloudlog.timestamp("Events updated")
-
-    # screen recording
-    self.screen_record(CS)
 
     if not self.CP.passive and self.initialized:
       # Update control state
