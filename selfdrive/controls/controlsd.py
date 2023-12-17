@@ -137,8 +137,11 @@ class Controls:
     passive = self.params.get_bool("Passive") or not openpilot_enabled_toggle
 
     # screen recording
-    self.start_record = Params().get_bool("StartRecord")
-    self.stop_record = Params().get_bool("StopRecord") 
+    self.readParamCount = 0
+    self.start_record = False #self.params.get_bool("StartRecord")
+    self.stop_record = False #self.params.get_bool("StopRecord")
+    self.screen_record_start_sound_alert = False
+    self.screen_record_stop_sound_alert = False
 
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
@@ -241,10 +244,30 @@ class Controls:
     self.update_frogpilot_params()
 
   def reset(self):
-    self.start_record = False
-    self.stop_record = False		
+    self.start_record = put_bool_nonblocking("StartRecord", False)
+    self.stop_record = put_bool_nonblocking("StopRecord", False)
     self.screen_record_start_sound_alert = False
     self.screen_record_stop_sound_alert = False
+
+  def update_params(self):
+    events = Events()
+    self.readParamCount += 1
+    if self.readParamCount > 50:
+      self.readParamCount = 0
+    elif self.readParamCount == 10:
+      self.start_record = Params().get_bool("StartRecord")
+      if self.start_record:
+        print("start_record2=", self.start_record)
+        events.add(car.CarEvent.EventName.startingRecord)
+        self.screen_record_start_sound_alert = True
+    elif self.readParamCount == 20:
+      self.stop_record = Params().get_bool("StopRecord")
+      if self.stop_record:
+        print("stop_record2=", self.stop_record)
+        events.add(car.CarEvent.EventName.stoppingRecord)
+        self.screen_record_stop_sound_alert = True
+    elif self.readParamCount == 30:
+      self.reset()
 
   def set_initial_state(self):
     if REPLAY:
@@ -258,6 +281,8 @@ class Controls:
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
+    # screen recording
+    self.update_params()
 
     self.events.clear()
 
@@ -387,16 +412,6 @@ class Controls:
     # All events here should at least have NO_ENTRY and SOFT_DISABLE.
     num_events = len(self.events)
 
-    # screen recording
-    self.second += DT_CTRL
-    if self.second > 1.0:
-      if self.start_record:
-        self.screen_record_start_sound_alert = True
-      elif self.stop_record:
-        self.screen_record_stop_sound_alert = True
-      else:
-        self.reset()
-      self.second = 0.0
     #not_running = {p.name for p in self.sm['managerState'].processes if not p.running and p.shouldBeRunning}
     #if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
     #  self.events.add(EventName.processNotRunning)
@@ -499,11 +514,11 @@ class Controls:
 
     # events for screen recording
     if self.screen_record_start_sound_alert:
+      print("start_sound_bool=", self.screen_record_start_sound_alert)
       self.events.add(EventName.startingRecord)
-      self.screen_record_start_sound_alert = False
     if self.screen_record_stop_sound_alert:
+      print("stop_sound_bool=", self.screen_record_stop_sound_alert)
       self.events.add(EventName.stoppingRecord)
-      self.screen_record_stop_sound_alert = False
 
   def data_sample(self):
     """Receive data from sockets and update carState"""
@@ -1025,9 +1040,6 @@ class Controls:
 
     self.update_events(CS)
     cloudlog.timestamp("Events updated")
-
-    # screen recording
-    self.screen_record(CS)
 
     if not self.CP.passive and self.initialized:
       # Update control state
