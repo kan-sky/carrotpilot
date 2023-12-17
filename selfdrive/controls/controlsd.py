@@ -211,12 +211,6 @@ class Controls:
     self.desired_curvature = 0.0
     self.desired_curvature_rate = 0.0
     self.experimental_mode = False
-
-    # screen recording
-    self.second = 0.0
-    self.screen_record_start_sound_alert = False
-    self.screen_record_stop_sound_alert = False
-
     self.v_cruise_helper = VCruiseHelper(self.CP, self.is_metric)
 
     self.recalibrating_seen = False
