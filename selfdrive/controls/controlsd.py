@@ -235,8 +235,8 @@ class Controls:
     self.carrotCruiseActivate = 0 #carrot
 
   def reset(self):
-    self.start_record = put_bool_nonblocking("StartRecord", False)
-    self.stop_record = put_bool_nonblocking("StopRecord", False)
+    self.start_record = self.params.put_bool_nonblocking("StartRecord", False)
+    self.stop_record = self.params.put_bool_nonblocking("StopRecord", False)
 
   def update_params(self):
     self.readParamCount += 1
@@ -304,10 +304,10 @@ class Controls:
     if (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator) or \
       (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or \
       (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
-      self.events.add(EventName.pedalPressed)
-
-    if CS.brakePressed and CS.standstill:
-      self.events.add(EventName.preEnableStandstill)
+      #self.events.add(EventName.pedalPressed)
+      pass
+    #if CS.brakePressed and CS.standstill:
+    #  self.events.add(EventName.preEnableStandstill)
 
     if CS.gasPressed:
       self.events.add(EventName.gasPressedOverride)
@@ -397,20 +397,20 @@ class Controls:
     # All events here should at least have NO_ENTRY and SOFT_DISABLE.
     num_events = len(self.events)
 
-    not_running = {p.name for p in self.sm['managerState'].processes if not p.running and p.shouldBeRunning}
-    if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
-      self.events.add(EventName.processNotRunning)
-      if not_running != self.not_running_prev:
-        cloudlog.event("process_not_running", not_running=not_running, error=True)
-      self.not_running_prev = not_running
-    else:
-      if not SIMULATION and not self.rk.lagging:
-        if not self.sm.all_alive(self.camera_packets):
-          self.events.add(EventName.cameraMalfunction)
-        elif not self.sm.all_freq_ok(self.camera_packets):
-          self.events.add(EventName.cameraFrameRate)
-    if not REPLAY and self.rk.lagging:
-      self.events.add(EventName.controlsdLagging)
+    #not_running = {p.name for p in self.sm['managerState'].processes if not p.running and p.shouldBeRunning}
+    #if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
+    #  self.events.add(EventName.processNotRunning)
+    #  if not_running != self.not_running_prev:
+    #    cloudlog.event("process_not_running", not_running=not_running, error=True)
+    #  self.not_running_prev = not_running
+    #else:
+    #  if not SIMULATION and not self.rk.lagging:
+    #    if not self.sm.all_alive(self.camera_packets):
+    #      self.events.add(EventName.cameraMalfunction)
+    #    elif not self.sm.all_freq_ok(self.camera_packets):
+    #      self.events.add(EventName.cameraFrameRate)
+    #if not REPLAY and self.rk.lagging:
+    #  self.events.add(EventName.controlsdLagging)
     if len(self.sm['radarState'].radarErrors) or (not self.rk.lagging and not self.sm.all_checks(['radarState'])):
       self.events.add(EventName.radarFault)
     if not self.sm.valid['pandaStates']:

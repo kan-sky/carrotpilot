@@ -1075,11 +1075,6 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   },
   EventName.trafficStopping: {
     ET.WARNING: EngagementAlert(AudibleAlert.stopping),
-    #ET.WARNING: Alert(
-    #  "신호 감속정지중입니다.",
-    #  "",
-    #  AlertStatus.normal, AlertSize.small,
-    #  Priority.LOW, VisualAlert.none, AudibleAlert.stopping, 3.),
   },
   EventName.speedDown: {
      ET.WARNING: EngagementAlert(AudibleAlert.speedDown),

@@ -466,7 +466,6 @@ struct CarControl {
       bsdWarning @20;
       speedDown @21;
       stopStop @22;
-
       startRecord @23;
       stopRecord @24;      
     }
