@@ -138,10 +138,10 @@ class Controls:
 
     # screen recording
     self.readParamCount = 0
-    self.start_record = False #self.params.get_bool("StartRecord")
-    self.stop_record = False #self.params.get_bool("StopRecord")
-    self.screen_record_start_sound_alert = False
-    self.screen_record_stop_sound_alert = False
+    self.start_record = False
+    self.stop_record = False
+    self.record_start_sound = False
+    self.record_stop_sound = False
 
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
@@ -240,27 +240,21 @@ class Controls:
   def reset(self):
     self.start_record = put_bool_nonblocking("StartRecord", False)
     self.stop_record = put_bool_nonblocking("StopRecord", False)
-    self.screen_record_start_sound_alert = False
-    self.screen_record_stop_sound_alert = False
 
   def update_params(self):
-    events = Events()
     self.readParamCount += 1
     if self.readParamCount > 50:
       self.readParamCount = 0
     elif self.readParamCount == 10:
       self.start_record = Params().get_bool("StartRecord")
+      self.stop_record = Params().get_bool("StopRecord")
       if self.start_record:
         print("start_record2=", self.start_record)
-        events.add(car.CarEvent.EventName.startingRecord)
-        self.screen_record_start_sound_alert = True
-    elif self.readParamCount == 20:
-      self.stop_record = Params().get_bool("StopRecord")
-      if self.stop_record:
+        self.record_start_sound = True
+      elif self.stop_record:
         print("stop_record2=", self.stop_record)
-        events.add(car.CarEvent.EventName.stoppingRecord)
-        self.screen_record_stop_sound_alert = True
-    elif self.readParamCount == 30:
+        self.record_stop_sound = True
+    elif self.readParamCount == 20:
       self.reset()
 
   def set_initial_state(self):
@@ -507,12 +501,14 @@ class Controls:
       self.events.add(FrogPilotEventName.greenLight)
 
     # events for screen recording
-    if self.screen_record_start_sound_alert:
-      print("start_sound_bool=", self.screen_record_start_sound_alert)
+    if self.record_start_sound:
+      print("start_sound_bool=", self.record_start_sound)
       self.events.add(EventName.startingRecord)
-    if self.screen_record_stop_sound_alert:
-      print("stop_sound_bool=", self.screen_record_stop_sound_alert)
+      self.record_start_sound = False
+    if self.record_stop_sound:
+      print("stop_sound_bool=", self.record_stop_sound)
       self.events.add(EventName.stoppingRecord)
+      self.record_stop_sound = False
 
   def data_sample(self):
     """Receive data from sockets and update carState"""
