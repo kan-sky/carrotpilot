@@ -404,6 +404,7 @@ def match_vision_track_apilot(v_ego, lead_msg, tracks, md, lane_width):
   return track_scc
 
 def get_lead_apilot(v_ego, ready, tracks, lead_msg, model_v_ego, md, lane_width):
+  global global_vision_aLeadTau
   if len(tracks) > 0 and ready:
     track = match_vision_track_apilot(v_ego, lead_msg, tracks, md, lane_width)
   else:
@@ -412,6 +413,7 @@ def get_lead_apilot(v_ego, ready, tracks, lead_msg, model_v_ego, md, lane_width)
   lead_dict = {'status': False}
   if track is not None:
     lead_dict = track.get_RadarState2(lead_msg.prob, lead_msg, mixRadarInfo=False)
+    global_vision_aLeadTau = _LEAD_ACCEL_TAU # 레이더 -> 비젼 전환시, 순간적인 비젼 accel값의 변화로 인한 주행충격을 방지하기 위함. (시험)
   elif lead_msg.prob > .5:
     lead_dict = get_RadarState_from_vision(lead_msg, v_ego, model_v_ego)
   
