@@ -11,7 +11,8 @@ import cereal.messaging as messaging
 from cereal import log
 
 from openpilot.common.params import Params
-from openpilot.selfdrive.controls.lib.lane_planner import LanePlanner
+#from openpilot.selfdrive.controls.lib.lane_planner import LanePlanner
+from openpilot.selfdrive.controls.lib.lane_planner_2 import LanePlanner
 
 
 TRAJECTORY_SIZE = 33
@@ -67,6 +68,7 @@ class LateralPlanner:
 
     self.lat_mpc = LateralMpc()
     self.reset_mpc(np.zeros(4))
+    self.vcurv = []
 
     # FrogPilot variables
   def reset_mpc(self, x0=None):
@@ -184,26 +186,40 @@ class LateralPlanner:
     elif self.v_ego*3.6 < self.useLaneLineSpeed - 2:
       self.useLaneLineMode = False
 
-    if self.useLaneLineMode and self.useLaneLineSpeed > 0:
-      # Turn off lanes during lane change
-      if self.DH.desire == log.LateralPlan.Desire.laneChangeRight or self.DH.desire == log.LateralPlan.Desire.laneChangeLeft:
-        self.LP.lll_prob *= self.DH.lane_change_ll_prob
-        self.LP.rll_prob *= self.DH.lane_change_ll_prob
+    #if self.useLaneLineMode and self.useLaneLineSpeed > 0:
+    #  # Turn off lanes during lane change
+    #  if self.DH.desire == log.LateralPlan.Desire.laneChangeRight or self.DH.desire == log.LateralPlan.Desire.laneChangeLeft:
+    #    self.LP.lll_prob *= self.DH.lane_change_ll_prob
+    #    self.LP.rll_prob *= self.DH.lane_change_ll_prob
   
-      # dynamic laneline/laneless logic
-      if self.LP.lll_prob < 0.3 and self.LP.rll_prob < 0.3:
-        self.lanelines_active_tmp = False
-      elif self.LP.lll_prob > 0.5 and self.LP.rll_prob > 0.5:
-        self.lanelines_active_tmp = True
-      self.lanelines_active = self.lanelines_active_tmp
+    #  # dynamic laneline/laneless logic
+    #  if self.LP.lll_prob < 0.3 and self.LP.rll_prob < 0.3:
+    #    self.lanelines_active_tmp = False
+    #  elif self.LP.lll_prob > 0.5 and self.LP.rll_prob > 0.5:
+    #    self.lanelines_active_tmp = True
+    #  self.lanelines_active = self.lanelines_active_tmp
       
-    else:
-      self.lanelines_active = False
+    #else:
+    #  self.lanelines_active = False
 
-    self.latDebugText = "laneMode({}), active({}/{}), prob={:.2f}".format(self.useLaneLineMode, self.lanelines_active_tmp, self.lanelines_active, self.LP.lll_prob)
-
+    #self.latDebugText = "laneMode({}), active({}/{}), prob={:.2f}".format(self.useLaneLineMode, self.lanelines_active_tmp, self.lanelines_active, self.LP.lll_prob)
     # Calculate final driving path and set MPC costs
-    self.path_xyz = self.LP.get_d_path(self.v_ego, self.t_idxs, self.path_xyz, self.lanelines_active)
+    #self.path_xyz = self.LP.get_d_path(self.v_ego, self.t_idxs, self.path_xyz, self.lanelines_active)
+
+    # Turn off lanes during lane change
+    if self.useLaneLineMode:
+      if self.DH.desire == log.LateralPlan.Desire.laneChangeRight or self.DH.desire == log.LateralPlan.Desire.laneChangeLeft:
+        self.LP.lane_change_multiplier = self.DH.lane_change_ll_prob
+      else:
+        self.LP.lane_change_multiplier = 1.0
+    else:
+      self.LP.lane_change_multiplier = 0.0
+
+    self.lanelines_active = True if self.LP.d_prob > 0.3 else False
+
+    # lanelines calculation?
+    self.path_xyz = self.LP.get_d_path(sm['carState'], self.v_ego, self.t_idxs, self.path_xyz, self.vcurv)
+    self.latDebugText = self.LP.debugText
 
     self.path_xyz[:, 1] += self.pathOffset
 
@@ -259,6 +275,7 @@ class LateralPlanner:
 
     lateralPlan.curvatures = (self.lat_mpc.x_sol[0:CONTROL_N, 3]/self.v_ego).tolist()
     lateralPlan.curvatureRates = [float(x.item() / self.v_ego) for x in self.lat_mpc.u_sol[0:CONTROL_N - 1]] + [0.0]
+    self.vcurv = (100 * self.lat_mpc.x_sol[:, 3]/self.v_ego).tolist()
 
     lateralPlan.mpcSolutionValid = bool(plan_solution_valid)
     lateralPlan.solverExecutionTime = self.lat_mpc.solve_time
@@ -294,3 +311,4 @@ class LateralPlanner:
     frogpilotLateralPlan.laneWidthRight = float(self.DH.lane_width_right)
 
     pm.send('frogpilotLateralPlan', frogpilot_plan_send)
+    

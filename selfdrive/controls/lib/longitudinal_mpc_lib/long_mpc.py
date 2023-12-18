@@ -418,11 +418,20 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
+  def update_tf(self, v_ego, t_follow):
+    t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 40, 100], [t_follow, t_follow + self.tFollowSpeedAddM, t_follow + self.tFollowSpeedAdd]) 
+    #t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 100], [t_follow, t_follow + self.tFollowSpeedAdd])
+    t_follow = max(0.6, t_follow * (2.0 - self.mySafeFactor)) 
+    if v_ego < self.v_ego_prev:
+      t_follow = max(t_follow, self.t_follow_prev)
+    self.t_follow_prev = t_follow
+    self.v_ego_prev = v_ego
+    return np.full(N+1, t_follow)
+
   def update(self, carstate, radarstate, model, v_cruise, x, v, a, j, have_lead, aggressive_acceleration, increased_stopping_distance, smoother_braking, custom_personalities, aggressive_follow, standard_follow, relaxed_follow, personality=log.LongitudinalPersonality.standard):
     #self.debugLongText = "v_cruise ={:.1f}".format(v_cruise)
     self.update_params()
     t_follow = get_T_FOLLOW(custom_personalities, aggressive_follow, standard_follow, relaxed_follow, personality)
-    t_follow = max(0.6, t_follow * (2.0 - self.mySafeFactor)) 
 
     v_ego = self.x0[1]
     a_ego = self.x0[2]
@@ -436,15 +445,7 @@ class LongitudinalMpc:
     self.comfort_brake = COMFORT_BRAKE
     self.stop_distance = STOP_DISTANCE
     applyStopDistance = self.stop_distance  * (2.0 - self.mySafeFactor)
-    
-    if v_ego >= self.v_ego_prev:
-      #t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 40, 100], [t_follow, t_follow + self.tFollowSpeedAddM, t_follow + self.tFollowSpeedAdd]) 
-      t_follow = interp(v_ego * CV.MS_TO_KPH, [0, 100], [t_follow, t_follow + self.tFollowSpeedAdd])
-      self.t_follow_prev = t_follow
-    else:
-      t_follow = self.t_follow_prev
-
-    self.v_ego_prev = v_ego
+    t_follow = self.update_tf(v_ego, t_follow)
 
     # Offset by FrogAi for FrogPilot for a more natural takeoff with a lead
     if aggressive_acceleration:
@@ -476,7 +477,7 @@ class LongitudinalMpc:
 
     if not self.conditional_experimental_mode:
       v_cruise, stop_x, self.mode = self.update_apilot(carstate, radarstate, model, v_cruise)
-      self.debugLongText = "XState({}),tf={:.2f},tf_d={:.1f},stop_x={:.1f},stopDist={:.1f},Traffic={}".format(str(self.xState), t_follow, t_follow*v_ego+6.0, stop_x, self.stopDist, str(self.trafficState))
+      self.debugLongText = "XState({}),tf={:.2f},tf_d={:.1f},stop_x={:.1f},stopDist={:.1f},Traffic={}".format(str(self.xState), t_follow[0], t_follow[0]*v_ego+6.0, stop_x, self.stopDist, str(self.trafficState))
     else:
       stop_x = 1000.0
       self.xState = XState.e2eCruise

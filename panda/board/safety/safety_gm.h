@@ -138,13 +138,20 @@ static void gm_rx_hook(CANPacket_t *to_push) {
       brake_pressed = GET_BYTE(to_push, 1) >= 8U;
     }
 
+    if ((addr == 0xBE) && (gm_hw == GM_ASCM)) {
+      brake_pressed = GET_BYTE(to_push, 1) >= 8U;
+    }
+
     if ((addr == 0xC9) && ((gm_hw == GM_CAM) || (gm_hw == GM_SDGM))) {
-      acc_main_on = GET_BIT(to_push, 29U) != 0U;
       brake_pressed = GET_BIT(to_push, 40U) != 0U;
     }
 
+    if (addr == 0xC9) {
+      acc_main_on = GET_BIT(to_push, 29U) != 0U;
+    }
+
     if (addr == 0x1C4) {
-      if (!gas_interceptor_detected) {
+      if (!enable_gas_interceptor) {
         gas_pressed = GET_BYTE(to_push, 5) != 0U;
       }
 
@@ -171,7 +178,7 @@ static void gm_rx_hook(CANPacket_t *to_push) {
 
     // Pedal Interceptor
     if (addr == 0x201) {
-      gas_interceptor_detected = 1;
+      enable_gas_interceptor = 1;
       int gas_interceptor = GM_GET_INTERCEPTOR(to_push);
       gas_pressed = gas_interceptor > GM_GAS_INTERCEPTOR_THRESHOLD;
       gas_interceptor_prev = gas_interceptor;

@@ -30,8 +30,8 @@ AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
 sound_list: Dict[int, Tuple[str, Optional[int], float]] = {
   # AudibleAlert, file name, play count (none for infinite)
-  AudibleAlert.engage: ("engage.wav", 1, MAX_VOLUME),
-  AudibleAlert.disengage: ("disengage.wav", 1, MAX_VOLUME),
+  AudibleAlert.engage: ("engage.wav", 1, 0.2),
+  AudibleAlert.disengage: ("disengage.wav", 1, 0.2),
   AudibleAlert.refuse: ("refuse.wav", 1, MAX_VOLUME),
 
   AudibleAlert.prompt: ("prompt.wav", 1, MAX_VOLUME),
@@ -40,7 +40,6 @@ sound_list: Dict[int, Tuple[str, Optional[int], float]] = {
 
   AudibleAlert.warningSoft: ("warning_soft.wav", None, MAX_VOLUME),
   AudibleAlert.warningImmediate: ("warning_immediate.wav", None, MAX_VOLUME),
-  AudibleAlert.firefox: ("firefox.wav", None, MAX_VOLUME),
   AudibleAlert.longEngaged: ("tici_engaged.wav", None, MAX_VOLUME),
   AudibleAlert.longDisengaged: ("tici_disengaged.wav", None, MAX_VOLUME),
   AudibleAlert.trafficSignGreen: ("traffic_sign_green.wav", None, MAX_VOLUME),
@@ -129,9 +128,9 @@ class Soundd:
       actual_sample_rate = wavefile.getframerate()
 
       nchannels = wavefile.getnchannels()
-      print("nchannels=", nchannels, ",sound=", sound_list[sound])
+      #print("nchannels=", nchannels, ",sound=", sound_list[sound])
       assert nchannels in [1,2]
-      print("loading...")
+      #print("loading...")
 
       length = wavefile.getnframes()
       frames = wavefile.readframes(length)
@@ -140,7 +139,7 @@ class Soundd:
       if nchannels == 2:
         samples = samples[0::2] / 2 + samples[1::2] / 2
 
-      resampled_samples = linear_resample(samples, actual_sample_rate, SAMPLE_RATE)
+      resampled_samples = linear_resample(samples, actual_sample_rate, SAMPLE_RATE) * volume
 
       self.loaded_sounds[sound] = resampled_samples.astype(np.float32) / (2**16/2)
 

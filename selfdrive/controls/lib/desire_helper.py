@@ -171,7 +171,14 @@ class DesireHelper:
       self.lane_change_timer += DT_MDL
 
     self.prev_one_blinker = one_blinker
-
+    
+    steering_pressed = carstate.steeringPressed and \
+                     ((carstate.steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.left) or
+                      (carstate.steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.right))
+    if steering_pressed:
+      self.lane_change_direction = LaneChangeDirection.none
+      self.lane_change_state = LaneChangeState.off
+    
     # Reset the flags
     self.lane_change_completed &= one_blinker
     self.turn_completed &= one_blinker
