@@ -197,7 +197,7 @@ def create_acc_commands_mix_scc(CP, packer, enabled, accel, upper_jerk, lower_je
     scc11_values = {
     "MainMode_ACC": 1  if cruise_available else 0,
     "TauGapSet": cruiseGap,
-    "VSetDis": set_speed if longEnabled else 0,
+    "VSetDis": set_speed if longEnabled or CS.out.gasPressed else 0,
     "AliveCounterACC": idx % 0x10,
     "SCCInfoDisplay" : 3 if longActive and radarAlarm else 4 if longActive and softHoldInfo else 0 if enabled else 0,   #2: 크루즈 선택, 3: 전방상황주의, 4: 출발준비 <= 주의 2를 선택하면... 선행차아이콘이 안나옴.
     "ObjValid": 1 if lead_visible else 0, # close lead makes controls tighter
@@ -212,7 +212,7 @@ def create_acc_commands_mix_scc(CP, packer, enabled, accel, upper_jerk, lower_je
     values = CS.scc11
     values["MainMode_ACC"] = 1  if cruise_available else 0
     values["TauGapSet"] = cruiseGap
-    values["VSetDis"] = set_speed if longEnabled else 0
+    values["VSetDis"] = set_speed if longEnabled or CS.out.gasPressed else 0
     values["AliveCounterACC"] = idx % 0x10
     #values["SCCInfoDisplay"] = 4 if longEnabled and softHoldInfo else 3 if longEnabled and radarAlarm else 2 if enabled else 0   #3: 전방상황주의, 4: 출발준비
     values["SCCInfoDisplay"] = 3 if longActive and radarAlarm else 4 if longActive and softHoldInfo else 0 if enabled else 0   #2: 크루즈 선택, 3: 전방상황주의, 4: 출발준비
@@ -287,12 +287,12 @@ def create_acc_commands_mix_scc(CP, packer, enabled, accel, upper_jerk, lower_je
 
   return commands
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, cruise_available):
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, cruise_available, personality):
   commands = []
 
   scc11_values = {
     "MainMode_ACC": 1 if cruise_available else 0,
-    "TauGapSet": 4,
+    "TauGapSet": personality + 1,
     "VSetDis": set_speed if enabled else 0,
     "AliveCounterACC": idx % 0x10,
     "ObjValid": 1, # close lead makes controls tighter

@@ -36,7 +36,8 @@ class RGBCameraWide(CopyRamRGBCamera):
     cam = self.get_cam()
     cam.setPos(C3_POSITION)
     lens = self.get_lens()
-    lens.setFov(160)
+    lens.setFov(120)
+    lens.setNear(0.1)
 
 class RGBCameraRoad(CopyRamRGBCamera):
   def __init__(self, *args, **kwargs):
@@ -45,6 +46,7 @@ class RGBCameraRoad(CopyRamRGBCamera):
     cam.setPos(C3_POSITION)
     lens = self.get_lens()
     lens.setFov(40)
+    lens.setNear(0.1)
 
 
 def straight_block(length):
@@ -96,7 +98,7 @@ class MetaDriveBridge(SimulatorBridge):
       on_continuous_line_done=False,
       crash_vehicle_done=False,
       crash_object_done=False,
-      traffic_density=0.02, # traffic is incredibly expensive
+      traffic_density=0.03, # traffic is incredibly expensive
       map_config=dict(
         type=MapGenerateMethod.PG_MAP_FILE,
         config=[
@@ -116,4 +118,4 @@ class MetaDriveBridge(SimulatorBridge):
       preload_models=False
     )
 
-    return MetaDriveWorld(config)
+    return MetaDriveWorld(config, self.dual_camera)

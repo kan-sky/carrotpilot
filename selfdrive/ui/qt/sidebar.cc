@@ -239,7 +239,7 @@ void Sidebar::updateFrogPilotParams() {
   customColors = isCustomTheme ? params.getInt("CustomColors") : 0;
   customIcons = isCustomTheme ? params.getInt("CustomIcons") : 0;
 
-  home_img = home_imgs[customIcons];
+  home_img = flag_imgs[0]; //home_imgs[customIcons];
   flag_img = flag_imgs[0]; //flag_imgs[customIcons];
   settings_img = settings_imgs[customIcons];
 
