@@ -235,8 +235,8 @@ class Controls:
     self.carrotCruiseActivate = 0 #carrot
 
   def reset(self):
-    self.start_record = put_bool_nonblocking("StartRecord", False)
-    self.stop_record = put_bool_nonblocking("StopRecord", False)
+    self.start_record = self.params.put_bool_nonblocking("StartRecord", False)
+    self.stop_record = self.params.put_bool_nonblocking("StopRecord", False)
 
   def update_params(self):
     self.readParamCount += 1
