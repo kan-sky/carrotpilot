@@ -1104,6 +1104,20 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   EventName.audioTurn: {
      ET.WARNING: EngagementAlert(AudibleAlert.audioTurn),
   },
+  EventName.startingRecord: {
+    ET.WARNING: Alert(
+      "녹화를 시작합니다.",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.LOW, VisualAlert.none, AudibleAlert.startRecord, 4.),
+  },
+  EventName.stoppingRecord: {
+    ET.WARNING: Alert(
+      "녹화를 종료합니다.",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.LOW, VisualAlert.none, AudibleAlert.stopRecord, 4.),
+  },
 }
 
 
