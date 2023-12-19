@@ -82,9 +82,9 @@ bool gm_cam_long = false;
 bool gm_pcm_cruise = false;
 bool gm_has_acc = true;
 bool gm_pedal_long = false;
+bool gm_cc_long = false;
 bool gm_skip_relay_check = false;
 bool gm_force_ascm = false;
-bool gm_cc_long = false;
 
 static void handle_gm_wheel_buttons(CANPacket_t *to_push) {
   int button = (GET_BYTE(to_push, 5) & 0x70U) >> 4;

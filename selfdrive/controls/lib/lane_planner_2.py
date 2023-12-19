@@ -2,7 +2,7 @@ import math
 import numpy as np
 from cereal import log
 from common.filter_simple import FirstOrderFilter
-from common.numpy_fast import interp
+from common.numpy_fast import interp, clip
 from common.realtime import DT_MDL
 from common.swaglog import cloudlog
 #from common.logger import sLogger
@@ -10,7 +10,7 @@ from common.params import Params
 
 TRAJECTORY_SIZE = 33
 # positive numbers go right
-CAMERA_OFFSET = 0.0 #0.08
+CAMERA_OFFSET = 0.08
 MIN_LANE_DISTANCE = 2.6
 MAX_LANE_DISTANCE = 3.7
 MAX_LANE_CENTERING_AWAY = 1.85
@@ -69,6 +69,12 @@ class LanePlanner:
     self.r_lane_change_prob = 0.
 
     self.debugText = ""
+    self.lane_width_left = 0.0
+    self.lane_width_right = 0.0
+    self.lane_width_left_filtered = FirstOrderFilter(1.0, 0.95, DT_MDL)
+    self.lane_width_right_filtered = FirstOrderFilter(1.0, 0.95, DT_MDL)
+    self.lane_offset_filtered = FirstOrderFilter(0.0, 0.98, DT_MDL)
+    self.offset_apply = False
 
   def parse_model(self, md):
 
@@ -133,9 +139,9 @@ class LanePlanner:
     clipped_lane_width = min(4.0, self.lane_width)
     path_from_left_lane = self.lll_y + clipped_lane_width / 2.0
     path_from_right_lane = self.rll_y - clipped_lane_width / 2.0
-
     self.d_prob = l_prob + r_prob - l_prob * r_prob
     self.d_prob *= self.lane_change_multiplier
+
     lane_path_y = (l_prob * path_from_left_lane + r_prob * path_from_right_lane) / (l_prob + r_prob + 0.0001)
     safe_idxs = np.isfinite(self.ll_t)
     if safe_idxs[0]:
@@ -158,7 +164,8 @@ class LanePlanner:
     if self.BigModel:
       return self.get_nlp_path(CS, v_ego, path_t, path_xyz, vcurv)
 
-    return self.get_stock_path(CS, v_ego, path_t, path_xyz, vcurv)
+    #return self.get_stock_path(CS, v_ego, path_t, path_xyz, vcurv)
+    return self.get_carrot_path(CS, v_ego, path_t, path_xyz, vcurv)
 
   def get_nlp_path(self, CS, v_ego, path_t, path_xyz, vcurv):
     # how visible is each lane?
@@ -289,4 +296,112 @@ class LanePlanner:
 
     # apply camera offset and centering force after everything
     path_xyz[:, 1] += CAMERA_OFFSET + self.center_force    
+    return path_xyz
+
+
+
+  def get_carrot_path(self, CS, v_ego, path_t, path_xyz, vcurv):
+    # Reduce reliance on lanelines that are too far apart or
+    # will be in a few seconds
+    l_prob, r_prob = self.lll_prob, self.rll_prob
+    width_pts = self.rll_y - self.lll_y
+    prob_mods = []
+    for t_check in (0.0, 1.5, 3.0):
+      width_at_t = interp(t_check * (v_ego + 7), self.ll_x, width_pts)
+      prob_mods.append(interp(width_at_t, [4.0, 5.0], [1.0, 0.0]))
+    mod = min(prob_mods)
+    l_prob *= mod
+    r_prob *= mod
+
+    # Reduce reliance on uncertain lanelines
+    l_std_mod = interp(self.lll_std, [.15, .3], [1.0, 0.0])
+    r_std_mod = interp(self.rll_std, [.15, .3], [1.0, 0.0])
+    l_prob *= l_std_mod
+    r_prob *= r_std_mod
+
+    # Find current lanewidth
+    self.lane_width_certainty.update(l_prob * r_prob)
+    current_lane_width = abs(self.rll_y[0] - self.lll_y[0])
+    self.lane_width_estimate.update(current_lane_width)
+    #speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
+    speed_lane_width = interp(v_ego, [0., 60.], [2.8, 3.5])
+    self.lane_width = self.lane_width_certainty.x * self.lane_width_estimate.x + \
+                      (1 - self.lane_width_certainty.x) * speed_lane_width
+
+    clipped_lane_width = min(4.0, self.lane_width)
+    path_from_left_lane = self.lll_y + clipped_lane_width / 2.0
+    path_from_right_lane = self.rll_y - clipped_lane_width / 2.0
+    self.d_prob = l_prob + r_prob - l_prob * r_prob
+
+    self.d_prob = max(l_prob, r_prob)
+    self.d_prob *= self.lane_change_multiplier
+
+    self.lane_width_left_filtered.update(self.lane_width_left)
+    self.lane_width_right_filtered.update(self.lane_width_right)
+
+    if False:
+      lane_path_y = (l_prob * path_from_left_lane + r_prob * path_from_right_lane) / (l_prob + r_prob + 0.0001)
+      safe_idxs = np.isfinite(self.ll_t)
+      if safe_idxs[0]:
+        lane_path_y_interp = np.interp(path_t, self.ll_t[safe_idxs], lane_path_y[safe_idxs])
+        path_xyz[:,1] = self.d_prob * lane_path_y_interp + (1.0 - self.d_prob) * path_xyz[:,1]
+
+    else:
+      self.adjustLaneOffset = float(Params().get_int("AdjustLaneOffset")) * 0.01
+      self.adjustCurveOffset = float(Params().get_int("AdjustCurveOffset")) * 0.01
+      offset_curve = 0.0
+      offset_lane = 0.0
+      #curvature = self.curvature * 100.0
+      curvature = 0.0
+      if len(vcurv) > 0:
+        curvature = vcurv[-1]
+        offset_curve = interp(abs(curvature), [0.01, 0.15], [0.0, self.adjustCurveOffset]) * np.sign(curvature)
+        #if curvature < -0.1:
+        #  offset_curve = - self.adjustCurveOffset;
+        #elif curvature > 0.1:
+        #  offset_curve = self.adjustCurveOffset
+        #else:
+        #  offset_curve = 0.0
+
+        if self.lane_width_left_filtered.x > 1.5 and self.lane_width_right_filtered.x > 1.5:
+          offset_lane = 0.0
+        elif self.lane_width_left_filtered.x < 2.5 and self.lane_width_right_filtered.x < 2.5:
+          offset_lane = 0.0
+        elif self.lane_width_left_filtered.x > 2.5:
+          offset_lane = self.adjustLaneOffset
+        elif self.lane_width_right_filtered.x > 2.5:
+          offset_lane = -self.adjustLaneOffset
+
+      lane_path_y = path_from_left_lane if l_prob > 0.5 or l_prob > r_prob else path_from_right_lane
+      #lane_path_y = (l_prob * path_from_left_lane + r_prob * path_from_right_lane) / (l_prob + r_prob + 0.0001)
+      diff_center = lane_path_y[5] - path_xyz[:,1][5]
+      if self.d_prob > 0.1:
+        diff_center = 0.0
+      offset_total = clip(offset_curve + offset_lane + diff_center, - self.adjustLaneOffset, self.adjustLaneOffset)
+      if self.offset_apply:
+        self.lane_offset_filtered.update(offset_total)
+      else:
+        self.lane_offset_filtered.x = 0.0
+      self.debugText = "d={:.2f},{:.1f},vC={:.2f},offset={:.2f}+{:.2f}={:.2f},LP={:.1f},RP={:.1f},LW={:.1f},RW={:.1f}".format(diff_center, self.d_prob, curvature, offset_curve, offset_lane, self.lane_offset_filtered.x, l_prob, r_prob, self.lane_width_left_filtered.x, self.lane_width_right_filtered.x)
+      if False:
+        safe_idxs = np.isfinite(self.ll_t)
+        if safe_idxs[0]:
+          lane_path_y_interp = np.interp(path_t, self.ll_t[safe_idxs], lane_path_y[safe_idxs])
+          path_xyz[:,1] = self.d_prob * lane_path_y_interp + (1.0 - self.d_prob) * path_xyz[:,1]
+      else:
+        #safe_idxs = np.isfinite(self.ll_x)
+        #if safe_idxs[0]:
+        lane_path_y_interp = np.interp(path_xyz[:,0] + v_ego * 0.1, self.ll_x, lane_path_y)
+        path_xyz[:,1] = self.d_prob * lane_path_y_interp + (1.0 - self.d_prob) * path_xyz[:,1]
+
+    # debug
+    #if len(vcurv) > 0:
+      #sLogger.Send("vC" + "{:.2f}".format(vcurv[0]) + " LX" + "{:.1f}".format(self.lll_y[0]) + " RX" + "{:.1f}".format(self.rll_y[0]) + " LW" + "{:.1f}".format(self.lane_width) + " LP" + "{:.1f}".format(l_prob) + " RP" + "{:.1f}".format(r_prob) + " RS" + "{:.1f}".format(self.rll_std) + " LS" + "{:.1f}".format(self.lll_std))
+      #self.debugText = "vC" + "{:.2f}".format(vcurv[0]) + " LX" + "{:.1f}".format(self.lll_y[0]) + " RX" + "{:.1f}".format(self.rll_y[0]) + " LW" + "{:.1f}".format(self.lane_width) + " LP" + "{:.1f}".format(l_prob) + " RP" + "{:.1f}".format(r_prob) + " RS" + "{:.1f}".format(self.rll_std) + " LS" + "{:.1f}".format(self.lll_std)
+    #else:
+      #sLogger.Send("vC--- LX" + "{:.1f}".format(self.lll_y[0]) + " RX" + "{:.1f}".format(self.rll_y[0]) + " LW" + "{:.1f}".format(self.lane_width) + " LP" + "{:.1f}".format(l_prob) + " RP" + "{:.1f}".format(r_prob) + " RS" + "{:.1f}".format(self.rll_std) + " LS" + "{:.1f}".format(self.lll_std))
+      #self.debugText = "vC--- LX" + "{:.1f}".format(self.lll_y[0]) + " RX" + "{:.1f}".format(self.rll_y[0]) + " LW" + "{:.1f}".format(self.lane_width) + " LP" + "{:.1f}".format(l_prob) + " RP" + "{:.1f}".format(r_prob) + " RS" + "{:.1f}".format(self.rll_std) + " LS" + "{:.1f}".format(self.lll_std)
+
+    path_xyz[:, 1] += (CAMERA_OFFSET + self.lane_offset_filtered.x)
+
     return path_xyz

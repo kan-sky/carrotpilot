@@ -30,10 +30,15 @@ class CarState(CarStateBase):
     # GAP_DIST
     self.distance_button_pressed = False
 
+    # use cluster speed & vCluratio
+    self.use_cluster_speed = True
     self.buttons_counter = 0
 
     self.single_pedal_mode = False
 
+    # for delay Accfault event
+    self.accFaultedCount = 0
+    self.acc_fault = False
   def update(self, pt_cp, cam_cp, loopback_cp):
     ret = car.CarState.new_message()
 
@@ -50,6 +55,9 @@ class CarState(CarStateBase):
     self.pscm_status = copy.copy(pt_cp.vl["PSCMStatus"])
     moving_forward = pt_cp.vl["EBCMWheelSpdRear"]["MovingForward"] != 0
     self.moving_backward = (pt_cp.vl["EBCMWheelSpdRear"]["MovingBackward"] != 0) and not moving_forward
+    # GAP_DIST
+    if self.cruise_buttons in [CruiseButtons.UNPRESS, CruiseButtons.INIT] and self.distance_button_pressed:
+      self.cruise_buttons = CruiseButtons.GAP_DIST
 
     # Forwarded BSM message
     ret.leftBlindspot = pt_cp.vl["left_blindspot"]["leftbsmlight"] == 1
@@ -62,6 +70,9 @@ class CarState(CarStateBase):
     if self.CP.networkLocation == NetworkLocation.fwdCamera and not self.CP.flags & GMFlags.NO_CAMERA.value:
       self.pt_lka_steering_cmd_counter = pt_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
       self.cam_lka_steering_cmd_counter = cam_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
+    # use cluster speed & vCluRatio(longitudialPlanner)
+    cluSpeed = pt_cp.vl["ECMVehicleSpeed"]["VehicleSpeed"]
+    ret.vEgoCluster = cluSpeed * CV.MPH_TO_MS
 
     ret.wheelSpeeds = self.get_wheel_speeds(
       pt_cp.vl["EBCMWheelSpdFront"]["FLWheelSpd"],
@@ -69,9 +80,17 @@ class CarState(CarStateBase):
       pt_cp.vl["EBCMWheelSpdRear"]["RLWheelSpd"],
       pt_cp.vl["EBCMWheelSpdRear"]["RRWheelSpd"],
     )
-    ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr])
-    ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
-    # sample rear wheel speeds, standstill=True if ECM allows engagement with brake
+    # use cluster speed & vCluRatio(longitudialPlanner)
+    if self.use_cluster_speed:
+      ret.vEgoRaw = cluSpeed * CV.MPH_TO_MS
+      ret.vEgo, ret.aEgo = self.update_clu_speed_kf(ret.vEgoRaw)
+
+    else:
+      ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]) * (105./100.)
+      ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
+
+    ret.vCluRatio = (ret.vEgoCluster / ret.vEgo) if (ret.vEgo > 3. and ret.vEgoCluster > 3.) else 1.0
+
     ret.standstill = ret.wheelSpeeds.rl <= STANDSTILL_THRESHOLD and ret.wheelSpeeds.rr <= STANDSTILL_THRESHOLD
 
     if pt_cp.vl["ECMPRDNL2"]["ManualMode"] == 1:
@@ -144,8 +163,12 @@ class CarState(CarStateBase):
       ret.parkingBrake = cam_cp.vl["BCMGeneralPlatformStatus"]["ParkBrakeSwActive"] == 1
     ret.cruiseState.available = pt_cp.vl["ECMEngineStatus"]["CruiseMainOn"] != 0
     ret.espDisabled = pt_cp.vl["ESPStatus"]["TractionControlOn"] != 1
-    ret.accFaulted = (pt_cp.vl["AcceleratorPedal2"]["CruiseState"] == AccState.FAULTED or
+    # for delay Accfault event
+    accFaulted = (pt_cp.vl["AcceleratorPedal2"]["CruiseState"] == AccState.FAULTED or \
                       pt_cp.vl["EBCMFrictionBrakeStatus"]["FrictionBrakeUnavailable"] == 1)
+    self.accFaultedCount = self.accFaultedCount + 1 if accFaulted else 0
+    ret.accFaulted = True if self.accFaultedCount > 50 else False
+    self.acc_fault = ret.accFaulted
 
     ret.cruiseState.enabled = pt_cp.vl["AcceleratorPedal2"]["CruiseState"] != AccState.OFF
     ret.cruiseState.standstill = pt_cp.vl["AcceleratorPedal2"]["CruiseState"] == AccState.STANDSTILL
@@ -202,10 +225,6 @@ class CarState(CarStateBase):
         self.param_memory.put_bool("PersonalityChangedViaWheel", True)
         self.previous_personality_profile = self.personality_profile
 
-    # GAP_DIST
-    if self.cruise_buttons in [CruiseButtons.UNPRESS, CruiseButtons.INIT] and self.distance_button_pressed:
-      self.cruise_buttons = CruiseButtons.GAP_DIST
-
     # Toggle Experimental Mode from steering wheel function
     if self.experimental_mode_via_press and ret.cruiseState.available:
       if self.CP.carFingerprint in SDGM_CAR:
@@ -261,6 +280,7 @@ class CarState(CarStateBase):
       ("EBCMFrictionBrakeStatus", 20),
       ("PSCMSteeringAngle", 100),
       ("ECMAcceleratorPos", 80),
+      ("ECMVehicleSpeed", 20),
     ]
 
     # BSM does not send a signal until the first instance of it lighting up
