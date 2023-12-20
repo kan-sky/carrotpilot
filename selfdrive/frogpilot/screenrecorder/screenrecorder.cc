@@ -101,9 +101,10 @@ void ScreenRecorder::start(bool sound) {
   update();
   started = milliseconds();
 
+  Params paramsMemory{"/dev/shm/params"};
   if(sound)
-      Params().putBool("StopRecord", false);
-      Params().putBool("StartRecord", true);
+    paramsMemory.putBoolNonBlocking("StopRecord", false);
+    paramsMemory.putBoolNonBlocking("StartRecord", true);
 }
 
 void ScreenRecorder::encoding_thread_func() {
@@ -133,9 +134,10 @@ void ScreenRecorder::stop(bool sound) {
   if (encoding_thread.joinable()) {
     encoding_thread.join();
 
+  Params paramsMemory{"/dev/shm/params"};
   if(sound)
-      Params().putBool("StartRecord", false);
-      Params().putBool("StopRecord", true);
+    paramsMemory.putBoolNonBlocking("StartRecord", false);
+    paramsMemory.putBoolNonBlocking("StopRecord", true);
   }
 }
 

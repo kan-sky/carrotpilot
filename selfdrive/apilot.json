@@ -315,6 +315,16 @@
     },
     {
       "group": "감속제어",
+      "name": "LeadDangerFactor",
+      "title": "LEAD_DANGER_FACTOR(80)",
+      "descr": "줄이면 정지거리가 짧아집니다.",
+      "min": 75,
+      "max": 100,
+      "default": 80,
+      "unit": 5
+    },
+    {
+      "group": "감속제어",
       "name": "TrafficStopMode",
       "title": "신호정지 방법 (1)",
       "descr": "0:사용안함,1:사용함",
@@ -752,6 +762,32 @@
       "edescr": "Above set speed: laneline. Below: laneless mode.",
       "min": 0,
       "max": 200,
+      "default": 0,
+      "unit": 10
+    },
+    {
+      "group": "조향일반",
+      "name": "AdjustLaneOffset",
+      "title": "레인모드: 차선조절옵셋 (0)cm",
+      "descr": "도로경계쪽으로 주행합니다.",
+      "egroup": "LAT",
+      "etitle": "AdjustLaneOffset (0)cm",
+      "edescr": "",
+      "min": 0,
+      "max": 500,
+      "default": 0,
+      "unit": 10
+    },
+    {
+      "group": "조향일반",
+      "name": "AdjustCurveOffset",
+      "title": "레인모드: 커브조절옵셋 (0)cm",
+      "descr": "커브시 안쪽으로 돌도록합니다.",
+      "egroup": "LAT",
+      "etitle": "AdjustCurveOffset (0)cm",
+      "edescr": "",
+      "min": 0,
+      "max": 500,
       "default": 0,
       "unit": 10
     },
