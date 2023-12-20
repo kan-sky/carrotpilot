@@ -152,6 +152,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     ret.radarTimeStep = 0.0667  # GM radar runs at 15Hz instead of standard 20Hz
     ret.longitudinalActuatorDelayUpperBound = 0.5  # large delay to initially start braking
+    ret.enableBsm = 0x01 in fingerprint[0] and 0x02 in fingerprint[0]
 
     if candidate in (CAR.VOLT, CAR.VOLT_CC):
       ret.minEnableSpeed = -1 if Params().get_bool("LowerVolt") else ret.minEnableSpeed

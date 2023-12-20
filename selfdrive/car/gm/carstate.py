@@ -60,8 +60,10 @@ class CarState(CarStateBase):
       self.cruise_buttons = CruiseButtons.GAP_DIST
 
     # Forwarded BSM message
-    ret.leftBlindspot = pt_cp.vl["left_blindspot"]["leftbsmlight"] == 1
-    ret.rightBlindspot = pt_cp.vl["right_blindspot"]["rightbsmlight"] == 1
+    if self.CP.enableBsm:
+      ret.leftBlindspot = pt_cp.vl["left_blindspot"]["leftbsmlight"] == 1
+      ret.rightBlindspot = pt_cp.vl["right_blindspot"]["rightbsmlight"] == 1
+
 
     # Variables used for avoiding LKAS faults
     self.loopback_lka_steering_cmd_updated = len(loopback_cp.vl_all["ASCMLKASteeringCmd"]["RollingCounter"]) > 0
@@ -284,8 +286,10 @@ class CarState(CarStateBase):
     ]
 
     # BSM does not send a signal until the first instance of it lighting up
-    messages.append(("left_blindspot", 0))
-    messages.append(("right_blindspot", 0))
+    if CP.enableBsm:
+      messages.append(("left_blindspot", 0))
+      messages.append(("right_blindspot", 0))
+
 
     if CP.carFingerprint in SDGM_CAR:
       messages += [
