@@ -314,7 +314,6 @@
       "unit": 1
     },
     {
-    {
       "group": "감속제어",
       "name": "LeadDangerFactor",
       "title": "LEAD_DANGER_FACTOR(80)",
@@ -324,6 +323,7 @@
       "default": 80,
       "unit": 5
     },
+    {
       "group": "감속제어",
       "name": "TrafficStopMode",
       "title": "신호정지 방법 (1)",
