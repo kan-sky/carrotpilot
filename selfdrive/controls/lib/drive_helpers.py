@@ -85,6 +85,7 @@ class VCruiseHelper:
     self._log_timer = 0
     self.debugText = ""
     self._first = True
+    self.activeAPM = 0
     self.apilotEventWait = 0
     self.apilotEventPrev = 0
 
@@ -563,6 +564,7 @@ class VCruiseHelper:
   def update_speed_apilot(self, CS, controls, v_cruise_kph_prev):
     v_ego = CS.vEgoCluster
     msg = self.roadLimitSpeed = controls.sm['roadLimitSpeed']
+    self.activeAPM = msg.active
 
     self.roadSpeed = clip(30, msg.roadLimitSpeed, 150.0)
     camType = int(msg.camType)
@@ -596,6 +598,7 @@ class VCruiseHelper:
       safeSpeed = CS.speedLimit
       leftDist = CS.speedLimitDistance
       speedLimitType = 2 if leftDist > 1 else 3
+      self.activeAPM += 1000
 
     if isSpeedBump:
       speedLimitType = 1 
