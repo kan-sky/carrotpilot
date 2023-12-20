@@ -38,7 +38,7 @@ class CarState(CarStateBase):
 
     # for delay Accfault event
     self.accFaultedCount = 0
-    self.acc_fault = False
+
   def update(self, pt_cp, cam_cp, loopback_cp):
     ret = car.CarState.new_message()
 
@@ -60,8 +60,9 @@ class CarState(CarStateBase):
       self.cruise_buttons = CruiseButtons.GAP_DIST
 
     # Forwarded BSM message
-    ret.leftBlindspot = pt_cp.vl["left_blindspot"]["leftbsmlight"] == 1
-    ret.rightBlindspot = pt_cp.vl["right_blindspot"]["rightbsmlight"] == 1
+    if self.CP.enableBsm:
+      ret.leftBlindspot = pt_cp.vl["left_blindspot"]["leftbsmlight"] == 1
+      ret.rightBlindspot = pt_cp.vl["right_blindspot"]["rightbsmlight"] == 1
 
     # Variables used for avoiding LKAS faults
     self.loopback_lka_steering_cmd_updated = len(loopback_cp.vl_all["ASCMLKASteeringCmd"]["RollingCounter"]) > 0
@@ -168,10 +169,10 @@ class CarState(CarStateBase):
                       pt_cp.vl["EBCMFrictionBrakeStatus"]["FrictionBrakeUnavailable"] == 1)
     self.accFaultedCount = self.accFaultedCount + 1 if accFaulted else 0
     ret.accFaulted = True if self.accFaultedCount > 50 else False
-    self.acc_fault = ret.accFaulted
 
     ret.cruiseState.enabled = pt_cp.vl["AcceleratorPedal2"]["CruiseState"] != AccState.OFF
     ret.cruiseState.standstill = pt_cp.vl["AcceleratorPedal2"]["CruiseState"] == AccState.STANDSTILL
+    ret.cruiseState.standstill = False
     if self.CP.networkLocation == NetworkLocation.fwdCamera and not self.CP.flags & GMFlags.NO_CAMERA.value:
       if self.CP.carFingerprint not in CC_ONLY_CAR:
         ret.cruiseState.speed = cam_cp.vl["ASCMActiveCruiseControlStatus"]["ACCSpeedSetpoint"] * CV.KPH_TO_MS
@@ -284,8 +285,9 @@ class CarState(CarStateBase):
     ]
 
     # BSM does not send a signal until the first instance of it lighting up
-    messages.append(("left_blindspot", 0))
-    messages.append(("right_blindspot", 0))
+    if CP.enableBsm:
+      messages.append(("left_blindspot", 0))
+      messages.append(("right_blindspot", 0))
 
     if CP.carFingerprint in SDGM_CAR:
       messages += [

@@ -46,7 +46,7 @@ J_EGO_COST = 5.0
 A_CHANGE_COST = 200.
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
-LEAD_DANGER_FACTOR = 0.85
+LEAD_DANGER_FACTOR = 0.75
 LIMIT_COST = 1e6
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
@@ -280,6 +280,7 @@ class LongitudinalMpc:
     self.trafficStopDistanceAdjust = 1.8
     self.aChangeCost = 200
     self.aChangeCostStart = 40
+    self.leadDangerFactor = LEAD_DANGER_FACTOR
     self.trafficStopMode = 1
     self.tFollowSpeedAdd = 0.0
     self.tFollowSpeedAddM = 0.0
@@ -484,7 +485,7 @@ class LongitudinalMpc:
 
     # Update in ACC mode or ACC/e2e blend
     if self.mode == 'acc':
-      self.params[:,5] = LEAD_DANGER_FACTOR
+      self.params[:,5] = self.leadDangerFactor #LEAD_DANGER_FACTOR
 
       x2 = stop_x * np.ones(N+1) + self.trafficStopDistanceAdjust #if self.xState == XState.e2eStop else 1000.0 * np.ones(N+1)
 
@@ -610,6 +611,8 @@ class LongitudinalMpc:
       self.lo_timer = 0
     elif self.lo_timer == 20:
       pass
+    elif self.lo_timer == 40:
+      self.leadDangerFactor = float(int(Params().get("LeadDangerFactor", encoding="utf8"))) * 0.01
     elif self.lo_timer == 80:
       self.trafficStopMode = int(Params().get("TrafficStopMode", encoding="utf8"))
     elif self.lo_timer == 100:
@@ -633,7 +636,7 @@ class LongitudinalMpc:
     if v_ego_kph < 1.0:
       stopSign = model_x < 20.0 and model_v < 10.0
     elif v_ego_kph < 82.0:
-      stopSign = model_x < 120.0 and ((model_v < 3.0) or (model_v < v[0]*0.7))  and abs(y[-1]) < 5.0
+      stopSign = model_x < interp(v[0], [60/3.6, 80/3.6], [120.0, 150]) and ((model_v < 3.0) or (model_v < v[0]*0.7))  and abs(y[-1]) < 5.0
     else:
       stopSign = False
 

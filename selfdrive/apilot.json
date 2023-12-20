@@ -314,6 +314,16 @@
       "unit": 1
     },
     {
+    {
+      "group": "감속제어",
+      "name": "LeadDangerFactor",
+      "title": "LEAD_DANGER_FACTOR(80)",
+      "descr": "줄이면 정지거리가 짧아집니다.",
+      "min": 75,
+      "max": 100,
+      "default": 80,
+      "unit": 5
+    },
       "group": "감속제어",
       "name": "TrafficStopMode",
       "title": "신호정지 방법 (1)",
