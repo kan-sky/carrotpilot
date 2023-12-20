@@ -86,6 +86,7 @@ def manager_init() -> None:
     ("AutoNaviSpeedSafetyFactor", "105"),
     ("AutoNaviSpeedDecelRate", "80"),
     ("AutoResumeFromBrakeReleaseTrafficSign", "0"),
+    ("LeadDangerFactor", "80"),
     ("StartAccelApply", "0"),
     ("StopAccelApply", "50"),
     ("StoppingAccel", "-80"),
