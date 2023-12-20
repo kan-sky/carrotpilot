@@ -201,7 +201,7 @@ class CarController:
           can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, CC.enabled,
                                                               hud_v_cruise * CV.MS_TO_KPH, hud_control.leadVisible, send_fcw, CS.display_menu, CS.personality_profile))
       else:
-        # to keep accel steady for logs when not sending gas
+        self.accel_g = ACCELERATION_DUE_TO_GRAVITY * apply_deadzone(self.pitch.x, PITCH_DEADZONE) # driving uphill is positive pitch
         accel += self.accel_g
 
       # Radar needs to know current speed and yaw rate (50hz),
