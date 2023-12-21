@@ -636,6 +636,9 @@ CarrotPanel::CarrotPanel(QWidget* parent) : QWidget(parent) {
     speedToggles->addItem(new CValueControl("AutoNaviSpeedSafetyFactor", "SpeedCameraSafetyFactor(105%)", "", ".. / assets / offroad / icon_road.png", 80, 120, 1));
     speedToggles->addItem(new CValueControl("AutoNaviSpeedBumpTime", "SpeedBumpTimeDistance(1s)", "", ".. / assets / offroad / icon_road.png", 1, 50, 1));
     speedToggles->addItem(new CValueControl("AutoNaviSpeedBumpSpeed", "SpeedBumpSpeed(35Km/h)", "", ".. / assets / offroad / icon_road.png", 10, 100, 5));
+    speedToggles->addItem(new CValueControl("LeadDangerFactor", "StopDistance오프셑(x80%)", "", "../assets/offroad/icon_road.png", 75, 100, 5));
+    speedToggles->addItem(new CValueControl("StopDistance", "StopDistance(600cm)", "선행차와 정지하는 거리를 입력합니다.", "../assets/offroad/icon_road.png", 200, 1000, 50));
+    speedToggles->addItem(new CValueControl("TrafficStopDistanceAdjust", "신호정지 위치조정(180cm)", "줄이면 정지선에서 멀어집니다.", "../assets/offroad/icon_road.png", 0, 300, 10));
 
     toggles_layout->addWidget(cruiseToggles);
     toggles_layout->addWidget(latLongToggles);

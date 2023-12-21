@@ -284,6 +284,7 @@ class LongitudinalMpc:
     self.trafficStopMode = 1
     self.tFollowSpeedAdd = 0.0
     self.tFollowSpeedAddM = 0.0
+    self.stopDistance = STOP_DISTANCE
     self.lo_timer = 0 
     self.v_ego_prev = 0.0
     self.trafficState = TrafficState.off
@@ -613,8 +614,10 @@ class LongitudinalMpc:
       pass
     elif self.lo_timer == 40:
       self.leadDangerFactor = float(int(Params().get("LeadDangerFactor", encoding="utf8"))) * 0.01
+      self.trafficStopDistanceAdjust = float(int(Params().get("TrafficStopDistanceAdjust", encoding="utf8"))) / 100.
     elif self.lo_timer == 80:
       self.trafficStopMode = int(Params().get("TrafficStopMode", encoding="utf8"))
+      self.stopDistance = float(int(Params().get("StopDistance", encoding="utf8"))) / 100.
     elif self.lo_timer == 100:
       self.tFollowSpeedAdd = float(Params().get_int("TFollowSpeedAdd")) / 100.
       self.tFollowSpeedAddM = float(Params().get_int("TFollowSpeedAddM")) / 100.

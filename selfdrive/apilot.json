@@ -316,12 +316,38 @@
     {
       "group": "감속제어",
       "name": "LeadDangerFactor",
-      "title": "LEAD_DANGER_FACTOR(80)",
+      "title": "StopDistance오프셑(x80%)",
       "descr": "줄이면 정지거리가 짧아집니다.",
       "min": 75,
       "max": 100,
       "default": 80,
       "unit": 5
+    },
+    {
+      "group": "감속제어",
+      "name": "StopDistance",
+      "title": "정지거리(600cm)",
+      "descr": "선행차와 정지하는 거리를 입력합니다.",
+      "egroup": "STOP",
+      "etitle": "StopDistance(600cm)",
+      "edescr": "Adjust stop distance",
+      "min": 200,
+      "max": 1000,
+      "default": 600,
+      "unit": 50
+    },
+    {
+      "group": "감속제어",
+      "name": "TrafficStopDistanceAdjust",
+      "title": "신호정지 위치조정(180cm)",
+      "descr": "줄이면 정지선에서 멀어집니다.",
+      "egroup": "STOP",
+      "etitle": "TrafficStopDistance(180cm)",
+      "edescr": "+Value : forward",
+      "min": 0,
+      "max": 300,
+      "default": 180,
+      "unit": 10
     },
     {
       "group": "감속제어",
