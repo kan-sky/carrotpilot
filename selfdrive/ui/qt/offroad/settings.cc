@@ -567,7 +567,7 @@ CarrotPanel::CarrotPanel(QWidget* parent) : QWidget(parent) {
     cruiseToggles->addItem(new CValueControl("MySafeModeFactor", "DRIVEMODE: SAFE ratio(60%)", "Accel/StopDistance/DecelRatio/Gap control ratio", "../assets/offroad/icon_road.png", 10, 90, 10));
 
     latLongToggles = new ListWidget(this);
-    latLongToggles->addItem(new CValueControl("UseLaneLineSpeed", "UseLaneLine Speed KPH(0)", "Above set speed: laneline. Below: laneless mode. lat_mpc", "../assets/offroad/icon_shell.png", 0, 200, 5));
+    latLongToggles->addItem(new CValueControl("UseLaneLineSpeed", "Use Laneline mode (0)", "Lainline mode, lat_mpc control used", "../assets/offroad/icon_shell.png", 0, 1, 1));
     latLongToggles->addItem(new CValueControl("AdjustLaneOffset", "AdjustLaneOffset(0)cm", "", "../assets/offroad/icon_shell.png", 0, 500, 5));
     latLongToggles->addItem(new CValueControl("AdjustCurveOffset", "AdjustCurveOffset(0)cm", "", "../assets/offroad/icon_shell.png", 0, 500, 5));
     //latLongToggles->addItem(new CValueControl("UseModelPath", "UseModelPath(0)", "", "../assets/offroad/icon_shell.png", 0, 1, 1));
@@ -626,6 +626,7 @@ CarrotPanel::CarrotPanel(QWidget* parent) : QWidget(parent) {
     startToggles->addItem(new ParamControl("SccConnectedBus2", "(HKG) SCC Module connected BUS2", "", "../assets/offroad/icon_warning.png", this));
     startToggles->addItem(new ParamControl("EnableRadarTracks", "(HKG) EnableRadarTracks", "Activate Radartracks at startup", "../assets/offroad/icon_warning.png", this));
     startToggles->addItem(new CValueControl("SoundVolumeAdjust", "Adjust Sound Volume(100%)", "", "../assets/offroad/icon_shell.png", 5, 100, 5));
+    startToggles->addItem(new CValueControl("MapboxStyle", "Mapbox Style(0)", "", "../assets/offroad/icon_shell.png", 0, 2, 1));
 
     speedToggles = new ListWidget(this);
     speedToggles->addItem(new CValueControl("AutoCurveSpeedCtrlUse", "CURVE: Auto Control(1)", "곡선도로를 만나면 속도를 줄여줍니다. 0:사용안함,1:도로설계기준", "../assets/offroad/icon_road.png", 0, 3, 1));
