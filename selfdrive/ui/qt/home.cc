@@ -221,10 +221,10 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   // Set the model name
   std::map<int, QString> MODEL_NAME {
     {0, "Blue Diamond"},
-    {1, "New Delhi"},
-    {2, "Farmville"},
-    {3, "New Lemon Pie"},
-    {4, "Blue Diamond V1"},
+    {1, "Farmville"},
+    {2, "New Lemon Pie"},
+    {3, "Blue Diamond V1"},
+    {4, "nd-driving"},
   };
 
   modelName = MODEL_NAME[params.getInt("Model")];
