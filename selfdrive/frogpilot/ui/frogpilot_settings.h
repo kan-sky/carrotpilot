@@ -228,7 +228,7 @@ ParamController(LaneChangeTime, "LaneChangeTime", "   Lane Change Timer", "Set a
   return std::clamp(v, 0, 10);
 )
 
-ParamController(Model, "Model", "Model Selector (Requires Reboot)", "Select your preferred openpilot model.\n\nBD = Blue Diamond (Default)\nND = New Delhi\nFV = Farmville\nNLP = New Lemon Pie\nBDv1 = Blue Diamond V1\nND = ND Driving", "../assets/offroad/icon_calibration.png",
+ParamController(Model, "Model", "Model Selector (Requires Reboot)", "Select your preferred openpilot model.\n\nBD = Blue Diamond (Default)\nFV = Farmville\nNLP = New Lemon Pie\nBDv1 = Blue Diamond V1\nND = Nd Driving", "../assets/offroad/icon_calibration.png",
   const int model = params.getInt("Model");
   return model == 0 ? "BD" : model == 1 ? "FV" : model == 2 ? "NLP" : model == 3 ? "BDv1" : "ND";,
   return v >= 0 ? v % 5 : 4;
