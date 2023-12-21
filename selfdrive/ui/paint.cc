@@ -1011,7 +1011,8 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
         case 2: strcpy(strDrivingMode, "NOR"); break;
         case 3: strcpy(strDrivingMode, "SPT"); break;
         default:
-            strcpy(strDrivingMode, "ERR"); break;
+            sprintf(strDrivingMode,"ERR%d", drivingMode); break;
+            //strcpy(strDrivingMode, "ERR"); break;
         }
     }
 
@@ -1027,6 +1028,14 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
     static char _strDrivingMode[128]="";
     if (strcmp(strDrivingMode, _strDrivingMode)) ui_draw_text_a(s, x + dxGap + 15, y + 120, strDrivingMode, 30, COLOR_WHITE, BOLD);
     strcpy(_strDrivingMode, strDrivingMode);
+
+    char strLatControlMode[128]="";
+    int useLaneLineSpeed = Params().getInt("UseLaneLineSpeed");
+    strcpy(strLatControlMode, (useLaneLineSpeed > 0) ? "Laneline Follow Mode" : "Laneless Mode");
+    static char _strLatControlMode[128]="";
+    if (strcmp(strLatControlMode, _strLatControlMode)) ui_draw_text_a(s, x + dxGap + 15, y + 120, strLatControlMode, 30, COLOR_WHITE, BOLD);
+    strcpy(_strLatControlMode, strLatControlMode);
+
     dxGap -= 60;
     if (s->show_gap_info > 0) {
 #ifdef __TEST
@@ -1085,6 +1094,7 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
     }
 
     // 속도표시
+    static float vtscOffset = 0.0;
     if (true) {
 
         //bool is_metric = s->scene.is_metric;
@@ -1095,10 +1105,15 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
         float cruiseMaxSpeed = controls_state.getVCruiseCluster();// scc_smoother.getCruiseMaxSpeed();
         float applyMaxSpeed = controls_state.getVCruise();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
         float curveSpeed = 0;//HW: controls_state.getCurveSpeed();
+        vtscOffset = 0.1 * s->scene.vtsc_offset * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * vtscOffset;
         bool speedCtrlActive = false;
-        if (curveSpeed < 0) {
-            speedCtrlActive = true;
-            curveSpeed = -curveSpeed;
+        //if (curveSpeed < 0) {
+        //    speedCtrlActive = true;
+        //    curveSpeed = -curveSpeed;
+        //}
+        if (vtscOffset > 0.5) {
+            //speedCtrlActive = true;
+            curveSpeed = applyMaxSpeed - vtscOffset;
         }
 
         //float xCruiseTarget = lp.getXCruiseTarget() * 3.6;
