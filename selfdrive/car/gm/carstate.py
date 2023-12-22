@@ -26,6 +26,8 @@ class CarState(CarStateBase):
     self.loopback_lka_steering_cmd_ts_nanos = 0
     self.pt_lka_steering_cmd_counter = 0
     self.cam_lka_steering_cmd_counter = 0
+    self.param = Params()
+    self.param_memory = Params("/dev/shm/params")
 
     # GAP_DIST
     self.distance_button_pressed = False

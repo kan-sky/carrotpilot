@@ -359,7 +359,7 @@ class LongitudinalPlanner:
     frogpilotLongitudinalPlan.greenLight = bool(self.green_light)
 
     frogpilotLongitudinalPlan.slcOverridden = self.override_slc
-    frogpilotLongitudinalPlan.slcOverriddenSpeed = self.overridden_speed
+    frogpilotLongitudinalPlan.slcOverriddenSpeed = float(self.overridden_speed)
     frogpilotLongitudinalPlan.slcSpeedLimit = SpeedLimitController.desired_speed_limit
     frogpilotLongitudinalPlan.slcSpeedLimitOffset = SpeedLimitController.offset
 

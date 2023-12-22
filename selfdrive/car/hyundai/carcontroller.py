@@ -7,6 +7,8 @@ from openpilot.selfdrive.car import apply_driver_steer_torque_limits, common_fau
 from openpilot.selfdrive.car.hyundai import hyundaicanfd, hyundaican
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CarControllerParams, CANFD_CAR, CAR
+import random
+from random import randint
 from openpilot.common.params import Params
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
