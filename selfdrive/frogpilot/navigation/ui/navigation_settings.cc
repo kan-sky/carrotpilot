@@ -223,8 +223,10 @@ void FrogPilotNavigationPanel::downloadMaps() {
 void FrogPilotNavigationPanel::removeMaps(QWidget *parent) {
   if (ConfirmationDialog::yesorno("Are you sure you want to delete all of your downloaded maps?", parent)) {
     std::thread([&] {
+      lastMapsDownload->setVisible(false);
       removeOfflineMapsButton->setVisible(false);
       offlineMapsSize->setText(formatSize(0));
+      params.remove("LastMapsUpdate");
       std::system("rm -rf /data/media/0/osm/offline");
     }).detach();
   }

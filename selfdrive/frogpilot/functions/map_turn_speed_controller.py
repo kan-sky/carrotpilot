@@ -3,10 +3,8 @@ from openpilot.common.conversions import Conversions as CV
 import json
 import math
 from openpilot.common.numpy_fast import interp
-from time import time
 
 mem_params = Params("/dev/shm/params")
-params = Params()
 
 R = 6373000.0 # approximate radius of earth in meters
 TO_RADIANS = math.pi / 180
@@ -40,24 +38,11 @@ def distance_to_point(ax, ay, bx, by):
 
 class MapTurnSpeedController:
   def __init__(self):
-    self.enabled = params.get_bool("MTSCEnabled")
-    self.last_params_update = time()
     self.target_lat = 0.0
     self.target_lon = 0.0
     self.target_v = 0.0
 
-  def update_params(self):
-    t = time()
-    if t > self.last_params_update + 5.0:
-      self.enabled = params.get_bool("MTSCEnabled")
-      self.last_params_update = t
-
   def target_speed(self, v_ego, a_ego) -> float:
-    self.update_params()
-
-    if not self.enabled:
-      return 0.0
-
     lat = 0.0
     lon = 0.0
     try:

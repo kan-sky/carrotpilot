@@ -14,6 +14,7 @@ private:
   void hideEvent(QHideEvent *event);
   void hideSubToggles();
   void setDefaults();
+  void showEvent(QShowEvent *event);
   void updateMetric();
 
   ButtonControl *backButton;
@@ -22,11 +23,11 @@ private:
   std::set<QString> customThemeKeys;
   std::set<QString> modelUIKeys;
 
-  std::map<std::string, ToggleControl*> toggles;
-
-  bool isMetric;
-  bool previousIsMetric;
+  std::map<std::string, ParamControl*> toggles;
 
   Params params;
   Params paramsMemory{"/dev/shm/params"};
+
+  bool isMetric;
+  bool previousIsMetric;
 };

@@ -1384,8 +1384,8 @@ void Compass::paintEvent(QPaintEvent *event) {
   // Draw cardinal directions
   p.setFont(InterFont(20, QFont::Bold));
   const QString directions[] = {"N", "E", "S", "W", "N"};
-  const int fromAngles[] = {0, 23, 113, 203, 293};
-  const int toAngles[] = {68, 158, 248, 338, 360};
+  const int fromAngles[] = {337, 68, 158, 248, 337};
+  const int toAngles[] = {22, 112, 202, 292, 360};
   const int alignmentFlags[] = {Qt::AlignTop | Qt::AlignHCenter, Qt::AlignRight | Qt::AlignVCenter, Qt::AlignBottom | Qt::AlignHCenter, Qt::AlignLeft | Qt::AlignVCenter, Qt::AlignTop | Qt::AlignHCenter};
   int directionOffset = 20;
 

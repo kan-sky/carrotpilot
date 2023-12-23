@@ -258,44 +258,21 @@ QString calculateETA(int totalFiles, int downloadedFiles, const std::chrono::ste
   using namespace std::chrono;
   if (totalFiles <= 0 || downloadedFiles >= totalFiles) return "Calculating...";
 
-  static std::deque<std::pair<double, long>> speedSamples;
-  static long lastUpdateDownloadedFiles = -1;
-  static steady_clock::time_point lastUpdateTime = steady_clock::now();
+  long elapsed = duration_cast<seconds>(steady_clock::now() - startTime).count();
 
-  long elapsedSeconds = duration_cast<seconds>(steady_clock::now() - startTime).count();
-  long timeSinceLastUpdate = duration_cast<seconds>(steady_clock::now() - lastUpdateTime).count();
-  if (timeSinceLastUpdate >= 1 || downloadedFiles > lastUpdateDownloadedFiles) {
-    double speed = timeSinceLastUpdate > 0 ? static_cast<double>(downloadedFiles - lastUpdateDownloadedFiles) / timeSinceLastUpdate : 0.0;
-    if (speed > 0.0) {
-      speedSamples.emplace_back(speed, elapsedSeconds);
-    }
-    lastUpdateDownloadedFiles = downloadedFiles;
-    lastUpdateTime = steady_clock::now();
+  if (downloadedFiles == 0 || elapsed <= 0) {
+    return "Calculating...";
   }
 
-  const size_t sampleSize = 10;
-  while (speedSamples.size() > sampleSize) {
-    speedSamples.pop_front();
-  }
+  double averageTimePerFile = static_cast<double>(elapsed) / downloadedFiles;
+  int remainingFiles = totalFiles - downloadedFiles;
+  long estimatedTimeRemaining = static_cast<long>(averageTimePerFile * remainingFiles);
 
-  double weightedSpeedSum = 0.0;
-  long totalWeight = 0;
-  for (const std::pair<double, long> &sample : speedSamples) {
-    long weight = elapsedSeconds - sample.second + 1;
-    weightedSpeedSum += sample.first * weight;
-    totalWeight += weight;
-  }
-
-  double averageSpeed = totalWeight > 0 ? weightedSpeedSum / totalWeight : 0.0;
-  if (averageSpeed <= 0.0) return "Calculating...";
-
-  long remainingFiles = totalFiles - downloadedFiles;
-  long remainingTimeEstimate = static_cast<long>(remainingFiles / averageSpeed);
-
-  std::chrono::time_point<std::chrono::system_clock> estimatedCompletionTime = system_clock::now() + seconds(remainingTimeEstimate);
+  std::chrono::time_point<std::chrono::system_clock> estimatedCompletionTime = system_clock::now() + seconds(estimatedTimeRemaining);
   QString estimatedTimeStr = formatDateTime(estimatedCompletionTime);
 
-  return formatTime(remainingTimeEstimate) + " (" + estimatedTimeStr + ")";
+  return formatTime(estimatedTimeRemaining) + " (" + estimatedTimeStr + ")";
+
 }
 
 QString formatDownloadStatus(int totalFiles, int downloadedFiles) {

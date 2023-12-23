@@ -317,7 +317,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CameraView", PERSISTENT},
     {"CarMake", PERSISTENT},
     {"CarModel", PERSISTENT},
-    {"CarStateSpeedLimit", PERSISTENT},
+    {"CarSpeedLimit", PERSISTENT},
     {"CECurves", PERSISTENT},
     {"CECurvesLead", PERSISTENT},
     {"CENavigation", PERSISTENT},

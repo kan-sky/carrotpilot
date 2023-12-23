@@ -86,9 +86,9 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
   });
   addItem(selectMakeButton);
 
-  ButtonControl *selectModelButton = new ButtonControl(tr("Select Model"), tr("SELECT"));
+  selectModelButton = new ButtonControl(tr("Select Model"), tr("SELECT"));
   QString modelSelection = QString::fromStdString(params.get("CarModel"));
-  connect(selectModelButton, &ButtonControl::clicked, [this, selectModelButton]() {
+  connect(selectModelButton, &ButtonControl::clicked, [this]() {
     std::string currentModel = params.get("CarModel");
     QString newModelSelection = MultiOptionDialog::getSelection(tr("Select a Model"), models, QString::fromStdString(currentModel), this);
     if (!newModelSelection.isEmpty()) {
@@ -104,7 +104,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
   noToggles->setAlignment(Qt::AlignCenter);
   addItem(noToggles);
 
-  std::vector<std::tuple<QString, QString, QString, QString>> vehicle_toggles {
+  std::vector<std::tuple<QString, QString, QString, QString>> vehicleToggles {
     {"EVTable", "EV Lookup Tables", "Smoothens out the gas and brake controls for EV vehicles.", ""},
     {"LongPitch", "Long Pitch Compensation", "Reduces speed and acceleration error for greater passenger comfort and improved vehicle efficiency.", ""},
     {"LowerVolt", "Lower Volt Enable Speed", "Lowers the Volt's minimum enable speed in order to enable openpilot at any speed.", ""},
@@ -114,7 +114,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
     {"TSS2Tune", "TSS2 Tune", "Tuning profile based on the tuning profile from DragonPilot for TSS2 vehicles.", ""}
   };
 
-  for (auto &[param, title, desc, icon] : vehicle_toggles) {
+  for (auto &[param, title, desc, icon] : vehicleToggles) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
     addItem(toggle);
     toggles[param.toStdString()] = toggle;
@@ -130,56 +130,66 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
     });
   }
 
-  QObject::connect(uiState(), &UIState::offroadTransition, this, &FrogPilotVehiclesPanel::setToggles);
+  QObject::connect(uiState(), &UIState::uiUpdate, this, [this]() {
+    if (this->isVisible()) {
+      this->setToggles();
+    }
+  });
 
+  gmKeys = {"EVTable", "LongPitch", "LowerVolt"};
+  toyotaKeys = {"LockDoors", "SNGHack", "TSS2Tune"};
+
+  setDefaults();
   setModels();
   setToggles();
 }
 
 void FrogPilotVehiclesPanel::setModels() {
-  std::string carMake = params.get("CarMake");
-  QString dirPath = "../../selfdrive/car";
-  models = getCarNames(dirPath, QString::fromStdString(carMake));
+  std::thread([&] {
+    std::string carMake = params.get("CarMake");
+    QString dirPath = "../../selfdrive/car";
+    models = getCarNames(dirPath, QString::fromStdString(carMake));
+  }).detach();
 }
 
 void FrogPilotVehiclesPanel::setToggles() {
-  const QString makeSelection = QString::fromStdString(params.get("CarMake"));
+  std::thread([&] {
+    previousMakeSelection = makeSelection;
+    makeSelection = QString::fromStdString(params.get("CarMake"));
 
-  if (previousMakeSelection == makeSelection) return;
+    selectModelButton->setVisible(!makeSelection.isEmpty());
 
-  previousMakeSelection = makeSelection;
-  selectMakeButton->setValue(makeSelection);
+    if (!makeSelection.isEmpty()) {
+      if (previousMakeSelection == makeSelection) return;
+    }
 
-  const bool gm = makeSelection == "Buick" || makeSelection == "Cadillac" || makeSelection == "Chevrolet" || makeSelection == "GM" || makeSelection == "GMC";
-  const bool toyota = makeSelection == "Lexus" || makeSelection == "Toyota";
+    previousMakeSelection = makeSelection;
+    selectMakeButton->setValue(makeSelection);
 
-  auto evtable = toggles["EVTable"];
-  evtable->setVisible(gm);
+    const bool gm = makeSelection == "Buick" || makeSelection == "Cadillac" || makeSelection == "Chevrolet" || makeSelection == "GM" || makeSelection == "GMC";
+    const bool toyota = makeSelection == "Lexus" || makeSelection == "Toyota";
 
-  auto longPitch = toggles["LongPitch"];
-  longPitch->setVisible(gm);
+    for (auto &[key, toggle] : toggles) {
+      const bool gmToggles = gmKeys.find(key.c_str()) != gmKeys.end();
+      const bool toyotaToggles = toyotaKeys.find(key.c_str()) != toyotaKeys.end();
 
-  auto lowerVolt = toggles["LowerVolt"];
-  lowerVolt->setVisible(gm);
+      if (gm) {
+        toggle->setVisible(gmToggles);
+      } else if (toyota) {
+        toggle->setVisible(toyotaToggles);
+      } else {
+        toggle->setVisible(false);
+      }
 
-  auto lockDoors = toggles["LockDoors"];
-  lockDoors->setVisible(toyota);
-
-  auto sngHack = toggles["SNGHack"];
-  sngHack->setVisible(toyota);
-
-  auto tss2Tune = toggles["TSS2Tune"];
-  tss2Tune->setVisible(toyota);
-
-  noToggles->setVisible(!(gm || toyota));
-
-  this->update();
+      noToggles->setVisible(!(gm || toyota));
+    }
+  }).detach();
 }
 
 void FrogPilotVehiclesPanel::setDefaults() {
   const bool FrogsGoMoo = params.get("DongleId").substr(0, 3) == "be6";
 
-  const std::map<std::string, std::string> default_values {
+  const std::map<std::string, std::string> defaultValues {
     {"EVTable", FrogsGoMoo ? "0" : "1"},
     {"LongPitch", FrogsGoMoo ? "0" : "1"},
     {"LowerVolt", FrogsGoMoo ? "0" : "1"},
@@ -189,7 +199,7 @@ void FrogPilotVehiclesPanel::setDefaults() {
   };
 
   bool rebootRequired = false;
-  for (const auto &[key, value] : default_values) {
+  for (const auto &[key, value] : defaultValues) {
     if (params.get(key).empty()) {
       params.put(key, value);
       rebootRequired = true;
