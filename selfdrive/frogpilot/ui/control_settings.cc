@@ -314,9 +314,12 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : ListWid
       paramsMemory.putBool("FrogPilotTogglesUpdated", true);
     });
 
-    connect(dynamic_cast<ParamValueControl*>(toggle), &ParamValueControl::buttonPressed, [this]() {
-      paramsMemory.putBool("FrogPilotTogglesUpdated", true);
-    });
+    ParamValueControl* pvc = dynamic_cast<ParamValueControl*>(toggle);
+    if (pvc != nullptr)
+        connect(dynamic_cast<ParamValueControl*>(toggle), &ParamValueControl::buttonPressed, [this]() {
+        paramsMemory.putBool("FrogPilotTogglesUpdated", true);
+            });
+    else printf("pvc nullptr...\n");
   }
 
   conditionalExperimentalKeys = {"CECurves", "CECurvesLead", "CESlowerLead", "CENavigation", "CEStopLights", "CESignal"};

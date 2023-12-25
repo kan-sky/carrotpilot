@@ -1193,7 +1193,7 @@ void AnnotatedCameraWidget::updateFrogPilotVariables() {
   conditionalSpeed = scene.conditional_speed;
   conditionalSpeedLead = scene.conditional_speed_lead;
   conditionalStatus = scene.conditional_status;
-  cruiseAdjustment = fmax((0.1 * fmax(setSpeed - scene.adjusted_cruise - setSpeed, 0) * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * cruiseAdjustment) - 1, 0);
+  cruiseAdjustment = fmax((0.1 * fmax(setSpeed - scene.adjusted_cruise - setSpeed - 1, 0) * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * cruiseAdjustment), 0);
   customColors = scene.custom_colors;
   desiredFollow = scene.desired_follow;
   experimentalMode = scene.experimental_mode;

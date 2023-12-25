@@ -190,7 +190,8 @@ class CarController:
           self.jerk_count = 0
         else:
           jerk_u = min(max(0.5, jerk * 2.0), jerk_max)
-          jerk_l = min(max(1.0, -jerk * 2.0), jerk_max)
+          #jerk_l = min(max(1.0, -jerk * 2.0), jerk_max)
+          jerk_l = min(max(1.5, -jerk * 2.0), jerk_max)
           cb_upper = clip(0.9 + accel * 0.2, 0, 1.2)
           cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
         

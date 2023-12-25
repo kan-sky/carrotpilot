@@ -1031,7 +1031,7 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
 
     char strLatControlMode[128]="";
     int useLaneLineSpeed = Params().getInt("UseLaneLineSpeed");
-    strcpy(strLatControlMode, (useLaneLineSpeed > 0) ? "Laneline Follow Mode" : "Laneless Mode");
+    strcpy(strLatControlMode, (useLaneLineSpeed > 0) ? tr("Lane Follow").toStdString().c_str() : tr("Laneless").toStdString().c_str());
     static char _strLatControlMode[128]="";
     if (strcmp(strLatControlMode, _strLatControlMode)) ui_draw_text_a(s, x + dxGap + 15, y + 120, strLatControlMode, 30, COLOR_WHITE, BOLD);
     strcpy(_strLatControlMode, strLatControlMode);
@@ -1105,7 +1105,7 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
         float cruiseMaxSpeed = controls_state.getVCruiseCluster();// scc_smoother.getCruiseMaxSpeed();
         float applyMaxSpeed = controls_state.getVCruise();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
         float curveSpeed = 0;//HW: controls_state.getCurveSpeed();
-        cruiseAdjustment  = 0.1 * s->scene.adjusted_cruise * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * cruiseAdjustment;
+        cruiseAdjustment = s->scene.adjusted_cruise * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) * 0.1 + cruiseAdjustment * 0.9;
         bool speedCtrlActive = false;
         //if (curveSpeed < 0) {
         //    speedCtrlActive = true;
@@ -1709,7 +1709,14 @@ void DrawApilot::drawLeadApilot(const UIState* s) {
     //const UIScene& scene = s->scene;
 
 #ifndef __TEST
-    if (!sm.alive("controlsState") || !sm.alive("radarState") || !sm.alive("carControl")) return;
+    if (!sm.alive("controlsState") || !sm.alive("radarState") || !sm.alive("carControl")) {
+        printf("not ready....\n");
+        return;
+    }
+    if (!sm.alive("lateralPlan") || !sm.alive("longitudinalPlan") || !sm.alive("liveParameters") || !sm.alive("roadLimitSpeed") || !sm.alive("liveTorqueParameters")) {
+        printf("not ready 2....\n");
+        return;
+    }
 #endif
     makeData(s);
 
