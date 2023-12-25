@@ -14,7 +14,6 @@ private:
   void hideEvent(QHideEvent *event);
   void hideSubToggles();
   void setDefaults();
-  void showEvent(QShowEvent *event);
   void updateMetric();
 
   ButtonControl *backButton;
@@ -28,6 +27,5 @@ private:
   Params params;
   Params paramsMemory{"/dev/shm/params"};
 
-  bool isMetric;
-  bool previousIsMetric;
+  bool isMetric = params.getBool("IsMetric");
 };

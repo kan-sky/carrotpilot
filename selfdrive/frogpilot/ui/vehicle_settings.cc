@@ -71,26 +71,25 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
   connect(selectMakeButton, &ButtonControl::clicked, [this]() {
     std::string currentModel = params.get("CarMake");
     QStringList makes = {
-      "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler", "Dodge", "Ford", "GM", "GMC", 
-      "Genesis", "Honda", "Hyundai", "Infiniti", "Jeep", "Kia", "Lexus", "Lincoln", "MAN", "Mazda", 
+      "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler", "Dodge", "Ford", "GM", "GMC",
+      "Genesis", "Honda", "Hyundai", "Infiniti", "Jeep", "Kia", "Lexus", "Lincoln", "MAN", "Mazda",
       "Mercedes", "Nissan", "Ram", "SEAT", "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo", "Škoda",
     };
 
-    QString newMakeSelection = MultiOptionDialog::getSelection(tr("Select a Make"), makes, QString::fromStdString(currentModel), this);
+    const QString newMakeSelection = MultiOptionDialog::getSelection(tr("Select a Make"), makes, QString::fromStdString(currentModel), this);
     if (!newMakeSelection.isEmpty()) {
       params.put("CarMake", newMakeSelection.toStdString());
       selectMakeButton->setValue(newMakeSelection);
       setModels();
-      setToggles();
     }
   });
   addItem(selectMakeButton);
 
   selectModelButton = new ButtonControl(tr("Select Model"), tr("SELECT"));
-  QString modelSelection = QString::fromStdString(params.get("CarModel"));
+  const QString modelSelection = QString::fromStdString(params.get("CarModel"));
   connect(selectModelButton, &ButtonControl::clicked, [this]() {
-    std::string currentModel = params.get("CarModel");
-    QString newModelSelection = MultiOptionDialog::getSelection(tr("Select a Model"), models, QString::fromStdString(currentModel), this);
+    const std::string currentModel = params.get("CarModel");
+    const QString newModelSelection = MultiOptionDialog::getSelection(tr("Select a Model"), models, QString::fromStdString(currentModel), this);
     if (!newModelSelection.isEmpty()) {
       params.put("CarModel", newModelSelection.toStdString());
       selectModelButton->setValue(newModelSelection);
@@ -104,18 +103,18 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
   noToggles->setAlignment(Qt::AlignCenter);
   addItem(noToggles);
 
-  std::vector<std::tuple<QString, QString, QString, QString>> vehicleToggles {
-    {"EVTable", "EV Lookup Tables", "Smoothens out the gas and brake controls for EV vehicles.", ""},
-    {"LongPitch", "Long Pitch Compensation", "Reduces speed and acceleration error for greater passenger comfort and improved vehicle efficiency.", ""},
-    {"LowerVolt", "Lower Volt Enable Speed", "Lowers the Volt's minimum enable speed in order to enable openpilot at any speed.", ""},
+  const std::vector<std::tuple<QString, QString, QString, QString>> vehicleToggles {
+    {"EVTable", "EV Lookup Tables", "Smoothen out the gas and brake controls for EV vehicles.", ""},
+    {"LongPitch", "Long Pitch Compensation", "Reduce speed and acceleration error for greater passenger comfort and improved vehicle efficiency.", ""},
+    {"LowerVolt", "Lower Volt Enable Speed", "Lower the Volt's minimum enable speed to enable openpilot at any speed.", ""},
 
-    {"LockDoors", "Lock Doors In Drive", "Automatically locks the doors when in drive and unlocks when in park.", ""},
+    {"LockDoors", "Lock Doors In Drive", "Automatically lock the doors when in drive and unlock when in park.", ""},
     {"SNGHack", "Stop and Go Hack", "Enable the 'Stop and Go' hack for vehicles without stock stop and go functionality.", ""},
     {"TSS2Tune", "TSS2 Tune", "Tuning profile based on the tuning profile from DragonPilot for TSS2 vehicles.", ""}
   };
 
-  for (auto &[param, title, desc, icon] : vehicleToggles) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+  for (const auto &[param, title, desc, icon] : vehicleToggles) {
+    ParamControl *toggle = new ParamControl(param, title, desc, icon, this);
     addItem(toggle);
     toggles[param.toStdString()] = toggle;
 
@@ -132,7 +131,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
 
   QObject::connect(uiState(), &UIState::uiUpdate, this, [this]() {
     if (this->isVisible()) {
-      this->setToggles();
+      this->setModels();
     }
   });
 
@@ -141,35 +140,32 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : ListWid
 
   setDefaults();
   setModels();
-  setToggles();
 }
 
 void FrogPilotVehiclesPanel::setModels() {
-  std::thread([&] {
-    std::string carMake = params.get("CarMake");
-    QString dirPath = "../../selfdrive/car";
-    models = getCarNames(dirPath, QString::fromStdString(carMake));
+  std::thread([this] {
+    carMake = QString::fromStdString(params.get("CarMake"));
+    const QString dirPath = "../../selfdrive/car";
+    models = getCarNames(dirPath, carMake);
+    setToggles();
   }).detach();
 }
 
 void FrogPilotVehiclesPanel::setToggles() {
-  std::thread([&] {
-    previousMakeSelection = makeSelection;
-    makeSelection = QString::fromStdString(params.get("CarMake"));
+  std::thread([this] {
+    selectModelButton->setVisible(!carMake.isEmpty());
 
-    selectModelButton->setVisible(!makeSelection.isEmpty());
-
-    if (!makeSelection.isEmpty()) {
-      if (previousMakeSelection == makeSelection) return;
+    if (!carMake.isEmpty()) {
+      if (previousCarMake == carMake) return;
     }
 
-    previousMakeSelection = makeSelection;
-    selectMakeButton->setValue(makeSelection);
+    previousCarMake = carMake;
+    selectMakeButton->setValue(carMake);
 
-    const bool gm = makeSelection == "Buick" || makeSelection == "Cadillac" || makeSelection == "Chevrolet" || makeSelection == "GM" || makeSelection == "GMC";
-    const bool toyota = makeSelection == "Lexus" || makeSelection == "Toyota";
+    const bool gm = carMake == "Buick" || carMake == "Cadillac" || carMake == "Chevrolet" || carMake == "GM" || carMake == "GMC";
+    const bool toyota = carMake == "Lexus" || carMake == "Toyota";
 
-    for (auto &[key, toggle] : toggles) {
+    for (const auto &[key, toggle] : toggles) {
       const bool gmToggles = gmKeys.find(key.c_str()) != gmKeys.end();
       const bool toyotaToggles = toyotaKeys.find(key.c_str()) != toyotaKeys.end();
 
@@ -194,7 +190,7 @@ void FrogPilotVehiclesPanel::setDefaults() {
     {"LongPitch", FrogsGoMoo ? "0" : "1"},
     {"LowerVolt", FrogsGoMoo ? "0" : "1"},
     {"LockDoors", "0"},
-    {"SNGHack", "0"},
+    {"SNGHack", "1"},
     {"TSS2Tune", "1"},
   };
 

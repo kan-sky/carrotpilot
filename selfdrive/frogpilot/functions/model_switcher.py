@@ -29,8 +29,8 @@ def set_model_list_parameter(params):
     # Reset the selected model if the model list changed
     params.put_int("Model", 0)
     params.put("ModelList".encode('utf-8'), model_list)
-    params.remove("CalibrationParams");
-    params.remove("LiveTorqueParameters");
+    #params.remove("CalibrationParams");
+    #params.remove("LiveTorqueParameters");
 
 def onnx_already_set(path1, path2):
   """Check if the two files are identical by comparing their SHA-256 hashes."""

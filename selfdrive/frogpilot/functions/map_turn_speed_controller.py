@@ -21,11 +21,11 @@ TARGET_OFFSET = 1.0 # seconds - This controls how soon before the curve you reac
 def calculate_accel(t, target_jerk, a_ego):
   return a_ego  + target_jerk * t
 
-def calculate_velocity(t, target_jerk, a_ego, v_ego):
-  return v_ego + a_ego * t + target_jerk/2 * (t ** 2)
-
 def calculate_distance(t, target_jerk, a_ego, v_ego):
   return t * v_ego + a_ego/2 * (t ** 2) + target_jerk/6 * (t ** 3)
+
+def calculate_velocity(t, target_jerk, a_ego, v_ego):
+  return v_ego + a_ego * t + target_jerk/2 * (t ** 2)
 
 
 # points should be in radians

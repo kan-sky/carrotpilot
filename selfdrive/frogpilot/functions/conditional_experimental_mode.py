@@ -20,12 +20,13 @@ SLOW_DOWN_DISTANCE = [10, 30., 50., 70., 80., 90., 120.]
 
 
 class GenericMovingAverageCalculator:
-  def __init__(self):
+  def __init__(self, window_size):
+    self.window_size = window_size
     self.data = []
     self.total = 0
 
   def add_data(self, value):
-    if len(self.data) == THRESHOLD:
+    if len(self.data) == self.window_size:
       self.total -= self.data.pop(0)
     self.data.append(value)
     self.total += value
@@ -51,9 +52,9 @@ class ConditionalExperimentalMode:
     self.previous_status_value = 0
     self.status_value = 0
 
-    self.curvature_gmac = GenericMovingAverageCalculator()
-    self.slow_down_gmac = GenericMovingAverageCalculator()
-    self.slow_lead_gmac = GenericMovingAverageCalculator()
+    self.curvature_gmac = GenericMovingAverageCalculator(window_size=THRESHOLD)
+    self.slow_down_gmac = GenericMovingAverageCalculator(window_size=THRESHOLD)
+    self.slow_lead_gmac = GenericMovingAverageCalculator(window_size=THRESHOLD)
 
     self.update_frogpilot_params()
 
@@ -85,18 +86,15 @@ class ConditionalExperimentalMode:
 
     self.previous_v_ego = v_ego
 
-    if not lead:
-      self.slow_lead_gmac.reset_data()
-
   # Check conditions for the appropriate state of Experimental Mode
   def check_conditions(self, carState, frogpilotNavigation, lead, lead_distance, modelData, speed_difference, standstill, v_ego, v_lead, mtsc_offset, vtsc_offset):
     if standstill:
       return self.experimental_mode
 
     # Prevent Experimental Mode from deactivating for a red light/stop sign so we don't accidentally run it
-    # stopping_for_light = v_ego <= self.previous_v_ego and self.status_value == 12
-    # if stopping_for_light and self.experimental_mode:
-      # return True
+    stopping_for_light = v_ego <= self.previous_v_ego and self.status_value == 12
+    if stopping_for_light and self.experimental_mode:
+      return True
 
     # Navigation check
     if self.navigation and modelData.navEnabled and frogpilotNavigation.navigationConditionMet:
@@ -124,8 +122,8 @@ class ConditionalExperimentalMode:
       return True
 
     # Road curvature check
-    curve_detected = self.road_curvature(modelData, v_ego) and (self.curves_lead or not lead)
-    if self.curves and curve_detected and mtsc_offset == 0 and vtsc_offset == 0:
+    curve_detected = self.road_curvature(modelData, v_ego)
+    if self.curves and curve_detected and (self.curves_lead or not lead) and mtsc_offset == 0 and v_offset == 0:
       self.status_value = 11
       return True
 
@@ -148,7 +146,10 @@ class ConditionalExperimentalMode:
     return False
 
   def slow_lead(self, lead, lead_distance, v_ego):
-    if lead and v_ego >= 0.01:
+    if not lead:
+      self.slow_lead_gmac.reset_data()
+
+    if lead and v_ego != 0:
       self.slow_lead_gmac.add_data(lead_distance / v_ego)
 
     return self.slow_lead_gmac.get_moving_average() is not None and self.slow_lead_gmac.get_moving_average() <= SLOW_LEAD_TTC
@@ -166,7 +167,7 @@ class ConditionalExperimentalMode:
 
     # Add data to slow down GMAC
     self.slow_down_gmac.add_data(model_check and model_stopping)
-    return self.slow_down_gmac.get_moving_average() >= SLOW_DOWN_PROB and not following_lead and not turning
+    return self.slow_down_gmac.get_moving_average() >= SLOW_DOWN_PROB and (self.stop_lights_lead or not following_lead) and not turning
 
   def update_frogpilot_params(self):
     self.curves = self.params.get_bool("CECurves")
@@ -178,5 +179,6 @@ class ConditionalExperimentalMode:
     self.signal = self.params.get_bool("CESignal")
     self.slower_lead = self.params.get_bool("CESlowerLead")
     self.stop_lights = self.params.get_bool("CEStopLights")
+    self.stop_lights_lead = self.params.get_bool("CEStopLightsLead")
 
 ConditionalExperimentalMode = ConditionalExperimentalMode()

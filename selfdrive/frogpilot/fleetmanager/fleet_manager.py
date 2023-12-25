@@ -12,6 +12,7 @@ from openpilot.common.realtime import set_core_affinity
 import openpilot.selfdrive.frogpilot.fleetmanager.helpers as fleet
 from openpilot.system.hardware.hw import Paths
 from openpilot.common.swaglog import cloudlog
+import traceback
 
 app = Flask(__name__)
 
@@ -19,6 +20,11 @@ app = Flask(__name__)
 def home_page():
   return render_template("index.html")
 
+@app.errorhandler(500)
+def internal_error(exception):
+  print('500 error caught')
+  tberror = traceback.format_exc()
+  return render_template("error.html", error=tberror)
 
 @app.route("/footage/full/<cameratype>/<route>")
 def full(cameratype, route):
@@ -134,7 +140,10 @@ def addr_input():
   elif PrimeType != 0:
     return render_template("prime.html")
   elif fleet.get_nav_active():
-    return render_template("nonprime.html", gmap_key=gmap_key, lon=lon, lat=lat)
+    if SearchInput == 2:
+      return render_template("nonprime.html", gmap_key=gmap_key, lon=lon, lat=lat)
+    else:
+      return render_template("nonprime.html", gmap_key=None, lon=None, lat=None)
   elif token == "" or token is None:
     return redirect(url_for('public_token_input'))
   elif s_token == "" or s_token is None:
@@ -146,7 +155,7 @@ def addr_input():
     else:
       return render_template("addr.html", gmap_key=gmap_key, lon=lon, lat=lat)
   else:
-      return render_template("addr.html", gmap_key=gmap_key, lon=lon, lat=lat)
+      return render_template("addr.html", gmap_key=None, lon=None, lat=None)
 
 @app.route("/nav_confirmation", methods=['GET', 'POST'])
 def nav_confirmation():
@@ -196,7 +205,7 @@ def find_CurrentStep():
 
 @app.route("/navdirections.json", methods=['GET'])
 def find_nav_directions():
-  directory = "/data/openpilot/selfdrive/manager/" 
+  directory = "/data/openpilot/selfdrive/manager/"
   filename = "navdirections.json"
   return send_from_directory(directory, filename, as_attachment=True)
 
@@ -214,6 +223,11 @@ def set_destination():
     return Response('{"success": true}', content_type='application/json')
   else:
     return Response('{"success": false}', content_type='application/json')
+
+@app.route("/navigation/<file_name>", methods=['GET'])
+def find_navicon(file_name):
+  directory = "/data/openpilot/selfdrive/assets/navigation/"
+  return send_from_directory(directory, file_name, as_attachment=True)
 
 
 def main():

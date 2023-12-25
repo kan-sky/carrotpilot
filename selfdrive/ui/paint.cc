@@ -994,7 +994,7 @@ void DrawApilot::drawGapInfo(const UIState* s, int x, int y) {
 #endif
     char strDrivingMode[128];
     int drivingMode = Params().getInt("AccelerationProfile"); //HW: controls_state.getMyDrivingMode();
-    if (drivingMode == 2) { // apilot driving mode
+    if (drivingMode == 0) { // apilot driving mode
         int myDrivingMode = Params().getInt("MyDrivingMode");
         switch (myDrivingMode) {
         case 1: strcpy(strDrivingMode, tr("ECO").toStdString().c_str()); break;
@@ -1094,7 +1094,7 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
     }
 
     // 속도표시
-    static float vtscOffset = 0.0;
+    static float cruiseAdjustment = 0.0;
     if (true) {
 
         //bool is_metric = s->scene.is_metric;
@@ -1105,15 +1105,15 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
         float cruiseMaxSpeed = controls_state.getVCruiseCluster();// scc_smoother.getCruiseMaxSpeed();
         float applyMaxSpeed = controls_state.getVCruise();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
         float curveSpeed = 0;//HW: controls_state.getCurveSpeed();
-        vtscOffset = 0.1 * s->scene.vtsc_offset * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * vtscOffset;
+        cruiseAdjustment  = 0.1 * s->scene.adjusted_cruise * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * cruiseAdjustment;
         bool speedCtrlActive = false;
         //if (curveSpeed < 0) {
         //    speedCtrlActive = true;
         //    curveSpeed = -curveSpeed;
         //}
-        if (vtscOffset > 0.5) {
+        if (cruiseAdjustment > 0.5) {
             //speedCtrlActive = true;
-            curveSpeed = applyMaxSpeed - vtscOffset;
+            curveSpeed = applyMaxSpeed - cruiseAdjustment;
         }
 
         //float xCruiseTarget = lp.getXCruiseTarget() * 3.6;

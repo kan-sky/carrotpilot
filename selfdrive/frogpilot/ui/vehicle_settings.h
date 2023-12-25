@@ -21,14 +21,15 @@ private:
 
   QLabel *noToggles;
 
-  QString makeSelection;
-  QString previousMakeSelection;
+  QString carMake;
+  QString previousCarMake;
+
   QStringList models;
+
+  std::map<std::string, ParamControl*> toggles;
 
   std::set<QString> gmKeys;
   std::set<QString> toyotaKeys;
-
-  std::map<std::string, ParamControl*> toggles;
 
   Params params;
   Params paramsMemory{"/dev/shm/params"};

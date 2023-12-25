@@ -600,7 +600,7 @@ static void update_state(UIState *s) {
       scene.speed_limit_overridden = frogpilotLongitudinalPlan.getSlcOverridden();
       scene.speed_limit_overridden_speed = frogpilotLongitudinalPlan.getSlcOverriddenSpeed();
     }
-    scene.vtsc_offset = frogpilotLongitudinalPlan.getVtscOffset();
+    scene.adjusted_cruise = frogpilotLongitudinalPlan.getAdjustedCruise();
   }
   if (sm.updated("gpsLocation")) {
     const auto gpsLocation = sm["gpsLocation"].getGpsLocation();

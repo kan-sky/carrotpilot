@@ -45,7 +45,6 @@ _A_TOTAL_MAX_BP = [20., 40.]
 
 # VTSC variables
 TARGET_LAT_A = 1.9  # m/s^2
-MIN_TARGET_V = 5    # m/s
 
 
 def get_max_accel(v_ego):
@@ -242,7 +241,7 @@ class LongitudinalPlanner:
 
       self.stopped_for_light_previously = stopped_for_light
 
-    if self.previously_driving and v_ego > MIN_TARGET_V:
+    if self.previously_driving:
       v_cruise = self.v_cruise_update(carState, modelData, enabled, v_cruise, v_ego)
     else:
       self.mtsc_target = 0
@@ -306,6 +305,8 @@ class LongitudinalPlanner:
     frogpilot_plan_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
     frogpilotLongitudinalPlan = frogpilot_plan_send.frogpilotLongitudinalPlan
 
+    frogpilotLongitudinalPlan.adjustedCruise = float(min(self.mtsc_target, self.vtsc_target))
+
     frogpilotLongitudinalPlan.conditionalExperimental = ConditionalExperimentalMode.experimental_mode
     frogpilotLongitudinalPlan.distances = self.x_desired_trajectory.tolist()
     frogpilotLongitudinalPlan.greenLight = bool(self.green_light)
@@ -321,14 +322,14 @@ class LongitudinalPlanner:
     frogpilotLongitudinalPlan.safeObstacleDistanceStock = self.mpc.safe_obstacle_distance_stock
     frogpilotLongitudinalPlan.stoppedEquivalenceFactorStock = self.mpc.stopped_equivalence_factor_stock
 
-    frogpilotLongitudinalPlan.vtscOffset = float(max(self.mtsc_target, self.vtsc_target))
-
     pm.send('frogpilotLongitudinalPlan', frogpilot_plan_send)
 
   def v_cruise_update(self, carState, modelData, enabled, v_cruise, v_ego):
     # Pfeiferj's Map Turn Speed Controller
     if self.map_turn_speed_controller:
-      self.mtsc_target = MapTurnSpeedController.target_speed(v_ego, carState.aEgo)
+      self.mtsc_target = np.clip(MapTurnSpeedController.target_speed(v_ego, carState.aEgo), 0, v_cruise)
+      if self.mtsc_target == 0:
+        self.mtsc_target = v_cruise
     else:
       self.mtsc_target = v_cruise
 
@@ -351,6 +352,9 @@ class LongitudinalPlanner:
       # Use the override speed if SLC is being overridden
       if self.override_slc:
         self.slc_target = self.overridden_speed
+
+      if self.slc_target == 0:
+        self.slc_target = v_cruise
     else:
       self.overriden_speed = 0
       self.slc_target = v_cruise
@@ -372,10 +376,12 @@ class LongitudinalPlanner:
 
       # Get the target velocity for the maximum curve
       self.vtsc_target = (adjusted_target_lat_a / max_curve) ** 0.5
-      self.vtsc_target = np.nanmax([self.vtsc_target, MIN_TARGET_V])
+      self.vtsc_target = np.clip(self.vtsc_target, 0, v_cruise)
+      if self.vtsc_target == 0:
+        self.vtsc_target = v_cruise
     else:
       self.vtsc_target = v_cruise
-    
+
     return min(v_cruise, self.mtsc_target, self.slc_target, self.vtsc_target)
 
   def update_frogpilot_params(self):
