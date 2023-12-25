@@ -287,7 +287,7 @@ class CarState(CarStateBase):
     ]
 
     # BSM does not send a signal until the first instance of it lighting up
-    if self.CP.enableBsm:
+    if CP.enableBsm:
       messages.append(("left_blindspot", 0))
       messages.append(("right_blindspot", 0))
 
