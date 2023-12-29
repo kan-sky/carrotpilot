@@ -1113,7 +1113,7 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
         //}
         if (cruiseAdjustment > 0.5) {
             //speedCtrlActive = true;
-            curveSpeed = applyMaxSpeed - cruiseAdjustment;
+            curveSpeed = cruiseAdjustment; // applyMaxSpeed - cruiseAdjustment;
         }
 
         //float xCruiseTarget = lp.getXCruiseTarget() * 3.6;
@@ -1851,6 +1851,10 @@ void DrawApilot::drawDebugText(UIState* s, bool show) {
     qstr = QString::fromStdString(lp.getDebugLongText().cStr());
     y += dy;
     ui_draw_text(s, text_x, y, qstr.toStdString().c_str(), 35, COLOR_WHITE, BOLD, 0.0f, 0.0f);
+    qstr = QString::fromStdString(lp.getDebugLongText2().cStr());
+    y += dy;
+    ui_draw_text(s, text_x, y, qstr.toStdString().c_str(), 35, COLOR_WHITE, BOLD, 0.0f, 0.0f);
+
     const auto live_params = sm["liveParameters"].getLiveParameters();
     float   liveSteerRatio = live_params.getSteerRatio();
     sprintf(str, "LiveSR = %.2f", liveSteerRatio);

@@ -569,7 +569,8 @@ class Controls:
 
     #############################################################
     if self.v_cruise_helper.cruiseActivate > 0:
-      print("[state_transition] cruiseActivate, noEntry=",self.events.contains(ET.NO_ENTRY), " self.enabled = ", self.enabled)
+      #print("[state_transition] cruiseActivate, noEntry=",self.events.contains(ET.NO_ENTRY), " self.enabled = ", self.enabled)
+      pass
     if not self.enabled and self.v_cruise_helper.cruiseActivate > 0: #ajouatom
       if self.can_enable:
         self.events.add(EventName.buttonEnable)
@@ -950,7 +951,10 @@ class Controls:
     controlsState.experimentalMode = self.experimental_mode
 
     controlsState.debugText1 = self.v_cruise_helper.debugText
-    controlsState.debugText2 = ""
+    controlsState.debugText2 = self.v_cruise_helper.debugText2
+
+    controlsState.leftBlinkerExt = self.v_cruise_helper.leftBlinkerExtCount > 0
+    controlsState.rightBlinkerExt = self.v_cruise_helper.rightBlinkerExtCount > 0
 
     lat_tuning = self.CP.lateralTuning.which()
     if self.joystick_mode:

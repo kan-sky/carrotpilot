@@ -119,6 +119,8 @@ class LongitudinalPlanner:
     self.cruiseMaxVals4 = 0.8
     self.cruiseMaxVals5 = 0.7
     self.cruiseMaxVals6 = 0.6
+
+    self.v_cruise_last = 0.0
   
   def read_param(self):
     try:
@@ -251,9 +253,9 @@ class LongitudinalPlanner:
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.reset_state = reset_state
-    self.mpc.conditional_experimental_mode = self.conditional_experimental_mode
-    self.mpc.update(sm['carState'], sm['radarState'], sm['modelV2'], v_cruise, x, v, a, j, have_lead, self.aggressive_acceleration, self.increased_stopping_distance, self.smoother_braking,
+    self.v_cruise_last = v_cruise
+    self.mpc.update(sm, reset_state, self.conditional_experimental_mode, sm['radarState'], v_cruise, x, v, a, j, 
+                    have_lead, self.aggressive_acceleration, self.increased_stopping_distance, self.smoother_braking,
                     self.custom_personalities, self.aggressive_follow, self.standard_follow, self.relaxed_follow, personality=self.personality)
 
     self.x_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.x_solution)
@@ -295,6 +297,7 @@ class LongitudinalPlanner:
     longitudinalPlan.personality = self.personality
 
     longitudinalPlan.debugLongText = self.mpc.debugLongText
+    longitudinalPlan.debugLongText2 = "VC:{:.1f},MTSC:{:.1f},VTSC:{:.1f},SLC:{:.1f}".format(self.v_cruise_last*3.6, self.mtsc_target*3.6, self.vtsc_target*3.6, self.slc_target*3.6)
     longitudinalPlan.trafficState = self.mpc.trafficState.value
     longitudinalPlan.xState = self.mpc.xState.value
 
@@ -360,7 +363,7 @@ class LongitudinalPlanner:
       self.slc_target = v_cruise
 
     # Pfeiferj's Vision Turn Controller
-    if self.vision_turn_controller:
+    if self.vision_turn_controller and v_ego > 10 / 3.6:
       # Set the curve sensitivity
       orientation_rate = np.array(np.abs(modelData.orientationRate.z)) * self.curve_sensitivity
       velocity = np.array(modelData.velocity.x)
@@ -377,7 +380,7 @@ class LongitudinalPlanner:
       # Get the target velocity for the maximum curve
       self.vtsc_target = (adjusted_target_lat_a / max_curve) ** 0.5
       self.vtsc_target = np.clip(self.vtsc_target, 0, v_cruise)
-      if self.vtsc_target == 0:
+      if self.vtsc_target == 0 or np.isnan(self.vtsc_target):
         self.vtsc_target = v_cruise
     else:
       self.vtsc_target = v_cruise

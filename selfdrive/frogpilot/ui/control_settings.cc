@@ -6,12 +6,6 @@
 #include "selfdrive/ui/ui.h"
 
 FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : ListWidget(parent) {
-  backButton = new ButtonControl(tr(""), tr("BACK"));
-  connect(backButton, &ButtonControl::clicked, [this]() {
-    hideSubToggles();
-  });
-  addItem(backButton);
-
   const std::vector<std::tuple<QString, QString, QString, QString>> controlToggles {
     {"AdjustablePersonalities", "Adjustable Personalities", "Use the 'Distance' button on the steering wheel or the onroad UI to switch between openpilot's driving personalities.\n\n1 bar = Aggressive\n2 bars = Standard\n3 bars = Relaxed", "../frogpilot/assets/toggle_icons/icon_distance.png"},
 
@@ -278,8 +272,9 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : ListWid
         }
 
         if (priorityValue != -1) {
-          params.putInt("SLCPriority", priorityValue);
           slscPriorityButton->setValue(priorities[priorityValue]);
+          params.putInt("SLCPriority", priorityValue);
+          paramsMemory.putBool("FrogPilotTogglesUpdated", true);
         }
       });
       slscPriorityButton->setValue(priorities[params.getInt("SLCPriority")]);
@@ -304,22 +299,17 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : ListWid
     addItem(toggle);
     toggles[param.toStdString()] = toggle;
 
-    connect(toggles["AlwaysOnLateral"], &ToggleControl::toggleFlipped, [this](bool state) {
-      if (toggles.find("AlwaysOnLateralMain") != toggles.end()) {
-        toggles["AlwaysOnLateralMain"]->setVisible(state);
-      }
+    QObject::connect(toggles["AlwaysOnLateral"], &ToggleControl::toggleFlipped, [this](bool state) {
+      toggles["AlwaysOnLateralMain"]->setVisible(state);
     });
 
-    connect(toggle, &ToggleControl::toggleFlipped, [this]() {
+    QObject::connect(toggle, &ToggleControl::toggleFlipped, [this]() {
       paramsMemory.putBool("FrogPilotTogglesUpdated", true);
     });
 
-    ParamValueControl* pvc = dynamic_cast<ParamValueControl*>(toggle);
-    if (pvc != nullptr)
-        connect(dynamic_cast<ParamValueControl*>(toggle), &ParamValueControl::buttonPressed, [this]() {
-        paramsMemory.putBool("FrogPilotTogglesUpdated", true);
-            });
-    else printf("pvc nullptr...\n");
+    QObject::connect(static_cast<ParamValueControl*>(toggle), &ParamValueControl::buttonPressed, [this]() {
+      paramsMemory.putBool("FrogPilotTogglesUpdated", true);
+    });
   }
 
   conditionalExperimentalKeys = {"CECurves", "CECurvesLead", "CESlowerLead", "CENavigation", "CEStopLights", "CESignal"};
@@ -331,13 +321,35 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : ListWid
   speedLimitControllerKeys = {"Offset1", "Offset2", "Offset3", "Offset4", "SLCFallback", "SLCPriority"};
   visionTurnControlKeys = {"CurveSensitivity", "TurnAggressiveness"};
 
-  QObject::connect(uiState(), &UIState::uiUpdate, this, &FrogPilotControlsPanel::updateMetric);
+  QObject::connect(toggles["AlwaysOnLateralMain"], &ToggleControl::toggleFlipped, [parent](bool state) {
+    if (state) {
+      ConfirmationDialog::toggleAlert("WARNING: This is very experimental and isn't guaranteed to work. If you run into any issues, please report it in the FrogPilot Discord!", "I understand the risks.", parent);
+    }
+  });
+
+  std::set<std::string> rebootKeys = {"AlwaysOnLateral", "AlwaysOnLateralMain", "FireTheBabysitter", "NoLogging", "MuteDM", "NNFF"};
+  for (const std::string &key : rebootKeys) {
+    QObject::connect(toggles[key], &ToggleControl::toggleFlipped, [parent]() {
+      if (ConfirmationDialog::toggle("Reboot required to take effect.", "Reboot Now", parent)) {
+        Hardware::reboot();
+      }
+    });
+  }
+
+  QObject::connect(uiState(), &UIState::uiUpdate, this, &FrogPilotControlsPanel::updateState);
 
   hideSubToggles();
   setDefaults();
 }
 
-void FrogPilotControlsPanel::updateMetric() {
+void FrogPilotControlsPanel::updateState() {
+  if (isVisible()) {
+    if (paramsMemory.getInt("FrogPilotTogglesOpen") == 2) {
+      paramsMemory.putInt("FrogPilotTogglesOpen", 0);
+      hideSubToggles();
+    }
+  }
+
   std::thread([this] {
     static bool checkedOnBoot = false;
 
@@ -362,11 +374,11 @@ void FrogPilotControlsPanel::updateMetric() {
     }
 
     ParamControl *ceSignalToggle = toggles["CESignal"];
-    ParamValueControl *offset1Toggle = dynamic_cast<ParamValueControl*>(toggles["Offset1"]);
-    ParamValueControl *offset2Toggle = dynamic_cast<ParamValueControl*>(toggles["Offset2"]);
-    ParamValueControl *offset3Toggle = dynamic_cast<ParamValueControl*>(toggles["Offset3"]);
-    ParamValueControl *offset4Toggle = dynamic_cast<ParamValueControl*>(toggles["Offset4"]);
-    ParamValueControl *stoppingDistanceToggle = dynamic_cast<ParamValueControl*>(toggles["StoppingDistance"]);
+    ParamValueControl *offset1Toggle = static_cast<ParamValueControl*>(toggles["Offset1"]);
+    ParamValueControl *offset2Toggle = static_cast<ParamValueControl*>(toggles["Offset2"]);
+    ParamValueControl *offset3Toggle = static_cast<ParamValueControl*>(toggles["Offset3"]);
+    ParamValueControl *offset4Toggle = static_cast<ParamValueControl*>(toggles["Offset4"]);
+    ParamValueControl *stoppingDistanceToggle = static_cast<ParamValueControl*>(toggles["StoppingDistance"]);
 
     if (isMetric) {
       ceSignalToggle->setTitle("Turn Signal When Driving Below 90 kph");
@@ -418,7 +430,7 @@ void FrogPilotControlsPanel::updateMetric() {
 }
 
 void FrogPilotControlsPanel::parentToggleClicked() {
-  backButton->setVisible(true);
+  paramsMemory.putInt("FrogPilotTogglesOpen", 1);
   conditionalSpeedsImperial->setVisible(false);
   conditionalSpeedsMetric->setVisible(false);
   modelSelectorButton->setVisible(false);
@@ -426,7 +438,6 @@ void FrogPilotControlsPanel::parentToggleClicked() {
 }
 
 void FrogPilotControlsPanel::hideSubToggles() {
-  backButton->setVisible(false);
   conditionalSpeedsImperial->setVisible(false);
   conditionalSpeedsMetric->setVisible(false);
   modelSelectorButton->setVisible(true);
@@ -449,6 +460,8 @@ void FrogPilotControlsPanel::hideSubToggles() {
 }
 
 void FrogPilotControlsPanel::hideEvent(QHideEvent *event) {
+  paramsMemory.putInt("FrogPilotTogglesOpen", 0);
+
   hideSubToggles();
 }
 
@@ -475,6 +488,7 @@ void FrogPilotControlsPanel::setDefaults() {
     {"CEStopLightsLead", FrogsGoMoo ? "0" : "1"},
     {"ConditionalExperimental", "1"},
     {"CurveSensitivity", FrogsGoMoo ? "125" : "100"},
+    {"CustomPersonalities", "1"},
     {"DeviceShutdown", "9"},
     {"ExperimentalModeViaPress", "1"},
     {"FireTheBabysitter", FrogsGoMoo ? "1" : "0"},
@@ -513,7 +527,7 @@ void FrogPilotControlsPanel::setDefaults() {
   for (const auto &[key, value] : defaultValues) {
     if (params.get(key).empty()) {
       params.put(key, value);
-      rebootRequired = true;
+      //rebootRequired = true;
     }
   }
 

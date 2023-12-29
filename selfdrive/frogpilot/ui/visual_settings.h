@@ -16,8 +16,6 @@ private:
   void setDefaults();
   void updateMetric();
 
-  ButtonControl *backButton;
-
   std::set<QString> customOnroadUIKeys;
   std::set<QString> customThemeKeys;
   std::set<QString> modelUIKeys;

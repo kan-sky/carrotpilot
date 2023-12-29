@@ -700,6 +700,8 @@ struct ControlsState @0x97ff69c53601abf1 {
 
   debugText1 @66 : Text;
   debugText2 @67 : Text;
+  leftBlinkerExt @68 : Bool;
+  rightBlinkerExt @69 : Bool;
   enum OpenpilotState @0xdbe58b96d2d1ac61 {
     disabled @0;
     preEnabled @1;
@@ -1027,6 +1029,7 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   trafficState @37 :Int32;
   xState @38 :Int32;
   debugLongText @39 : Text;
+  debugLongText2 @40 : Text;
 
   enum LongitudinalPlanSource {
     cruise @0;

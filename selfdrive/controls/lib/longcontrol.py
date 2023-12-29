@@ -80,13 +80,13 @@ class LongControl:
       self.readParamCount = 0
     elif self.readParamCount == 10:
       self.longitudinalTuningKpV = float(Params().get_int("LongitudinalTuningKpV")) * 0.01
-      #self.longitudinalTuningKiV = float(Params().get_int("LongitudinalTuningKiV")) * 0.001
+      self.longitudinalTuningKiV = float(Params().get_int("LongitudinalTuningKiV")) * 0.001
       self.longitudinalTuningKf = float(Params().get_int("LongitudinalTuningKf")) * 0.01
 
       ## longcontrolTuning이 한개일때만 적용
       if len(self.CP.longitudinalTuning.kpBP) == 1 and len(self.CP.longitudinalTuning.kiBP)==1:
         self.CP.longitudinalTuning.kpV = [self.longitudinalTuningKpV]
-        #self.CP.longitudinalTuning.kiV = [self.longitudinalTuningKiV]
+        self.CP.longitudinalTuning.kiV = [self.longitudinalTuningKiV]
         self.pid._k_p = (self.CP.longitudinalTuning.kpBP, self.CP.longitudinalTuning.kpV)
         self.pid._k_i = (self.CP.longitudinalTuning.kiBP, self.CP.longitudinalTuning.kiV)
         self.pid.k_f = self.longitudinalTuningKf

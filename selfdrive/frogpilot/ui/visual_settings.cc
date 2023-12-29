@@ -6,12 +6,6 @@
 #include "selfdrive/ui/ui.h"
 
 FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : ListWidget(parent) {
-  backButton = new ButtonControl(tr(""), tr("BACK"));
-  connect(backButton, &ButtonControl::clicked, [this]() {
-    hideSubToggles();
-  });
-  addItem(backButton);
-
   const std::vector<std::tuple<QString, QString, QString, QString>> visualToggles {
     {"CustomTheme", "Custom Themes", "Enable the ability to use custom themes.", "../frogpilot/assets/wheel_images/frog.png"},
     {"CustomColors", "Custom Colors", "Switch out the standard openpilot color scheme with a custom color scheme.\n\nWant to submit your own color scheme? Post it in the 'feature-request' channel in the FrogPilot Discord!", ""},
@@ -54,7 +48,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : ListWidge
     } else if (param == "CustomTheme") {
       ParamManageControl *customThemeToggle = new ParamManageControl(param, title, desc, icon, this);
       connect(customThemeToggle, &ParamManageControl::manageButtonClicked, this, [this]() {
-        backButton->setVisible(true);
+        paramsMemory.putInt("FrogPilotTogglesOpen", 1);
         for (auto &[key, toggle] : toggles) {
           toggle->setVisible(customThemeKeys.find(key.c_str()) != customThemeKeys.end());
         }
@@ -67,7 +61,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : ListWidge
     } else if (param == "CustomUI") {
       ParamManageControl *customUIToggle = new ParamManageControl(param, title, desc, icon, this);
       connect(customUIToggle, &ParamManageControl::manageButtonClicked, this, [this]() {
-        backButton->setVisible(true);
+        paramsMemory.putInt("FrogPilotTogglesOpen", 1);
         for (auto &[key, toggle] : toggles) {
           toggle->setVisible(customOnroadUIKeys.find(key.c_str()) != customOnroadUIKeys.end());
         }
@@ -77,7 +71,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : ListWidge
     } else if (param == "ModelUI") {
       ParamManageControl *modelUIToggle = new ParamManageControl(param, title, desc, icon, this);
       connect(modelUIToggle, &ParamManageControl::manageButtonClicked, this, [this]() {
-        backButton->setVisible(true);
+        paramsMemory.putInt("FrogPilotTogglesOpen", 1);
         for (auto &[key, toggle] : toggles) {
           toggle->setVisible(modelUIKeys.find(key.c_str()) != modelUIKeys.end());
         }
@@ -99,7 +93,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : ListWidge
 
     } else if (param == "WheelIcon") {
       std::vector<QString> wheelToggles{tr("RotatingWheel")};
-      std::vector<QString> wheelToggleNames{tr("Rotating Icon")};
+      std::vector<QString> wheelToggleNames{tr("Rotating")};
       std::map<int, QString> steeringWheelLabels = {{0, "Stock"}, {1, "Lexus"}, {2, "Toyota"}, {3, "Frog"}, {4, "Rocket"}, {5, "Hyundai"}, {6, "Stalin"}};
       toggle = new ParamValueToggleControl(param, title, desc, icon, 0, 6, steeringWheelLabels, this, true, "", 1, wheelToggles, wheelToggleNames);
 
@@ -134,6 +128,12 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : ListWidge
 }
 
 void FrogPilotVisualsPanel::updateMetric() {
+  if (isVisible()) {
+    if (paramsMemory.getInt("FrogPilotTogglesOpen") == 2) {
+      hideSubToggles();
+    }
+  }
+
   std::thread([this] {
     static bool checkedOnBoot = false;
 
@@ -181,8 +181,6 @@ void FrogPilotVisualsPanel::updateMetric() {
 }
 
 void FrogPilotVisualsPanel::hideSubToggles() {
-  backButton->setVisible(false);
-
   for (auto &[key, toggle] : toggles) {
     const bool subToggles = modelUIKeys.find(key.c_str()) != modelUIKeys.end() ||
                             customOnroadUIKeys.find(key.c_str()) != customOnroadUIKeys.end() ||
@@ -192,6 +190,8 @@ void FrogPilotVisualsPanel::hideSubToggles() {
 }
 
 void FrogPilotVisualsPanel::hideEvent(QHideEvent *event) {
+  paramsMemory.putInt("FrogPilotTogglesOpen", 0);
+
   hideSubToggles();
 }
 
@@ -235,7 +235,7 @@ void FrogPilotVisualsPanel::setDefaults() {
   for (const auto &[key, value] : defaultValues) {
     if (params.get(key).empty()) {
       params.put(key, value);
-      rebootRequired = true;
+      //rebootRequired = true;
     }
   }
 
