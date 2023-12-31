@@ -87,7 +87,7 @@ class DesireHelper:
     self.distance_to_road_edge_left = 0
     self.distance_to_road_edge_right = 0
     turning = abs(carstate.steeringAngleDeg) >= 60
-    if True: #carrot: Ç×»ó°è»ê.. self.blindspot_path and not below_lane_change_speed and not turning:
+    if True: #carrot: í•­ìƒê³„ì‚°.. self.blindspot_path and not below_lane_change_speed and not turning:
       # Calculate left and right lane widths
       self.lane_width_left, self.distance_to_road_edge_left = self.calculate_lane_width(modeldata.laneLines[0], modeldata.laneLines[1], modeldata.roadEdges[0])
       self.lane_width_right, self.distance_to_road_edge_right = self.calculate_lane_width(modeldata.laneLines[3], modeldata.laneLines[2], modeldata.roadEdges[1])
@@ -104,7 +104,8 @@ class DesireHelper:
       desired_lane = modeldata.laneLines[blinker_index if leftBlinker else blinker_index + 2]
       road_edge = modeldata.roadEdges[blinker_index]
       # Check if the lane width exceeds the threshold
-      lane_available = self.calculate_lane_width(desired_lane, current_lane, road_edge) >= min_lane_threshold
+      lane_width, distance_to_road_edge = self.calculate_lane_width(desired_lane, current_lane, road_edge)
+      lane_available = lane_width >= min_lane_threshold
 
     if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
       self.lane_change_state = LaneChangeState.off
