@@ -89,6 +89,8 @@ class VCruiseHelper:
     self.activeAPM = 0
     self.rightBlinkerExtCount = 0
     self.leftBlinkerExtCount = 0
+    self.naviDistance = 0
+    self.naviSpeed = 0
     self.apilotEventWait = 0
     self.apilotEventPrev = 0
 
@@ -103,7 +105,9 @@ class VCruiseHelper:
     self.autoNaviSpeedCtrl = 2
     self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
     self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
+    self.autoResumeFromBrakeReleaseTrafficSign = Params().get_int("AutoResumeFromBrakeReleaseTrafficSign")
     self.autoCruiseControl = Params().get_int("AutoCruiseControl")
+    self.cruiseButtonMode = Params().get_int("CruiseButtonMode")
     self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
     self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
     self.autoSpeedUptoRoadSpeedLimit = float(self.params.get_int("AutoSpeedUptoRoadSpeedLimit")) * 0.01
@@ -113,6 +117,10 @@ class VCruiseHelper:
     self.cruiseOnDist = float(int(Params().get("CruiseOnDist", encoding="utf8"))) / 100.
     self.softHoldMode = Params().get_int("SoftHoldMode")
     self.cruiseSpeedMin = Params().get_int("CruiseSpeedMin")
+    self.autoTurnControl = Params().get_int("AutoTurnControl")
+    self.autoTurnControlTurnEnd = Params().get_int("AutoTurnControlTurnEnd")
+    self.autoTurnControlSpeedLaneChange = Params().get_int("AutoTurnControlSpeedLaneChange")
+    self.autoTurnControlSpeedTurn = Params().get_int("AutoTurnControlSpeedTurn")
 
   def _params_update(self):
     self.frame += 1
@@ -127,7 +135,9 @@ class VCruiseHelper:
     elif self.params_count == 20:
       self.autoResumeFromGasSpeed = Params().get_int("AutoResumeFromGasSpeed")
       self.autoCancelFromGasMode = Params().get_int("AutoCancelFromGasMode")
+      self.autoResumeFromBrakeReleaseTrafficSign = Params().get_int("AutoResumeFromBrakeReleaseTrafficSign")
       self.autoCruiseControl = Params().get_int("AutoCruiseControl")
+      self.cruiseButtonMode = Params().get_int("CruiseButtonMode")
       self.cruiseOnDist = float(Params().get_int("CruiseOnDist")) / 100.
       self.softHoldMode = Params().get_int("SoftHoldMode")
       self.cruiseSpeedMin = Params().get_int("CruiseSpeedMin")
@@ -135,6 +145,11 @@ class VCruiseHelper:
       self.steerRatioApply = float(self.params.get_int("SteerRatioApply")) * 0.1
       self.liveSteerRatioApply = float(self.params.get_int("LiveSteerRatioApply")) * 0.01
       self.autoSpeedUptoRoadSpeedLimit = float(self.params.get_int("AutoSpeedUptoRoadSpeedLimit")) * 0.01
+    elif self.params_count == 40:
+      self.autoTurnControl = Params().get_int("AutoTurnControl")
+      self.autoTurnControlTurnEnd = Params().get_int("AutoTurnControlTurnEnd")
+      self.autoTurnControlSpeedLaneChange = Params().get_int("AutoTurnControlSpeedLaneChange")
+      self.autoTurnControlSpeedTurn = Params().get_int("AutoTurnControlSpeedTurn")
     elif self.params_count >= 100:
       self.autoCurveSpeedCtrlUse = Params().get_int("AutoCurveSpeedCtrlUse")
       self.autoCurveSpeedFactor = float(Params().get_int("AutoCurveSpeedFactor"))*0.01
@@ -286,6 +301,7 @@ class VCruiseHelper:
     v_cruise_kph = self.v_cruise_kph_set    
     v_cruise_kph = self._update_cruise_buttons(CS, v_cruise_kph, controls)
     v_cruise_kph_apply = self.cruise_control_speed(v_cruise_kph)
+    self.auto_navi_control(controls)
     apn_limit_kph = self.update_speed_apilot(CS, controls, self.v_cruise_kph)
     v_cruise_kph_apply = min(v_cruise_kph_apply, apn_limit_kph)
     self.curveSpeed = self.apilot_curve(CS, controls)
@@ -380,7 +396,7 @@ class VCruiseHelper:
 
   def _update_cruise_buttons(self, CS, v_cruise_kph, controls):
 
-    self.cruiseButtonMode = 2    
+    #self.cruiseButtonMode = 2    
 
     if v_cruise_kph > 200:
       self._add_log("VCruise: speed initialize....")
@@ -463,9 +479,14 @@ class VCruiseHelper:
           if self.softHoldActive > 0:
             self.softHoldActive = 0
           else:
-            v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
+            if self.cruiseButtonMode == 0:
+              v_cruise_kph = button_kph
+            elif self.cruiseButtonMode in [1,2]:
+              v_cruise_kph = self.v_cruise_speed_up(v_cruise_kph)
         elif button_type == ButtonType.decelCruise:
-          if v_cruise_kph > self.v_ego_kph_set + 2:
+          if self.autoCruiseControl == 0 or self.cruiseButtonMode in [0,1]:
+            v_cruise_kph = button_kph
+          elif v_cruise_kph > self.v_ego_kph_set + 2:
             v_cruise_kph = self.v_ego_kph_set
           else:
             #v_cruise_kph = button_kph
@@ -514,8 +535,9 @@ class VCruiseHelper:
           self._add_log("Cruise Activate from Speed")          
         self.cruiseActivate = 1
     elif self.brake_pressed_count == -1 and self.softHoldActive == 0:
-      if not controls.enabled and self.v_ego_kph_set < 70.0 and controls.experimental_mode and Params().get_bool("AutoResumeFromBrakeReleaseTrafficSign"):
-        self._add_log("Cruise Activate from TrafficSign")
+      if self.autoResumeFromGasSpeed < self.v_ego_kph_set and self.autoResumeFromBrakeReleaseTrafficSign:
+        v_cruise_kph = self.v_ego_kph_set
+        self._add_log("Cruise Activate Brake Release")
         self.cruiseActivate = 1
 
     if self.gas_pressed_count > 0 and self.v_ego_kph_set > v_cruise_kph:
@@ -524,8 +546,8 @@ class VCruiseHelper:
       self._add_log("Cruise Activete from SoftHold")
       self.softHoldActive = 2
       self.cruiseActivate = 1
-    elif self.brake_pressed_count == -1 and self.xState == 3:
-      v_cruise_kph = self.v_ego_kph_set
+    elif self.brake_pressed_count == -1 and self.xState == 3 and self.autoResumeFromBrakeReleaseTrafficSign:
+      #v_cruise_kph = self.v_ego_kph_set
       self._add_log("Cruise Activate from Traffic sign stop")
       self.cruiseActivate = 1
     elif self.brake_pressed_count == -1 and (0 < self.lead_dRel < 20):
@@ -629,18 +651,29 @@ class VCruiseHelper:
     safeSpeed *= self.autoNaviSpeedSafetyFactor
 
     log = ""
-    if isSectionLimit:
-      applySpeed = safeSpeed
-    elif leftDist > 0 and safeSpeed > 0 and safeDist > 0:
+    if leftDist > 0 and safeSpeed > 0 and safeDist > 0:
       applySpeed = self.decelerate_for_speed_camera(safeSpeed/3.6, safeDist, v_cruise_kph_prev * CV.KPH_TO_MS, self.autoNaviSpeedDecelRate, leftDist) * CV.MS_TO_KPH
+      if isSectionLimit and applySpeed > safeSpeed:
+        applySpeed = safeSpeed
       if applySpeed < CS.vEgoCluster * CV.MS_TO_KPH:
         self._make_event(controls, EventName.speedDown, 60.0)
     else:
       applySpeed = 255
 
-    apTbtSpeed = apTbtDistance = 0
-    log = "{:.1f}<{:.1f}/{:.1f},{:.1f} B{} A{:.1f}/{:.1f} N{:.1f}/{:.1f} C{:.1f}/{:.1f} V{:.1f}/{:.1f} ".format(
-                  applySpeed, safeSpeed, leftDist, safeDist,
+    apTbtDistance = self.naviDistance
+    apTbtSpeed = self.naviSpeed
+    if apTbtSpeed > 0 and apTbtDistance > 0:
+      safeTbtDist = self.autoTurnControlTurnEnd * v_ego
+      applyTbtSpeed = self.decelerate_for_speed_camera(apTbtSpeed/3.6, safeTbtDist, v_cruise_kph_prev/3.6, self.autoNaviSpeedDecelRate, apTbtDistance) * 3.6
+      if applyTbtSpeed < applySpeed:
+        applySpeed = applyTbtSpeed
+        safeSpeed = apTbtSpeed
+        leftDist = apTbtDistance
+        safeDist = safeTbtDist
+        speedLimitType = 4
+
+    log = "{},{:.1f}<{:.1f}/{:.1f},{:.1f} B{} A{:.1f}/{:.1f} N{:.1f}/{:.1f} C{:.1f}/{:.1f} V{:.1f}/{:.1f} ".format(
+                  msg.roadcate, applySpeed, safeSpeed, leftDist, safeDist,
                   1 if isSpeedBump else 0, 
                   msg.xSpdLimit, msg.xSpdDist,
                   msg.camLimitSpeed, msg.camLimitSpeedLeftDist,
@@ -649,6 +682,7 @@ class VCruiseHelper:
     #if applySpeed < 200:
     #  print(log)
     #controls.debugText1 = log
+    self.debugText2 = log
     return applySpeed #, roadSpeed, leftDist, speedLimitType
 
   def cruise_control_speed(self, v_cruise_kph):
@@ -673,6 +707,77 @@ class VCruiseHelper:
 
     return v_cruise_kph_apply
 
+  def auto_navi_control(self, controls):
+    if self.autoTurnControl > 0:
+      navInstruction = controls.sm['navInstruction']
+      roadLimitSpeed = controls.sm['roadLimitSpeed']
+      frogpilotLateralPlan = controls.sm['frogpilotLateralPlan']
+      distanceToRoadEdgeLeft = frogpilotLateralPlan.distanceToRoadEdgeLeft
+      distanceToRoadEdgeRight = frogpilotLateralPlan.distanceToRoadEdgeRight
+
+      nav_distance = navInstruction.maneuverDistance;
+      nav_type = navInstruction.maneuverType;
+      nav_modifier = navInstruction.maneuverModifier;
+      nav_turn = False
+      nav_speedDown = False
+      direction = 0 #1:left, 2:right
+      if nav_type in ['turn', 'fork', 'off ramp']:
+        nav_turn = True if nav_type == 'turn' and nav_modifier in ['left', 'right'] else False
+        direction = 1 if nav_modifier in ['slight left', 'left'] else 2 if nav_modifier in ['slight right', 'right'] else 0
+      else:
+        nav_distance = roadLimitSpeed.xDistToTurn
+        nav_type = roadLimitSpeed.xTurnInfo
+        nav_turn = True if nav_type in [1,2] else False
+        nav_speedDown = True if nav_turn or nav_type == 5 else False
+        direction = 1 if nav_type in [1,3] else 2 if nav_type in [2,4,43] else 0
+
+      roadcate = roadLimitSpeed.roadcate
+      if roadcate > 7 and (distanceToRoadEdgeLeft + distanceToRoadEdgeRight) > 5.5:
+        roadcate = 5
+      turn_dist = interp(roadLimitSpeed.roadcate, [0,7], [100.0, 50.0])
+      turn_speed = interp(roadLimitSpeed.roadcate, [0,7], [100.0, self.autoTurnControlSpeedTurn])
+      laneChange_dist = interp(roadLimitSpeed.roadcate, [0,7], [300, 160])
+      laneChange_speed = interp(roadLimitSpeed.roadcate, [0,7], [100, self.autoTurnControlSpeedLaneChange])
+
+      self.naviDistance = 0
+      self.naviSpeed = 0
+      if self.autoTurnControl >= 2:
+        if nav_turn or nav_speedDown or direction != 0:
+          self.naviDistance = nav_distance
+          self.naviSpeed = turn_speed if nav_turn or nav_speedDown else laneChange_speed
+
+      ## lanechange, turn : 300m left
+      if 5 < nav_distance < 300 and direction != 0:
+        if nav_turn:
+          if nav_distance < turn_dist:
+            # start Turn
+            nav_direction = direction
+          elif nav_distance < laneChange_dist:
+            nav_turn = False
+            nav_direction = direction
+          else:
+            nav_turn = False
+            nav_direction = 0
+        elif nav_distance < laneChange_dist:
+          nav_direction = direction
+        else:
+          nav_direction = 0
+      else:
+        nav_turn = False
+        nav_direction = 0
+
+      blinkerExtState = self.rightBlinkerExtCount + self.rightBlinkerExtCount
+      if nav_direction == 1 and nav_turn: # 왼쪽차선변경은 위험하니 턴인경우만 하자, 하지만 지금은 안함.
+        self.leftBlinkerExtCount = 10
+      elif nav_direction == 2:
+        self.rightBlinkerExtCount = 10
+
+      if blinkerExtState <= 0 and self.rightBlinkerExtCount + self.rightBlinkerExtCount > 0:
+        self._make_event(controls, EventName.audioTurn if nav_turn else EventName.audioLaneChange)
+
+    else:
+      self.naviDistance = 0
+      self.naviSpeed = 0
 
 def apply_deadzone(error, deadzone):
   if error > deadzone:
