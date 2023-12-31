@@ -237,6 +237,8 @@ class Controls:
   def reset(self):
     self.start_record = self.params.put_bool_nonblocking("StartRecord", False)
     self.stop_record = self.params.put_bool_nonblocking("StopRecord", False)
+    self.record_start_sound = False
+    self.record_stop_sound = False
 
   def update_params(self):
     self.readParamCount += 1
@@ -251,8 +253,6 @@ class Controls:
       elif self.stop_record:
         print("stop_record2=", self.stop_record)
         self.record_stop_sound = True
-    elif self.readParamCount == 20:
-      self.reset()
 
   def set_initial_state(self):
     if REPLAY:
@@ -501,11 +501,11 @@ class Controls:
     if self.record_start_sound:
       print("start_sound_bool=", self.record_start_sound)
       self.events.add(EventName.startingRecord)
-      self.record_start_sound = False
+      self.reset()
     if self.record_stop_sound:
       print("stop_sound_bool=", self.record_stop_sound)
       self.events.add(EventName.stoppingRecord)
-      self.record_stop_sound = False
+      self.reset()
 
   def data_sample(self):
     """Receive data from sockets and update carState"""
