@@ -721,7 +721,7 @@ class VCruiseHelper:
       nav_turn = False
       nav_speedDown = False
       direction = 0 #1:left, 2:right
-      if nav_type in ['turn', 'fork', 'off ramp']:
+      if nav_type in ['turn', 'fork', 'off ramp'] and roadLimitSpeed.xDistToTurn <= 0 and roadLimitSpeed.xTurnInfo < 0:
         nav_turn = True if nav_type == 'turn' and nav_modifier in ['left', 'right'] else False
         direction = 1 if nav_modifier in ['slight left', 'left'] else 2 if nav_modifier in ['slight right', 'right'] else 0
       else:
@@ -734,10 +734,10 @@ class VCruiseHelper:
       roadcate = roadLimitSpeed.roadcate
       if roadcate > 7 and (distanceToRoadEdgeLeft + distanceToRoadEdgeRight) > 5.5:
         roadcate = 5
-      turn_dist = interp(roadLimitSpeed.roadcate, [0,7], [100.0, 50.0])
-      turn_speed = interp(roadLimitSpeed.roadcate, [0,7], [100.0, self.autoTurnControlSpeedTurn])
-      laneChange_dist = interp(roadLimitSpeed.roadcate, [0,7], [300, 160])
-      laneChange_speed = interp(roadLimitSpeed.roadcate, [0,7], [100, self.autoTurnControlSpeedLaneChange])
+      turn_dist = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [100, 100, 80, 50])
+      turn_speed = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [self.autoTurnControlSpeedTurn*2, self.autoTurnControlSpeedTurn*2, self.autoTurnControlSpeedTurn*1.5, self.autoTurnControlSpeedTurn])
+      laneChange_dist = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [300, 280, 200, 160])
+      laneChange_speed = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [120, 100, self.autoTurnControlSpeedLaneChange*1.5, self.autoTurnControlSpeedLaneChange])
 
       self.naviDistance = 0
       self.naviSpeed = 0
