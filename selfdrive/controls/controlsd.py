@@ -234,24 +234,21 @@ class Controls:
 
     self.carrotCruiseActivate = 0 #carrot
 
-  def reset(self):
-    self.start_record = self.params.put_bool_nonblocking("StartRecord", False)
-    self.stop_record = self.params.put_bool_nonblocking("StopRecord", False)
-    self.start_sound = False
-    self.stop_sound = False
-
+  # screen recording
   def update_params(self):
     self.readParamCount += 1
     if self.readParamCount == 10:
-      self.start_record = Params().get_bool("StartRecord")
-      self.stop_record = Params().get_bool("StopRecord")
+      self.start_record = self.params.get_bool("StartRecord")
+      self.stop_record = self.params.get_bool("StopRecord")
       if self.start_record:
         print("start_record=", self.start_record)
         self.start_sound = True
+        self.start_record = self.params.put_bool_nonblocking("StartRecord", False)
       elif self.stop_record:
         print("stop_record=", self.stop_record)
         self.stop_sound = True
-    elif self.readParamCount >= 100:
+        self.stop_record = self.params.put_bool_nonblocking("StopRecord", False)
+    elif self.readParamCount >= 30:
       self.readParamCount = 0
 	  
   def set_initial_state(self):
@@ -502,11 +499,11 @@ class Controls:
     if self.start_sound:
       print("start_sound=", self.start_sound)
       self.events.add(EventName.startingRecord)
-      self.reset()
+      self.start_sound = False
     if self.stop_sound:
       print("stop_sound=", self.stop_sound)
       self.events.add(EventName.stoppingRecord)
-      self.reset()
+      self.stop_sound = False
 
   def data_sample(self):
     """Receive data from sockets and update carState"""
