@@ -175,7 +175,7 @@ class ImmediateDisableAlert(Alert):
     super().__init__("TAKE CONTROL IMMEDIATELY", alert_text_2,
                      AlertStatus.critical, AlertSize.full,
                      Priority.HIGHEST, VisualAlert.steerRequired,
-                     AudibleAlert.warningImmediate, 2.),
+                     AudibleAlert.warningImmediate, 4.),
 
 
 class EngagementAlert(Alert):
@@ -231,7 +231,7 @@ def startup_master_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubM
   if "REPLAY" in os.environ:
     branch = "replay"
 
-  return StartupAlert("Hippity hoppity this is my property", "so I do what I want 🐸", alert_status=AlertStatus.frogpilot)
+  return StartupAlert("Hippity hoppity this is my property", "so I do what I want", alert_status=AlertStatus.frogpilot)
 
 def below_engage_speed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
   return NoEntryAlert(f"Drive above {get_display_speed(CP.minEnableSpeed, metric)} to engage")
@@ -275,7 +275,7 @@ def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubM
       "NNFF Torque Controller loaded",
       model_name,
       AlertStatus.frogpilot, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.nnff, 5.0)
+      Priority.LOW, VisualAlert.none, AudibleAlert.engage, 5.0)
 
 # *** debug alerts ***
 
@@ -1048,11 +1048,6 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   },
   EventName.trafficSignGreen: {
     ET.WARNING: EngagementAlert(AudibleAlert.trafficSignGreen),
-    #ET.WARNING: Alert(
-    #  "출발합니다.",
-    #  "",
-    #  AlertStatus.normal, AlertSize.small,
-    #  Priority.LOW, VisualAlert.none, AudibleAlert.trafficSignGreen, 3.),
   },
   EventName.trafficSignChanged: {
     ET.WARNING: Alert(
@@ -1093,18 +1088,10 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
      ET.WARNING: EngagementAlert(AudibleAlert.audioTurn),
   },
   EventName.startingRecord: {
-    ET.WARNING: Alert(
-      "녹화를 시작합니다.",
-      "",
-      AlertStatus.normal, AlertSize.none,
-      Priority.LOW, VisualAlert.none, AudibleAlert.startRecord, 4.),
+    ET.WARNING: EngagementAlert(AudibleAlert.startRecord),
   },
   EventName.stoppingRecord: {
-    ET.WARNING: Alert(
-      "녹화를 종료합니다.",
-      "",
-      AlertStatus.normal, AlertSize.none,
-      Priority.LOW, VisualAlert.none, AudibleAlert.stopRecord, 4.),
+    ET.WARNING: EngagementAlert(AudibleAlert.stopRecord),
   },
 }
 
