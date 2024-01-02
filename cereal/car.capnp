@@ -468,7 +468,9 @@ struct CarControl {
       speedDown @21;
       stopStop @22;
       startRecord @23;
-      stopRecord @24;      
+      stopRecord @24;
+      reverseGear @25;
+      nnff @26;      
     }
   }
 

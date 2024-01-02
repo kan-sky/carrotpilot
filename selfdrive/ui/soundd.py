@@ -56,6 +56,8 @@ sound_list: Dict[int, Tuple[str, Optional[int], float]] = {
   AudibleAlert.audioTurn: ("audio_turn.wav", None, MAX_VOLUME),
   AudibleAlert.startRecord: ("start_record.wav", None, MAX_VOLUME),
   AudibleAlert.stopRecord: ("stop_record.wav", None, MAX_VOLUME),
+  AudibleAlert.reverseGear: ("reverse_gear.wav", None, MAX_VOLUME),
+  AudibleAlert.nnff: ("nnff.wav", None, MAX_VOLUME),
 }
 
 def check_controls_timeout_alert(sm):
