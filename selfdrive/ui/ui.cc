@@ -605,7 +605,7 @@ static void update_state(UIState *s) {
   if (sm.updated("liveLocationKalman")) {
     const auto liveLocationKalman = sm["liveLocationKalman"].getLiveLocationKalman();
     if (scene.compass) {
-      auto orientation = liveLocationKalman.getCalibratedOrientationNED();
+      const auto orientation = liveLocationKalman.getCalibratedOrientationNED();
       if (orientation.getValid()) {
         scene.bearing_deg = RAD2DEG(orientation.getValue()[2]);
       }
@@ -788,15 +788,9 @@ void UIState::update() {
 
   // Update FrogPilot variables when they are changed
   static Params paramsMemory{"/dev/shm/params"};
-  static bool toggles_checked = false;
   if (paramsMemory.getBool("FrogPilotTogglesUpdated")) {
     ui_update_params(this);
     emit uiUpdateFrogPilotParams();
-    // Loop through twice so other parts of the code update first
-    if (toggles_checked) {
-      paramsMemory.putBool("FrogPilotTogglesUpdated", false);
-    }
-    toggles_checked = !toggles_checked;
   }
 
   // FrogPilot live variables that need to be constantly checked
