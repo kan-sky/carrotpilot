@@ -1077,6 +1077,7 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
     float cur_speed = getVEgo() * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     if (cur_speed < 0.0) cur_speed = 0.0;
     auto controls_state = sm["controlsState"].getControlsState();
+    auto carstate = sm["carState"].getCarState();
     const auto road_limit_speed = sm["roadLimitSpeed"].getRoadLimitSpeed();
     //const auto car_params = sm["carParams"].getCarParams();
     if (s->show_mode == 3) {
@@ -1105,7 +1106,11 @@ void DrawApilot::drawSpeed(const UIState* s, int x, int y) {
         float cruiseMaxSpeed = controls_state.getVCruiseCluster();// scc_smoother.getCruiseMaxSpeed();
         float applyMaxSpeed = controls_state.getVCruise();// HW: controls_state.getVCruiseOut();// scc_smoother.getApplyMaxSpeed();
         float curveSpeed = 0;//HW: controls_state.getCurveSpeed();
-        cruiseAdjustment = s->scene.adjusted_cruise * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) * 0.1 + cruiseAdjustment * 0.9;
+        //cruiseAdjustment = 0.1 * s->scene.cruiseAdjustment * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * cruiseAdjustment;
+        //cruiseAdjustment = fmax((0.1 * fmax(setSpeed - scene.adjusted_cruise - setSpeed, 0) * (is_metric ? MS_TO_KPH : MS_TO_MPH) + 0.9 * cruiseAdjustment) - 1, 0);
+        float vCluRatio = carstate.getVCluRatio();
+        if (vCluRatio < 0.5) vCluRatio = 1.0;
+        cruiseAdjustment = s->scene.adjusted_cruise / vCluRatio  * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH) * 0.1 + cruiseAdjustment * 0.9;
         bool speedCtrlActive = false;
         //if (curveSpeed < 0) {
         //    speedCtrlActive = true;
@@ -1326,8 +1331,8 @@ void DrawApilot::drawTurnInfo(const UIState* s, int x, int y) {
     }
     auto car_state = sm["carState"].getCarState();
     auto controls_state = sm["controlsState"].getControlsState();
-    bool leftBlinker = car_state.getLeftBlinker() || controls_state.getLeftBlinkerExt();
-    bool rightBlinker = car_state.getRightBlinker() || controls_state.getRightBlinkerExt();
+    bool leftBlinker = car_state.getLeftBlinker() || (controls_state.getLeftBlinkerExt() > 0);
+    bool rightBlinker = car_state.getRightBlinker() || (controls_state.getRightBlinkerExt() > 0);
     bool bsd_l = car_state.getLeftBlindspot();
     bool bsd_r = car_state.getRightBlindspot();
 

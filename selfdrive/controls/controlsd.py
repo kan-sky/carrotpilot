@@ -136,8 +136,8 @@ class Controls:
     self.readParamCount = 0
     self.start_record = False
     self.stop_record = False
-    self.record_start_sound = False
-    self.record_stop_sound = False
+    self.start_sound = False
+    self.stop_sound = False
 
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
@@ -237,23 +237,23 @@ class Controls:
   def reset(self):
     self.start_record = self.params.put_bool_nonblocking("StartRecord", False)
     self.stop_record = self.params.put_bool_nonblocking("StopRecord", False)
-    self.record_start_sound = False
-    self.record_stop_sound = False
+    self.start_sound = False
+    self.stop_sound = False
 
   def update_params(self):
     self.readParamCount += 1
-    if self.readParamCount > 50:
-      self.readParamCount = 0
-    elif self.readParamCount == 10:
+    if self.readParamCount == 10:
       self.start_record = Params().get_bool("StartRecord")
       self.stop_record = Params().get_bool("StopRecord")
       if self.start_record:
-        print("start_record2=", self.start_record)
-        self.record_start_sound = True
+        print("start_record=", self.start_record)
+        self.start_sound = True
       elif self.stop_record:
-        print("stop_record2=", self.stop_record)
-        self.record_stop_sound = True
-
+        print("stop_record=", self.stop_record)
+        self.stop_sound = True
+    elif self.readParamCount >= 100:
+      self.readParamCount = 0
+	  
   def set_initial_state(self):
     if REPLAY:
       controls_state = Params().get("ReplayControlsState")
@@ -266,6 +266,7 @@ class Controls:
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
+
     # screen recording
     self.update_params()
 
@@ -498,12 +499,12 @@ class Controls:
       self.events.add(FrogPilotEventName.greenLight)
 
     # events for screen recording
-    if self.record_start_sound:
-      print("start_sound_bool=", self.record_start_sound)
+    if self.start_sound:
+      print("start_sound=", self.start_sound)
       self.events.add(EventName.startingRecord)
       self.reset()
-    if self.record_stop_sound:
-      print("stop_sound_bool=", self.record_stop_sound)
+    if self.stop_sound:
+      print("stop_sound=", self.stop_sound)
       self.events.add(EventName.stoppingRecord)
       self.reset()
 
@@ -953,8 +954,8 @@ class Controls:
     controlsState.debugText1 = self.v_cruise_helper.debugText
     controlsState.debugText2 = self.v_cruise_helper.debugText2
 
-    controlsState.leftBlinkerExt = self.v_cruise_helper.leftBlinkerExtCount > 0
-    controlsState.rightBlinkerExt = self.v_cruise_helper.rightBlinkerExtCount > 0
+    controlsState.leftBlinkerExt = self.v_cruise_helper.leftBlinkerExtCount + self.v_cruise_helper.blinkerExtMode
+    controlsState.rightBlinkerExt = self.v_cruise_helper.rightBlinkerExtCount  + self.v_cruise_helper.blinkerExtMode
 
     lat_tuning = self.CP.lateralTuning.which()
     if self.joystick_mode:

@@ -87,6 +87,7 @@ class VCruiseHelper:
     self.debugText2 = ""
     self._first = True
     self.activeAPM = 0
+    self.blinkerExtMode = 0 # 0: Normal, 10000: voice
     self.rightBlinkerExtCount = 0
     self.leftBlinkerExtCount = 0
     self.naviDistance = 0
@@ -294,6 +295,12 @@ class VCruiseHelper:
       self.lead_vRel = 0
 
   def _update_v_cruise_apilot(self, CS, controls):
+
+    self.rightBlinkerExtCount = max(self.rightBlinkerExtCount - 1, 0)
+    self.leftBlinkerExtCount = max(self.leftBlinkerExtCount - 1, 0)
+    if self.rightBlinkerExtCount + self.leftBlinkerExtCount <= 0:
+      self.blinkerExtMode = 0
+
     self._update_lead(controls)
     self.v_ego_kph_set = int(CS.vEgoCluster * CV.MS_TO_KPH + 0.5)
     if self.v_cruise_kph_set > 200:
@@ -374,15 +381,18 @@ class VCruiseHelper:
           #else:
           v_cruise_kph = 20
       elif msg.xCmd == "LANECHANGE":
+        blinkerExtState = self.rightBlinkerExtCount + self.rightBlinkerExtCount
         if msg.xArg == "RIGHT":
-          self.rightBlinkerExtCount = 20
+          self.rightBlinkerExtCount = 50
+          self.blinkerExtMode = 10000
         elif msg.xArg == "LEFT":
-          self.leftBlinkerExtCount = 20
+          self.leftBlinkerExtCount = 50
+          self.blinkerExtMode = 10000
+        if blinkerExtState <= 0 and self.rightBlinkerExtCount + self.rightBlinkerExtCount > 0:
+          self._make_event(controls, EventName.audioLaneChange)
+
       elif msg.xCmd == "DETECT":
         self.debugText2 = "DETECT[{}]={}".format(msg.xIndex, msg.xArg)
-    else:
-      self.rightBlinkerExtCount = max(self.rightBlinkerExtCount - 1, 0)
-      self.leftBlinkerExtCount = max(self.leftBlinkerExtCount - 1, 0)
     return v_cruise_kph
 
   def _add_log(self, log):
