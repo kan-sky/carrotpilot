@@ -454,11 +454,13 @@ def main():
         #dat.roadLimitSpeed.xRoadName = apilot_val['opkrroadname']['value']
 
         #for 띠맵
-        if ret or now - prev_recvTime > 2.0: # 수신값이 있거나, 2.0초가 지난경우 데이터를 초기화함.
+        #if ret or now - prev_recvTime > 2.0: # 수신값이 있거나, 2.0초가 지난경우 데이터를 초기화함.
+        if sdi_valid_count <= 0: #now - prev_recvTime > 2.0: # 2.0초가 지난경우 데이터를 초기화함.
           nTBTTurnType = nSdiType = nSdiSpeedLimit = nSdiPlusType = nSdiPlusSpeedLimit = nSdiBlockType = -1
           nSdiBlockSpeed = nRoadLimitSpeed = -1
           roadcate = 8
           nLaneCount = 0
+          #print("Reset roadlimit...")
 
         nSdiDist -= delta_dist
         nSdiPlusDist -= delta_dist
@@ -477,6 +479,7 @@ def main():
 
         #print("I:{:.1f},{:.1f},{:.1f},{:.2f}".format(nSdiDist, nSdiPlusDist, nTBTDist, delta_dist))
 
+        sdi_valid = False
         if ret:
           nTBTTurnType = int(server.get_apilot_val("nTBTTurnType", nTBTTurnType))
           nSdiType = int(server.get_apilot_val("nSdiType", nSdiType))
@@ -492,8 +495,11 @@ def main():
           nRoadLimitSpeed = int(server.get_apilot_val("nRoadLimitSpeed", nRoadLimitSpeed))
           roadcate = int(server.get_apilot_val("roadcate", roadcate))
           nLaneCount = int(server.get_apilot_val("nLaneCount", nLaneCount))
-          roadcate = 8 if nLaneCount == 0 else roadcate
+          #roadcate = 8 if nLaneCount == 0 else roadcate
           #print("roadcate=", roadcate)
+
+          if int(server.get_apilot_val("nRoadLimitSpeed", -1)) != -1:
+            sdi_valid = True
 
         #print("O:{:.1f},{:.1f},{:.1f},{:.2f}".format(nSdiDist, nSdiPlusDist, nTBTDist, delta_dist))
 
@@ -527,7 +533,7 @@ def main():
           xTurnInfo = -1
         if nTBTDist > 0 and xTurnInfo >= 0:
           xDistToTurn = nTBTDist
-        sdi_valid = True if nRoadLimitSpeed >= 0 or nTBTTurnType > 0 or nSdiType >= 0 else False
+        #sdi_valid = True if nRoadLimitSpeed >= 0 or nTBTTurnType > 0 or nSdiType >= 0 else False
         if nRoadLimitSpeed > 0:
           if nRoadLimitSpeed >= 200:
             nRoadLimitSpeed = (nRoadLimitSpeed - 20) / 10
@@ -611,6 +617,7 @@ def main():
         if xRoadLimitSpeed > 0:
           dat.roadLimitSpeed.roadLimitSpeed = int(xRoadLimitSpeed)
         dat.roadLimitSpeed.xRoadName = xRoadName + "[{}]".format(road_category_map.get(roadcate,"X")) + sdiDebugText
+        #print(dat.roadLimitSpeed.xRoadName)
 
         dat.roadLimitSpeed.xCmd = "" if xCmd is None else xCmd
         dat.roadLimitSpeed.xArg = "" if xArg is None else xArg
