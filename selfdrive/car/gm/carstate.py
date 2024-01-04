@@ -69,6 +69,8 @@ class CarState(CarStateBase):
       else:
         ret.leftBlindspot = pt_cp.vl["BCMBSM"]["Left_BSM"] == 1
         ret.rightBlindspot = pt_cp.vl["BCMBSM"]["Right_BSM"] == 1
+        print("leftBsm=", ret.leftBlindspot)
+        print("rightBsm=", ret.rightBlindspot)
 
     # Variables used for avoiding LKAS faults
     self.loopback_lka_steering_cmd_updated = len(loopback_cp.vl_all["ASCMLKASteeringCmd"]["RollingCounter"]) > 0
