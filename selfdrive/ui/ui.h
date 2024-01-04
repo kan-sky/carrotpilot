@@ -162,7 +162,7 @@ typedef struct UIScene {
   float max_distance;
 
   // lead
-  QPointF lead_vertices[2];
+  QPointF lead_vertices[4];
   bool lead_radar[2] = {false, false};
   std::vector<lead_vertex_data> lead_vertices_side;
   // DMoji state
@@ -235,6 +235,7 @@ typedef struct UIScene {
   float speed_limit_overridden_speed;
   float stopped_equivalence;
   float stopped_equivalence_stock;
+  QPolygonF track_adjacent_vertices[6];
   QPolygonF track_edge_vertices;
   QPolygonF track_left_adjacent_lane_vertices;
   QPolygonF track_right_adjacent_lane_vertices;
