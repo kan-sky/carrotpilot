@@ -175,8 +175,6 @@ class CarController:
 
         idx = (self.frame // 4) % 4
 
-        at_full_stop = CC.longActive and CS.out.standstill
-        near_stop = CC.longActive and (CS.out.vEgo < self.params.NEAR_STOP_BRAKE_PHASE)
         if self.CP.flags & GMFlags.CC_LONG.value:
           if CC.longActive and CS.out.vEgo > self.CP.minEnableSpeed:
             # Using extend instead of append since the message is only sent intermittently
@@ -187,7 +185,7 @@ class CarController:
           friction_brake_bus = CanBus.CHASSIS
           # GM Camera exceptions
           # TODO: can we always check the longControlState?
-          if self.CP.networkLocation == NetworkLocation.fwdCamera:
+          if self.CP.networkLocation == NetworkLocation.fwdCamera and self.CP.carFingerprint not in CC_ONLY_CAR:
             at_full_stop = at_full_stop and stopping
             friction_brake_bus = CanBus.POWERTRAIN
 
@@ -201,7 +199,7 @@ class CarController:
           can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, CC.enabled,
                                                               hud_v_cruise * CV.MS_TO_KPH, hud_control.leadVisible, send_fcw, CS.display_menu, CS.personality_profile))
       else:
-        self.accel_g = ACCELERATION_DUE_TO_GRAVITY * apply_deadzone(self.pitch.x, PITCH_DEADZONE) # driving uphill is positive pitch
+        # to keep accel steady for logs when not sending gas
         accel += self.accel_g
 
       # Radar needs to know current speed and yaw rate (50hz),
