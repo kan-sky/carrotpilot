@@ -67,16 +67,27 @@ class CarController:
   def calc_pedal_command(accel: float, long_active: bool) -> float:
     if not long_active: return 0.
 
-    zero = 0.15625  # 40/256
-    if accel > 0.:
-      # Scales the accel from 0-1 to 0.156-1
-      pedal_gas = clip(((1 - zero) * accel + zero), 0., 1.)
+    if self.CP.carFingerprint in (CAR.BOLT_EUV, CAR.BOLT_CC):
+      # Pedal Formula re_struct
+      accGain = 0.1429  # This value is the result of testing by several users.
+      # DesiredLateralAccel and ActualLateralAccel values were compared and tuned using plotjuggler, and tuned to almost match.
+      # In the old Bolt L mode equipped with a comma pedal, the intensity of acceleration and deceleration states were different, so they were tuned separately.
+      DecelZero = interp(Car_velocity, [0., 3, 10, 15, 30], [0, 0.185, 0.245, 0.25, 0.280])
+      AccelZero = interp(Car_velocity, [0., 3, 10, 15, 30], [0, 0.130, 0.185, 0.215, 0.280])
+      ZeroRatio = interp(accel, [-3.5, 2], [1.0, 0.0])
+      zero = DecelZero * ZeroRatio + AccelZero * (1 - ZeroRatio)
+      pedal_gas = clip((zero + accel * accGain), 0.0, 1.0)
+      return pedal_gas
+
     else:
-      # if accel is negative, -0.1 -> 0.015625
-      pedal_gas = clip(zero + accel, 0., zero)  # Make brake the same size as gas, but clip to regen
-
-    return pedal_gas
-
+      zero = 0.15625  # 40/256
+      if accel > 0.:
+        # Scales the accel from 0-1 to 0.156-1
+        pedal_gas = clip(((1 - zero) * accel + zero), 0., 1.)
+      else:
+        # if accel is negative, -0.1 -> 0.015625
+        pedal_gas = clip(zero + accel, 0., zero)  # Make brake the same size as gas, but clip to regen
+      return pedal_gas
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -165,9 +176,9 @@ class CarController:
           # FIXME: brakes aren't applied immediately when enabling at a stop
           if stopping:
             self.apply_gas = self.params.INACTIVE_REGEN
-          if self.CP.carFingerprint in CC_ONLY_CAR:
+          if self.CP.carFingerprint in ((CAR.BOLT_EUV, CAR.BOLT_CC) or CC_ONLY_CAR):
             # gas interceptor only used for full long control on cars without ACC
-            interceptor_gas_cmd = self.calc_pedal_command(actuators.accel, CC.longActive)
+            interceptor_gas_cmd = self.calc_pedal_command(actuators.accel, CC.longActive, CS.out.vEgo)
 
         if CC.cruiseControl.resume and actuators.longControlState == LongCtrlState.starting:
           interceptor_gas_cmd = self.params.SNG_INTERCEPTOR_GAS
