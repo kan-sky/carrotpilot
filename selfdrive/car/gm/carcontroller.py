@@ -6,7 +6,7 @@ from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits, create_gas_interceptor_command
 from openpilot.selfdrive.car.gm import gmcan
-from openpilot.selfdrive.car.gm.values import DBC, CanBus, CarControllerParams, CruiseButtons, GMFlags, CC_ONLY_CAR, EV_CAR, SDGM_CAR
+from openpilot.selfdrive.car.gm.values import CAR, DBC, CanBus, CarControllerParams, CruiseButtons, GMFlags, CC_ONLY_CAR, EV_CAR, SDGM_CAR
 from openpilot.selfdrive.controls.lib.drive_helpers import apply_deadzone
 from openpilot.selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
 
@@ -64,7 +64,7 @@ class CarController:
     self.use_ev_tables = params.get_bool("EVTable")
 
   @staticmethod
-  def calc_pedal_command(accel: float, long_active: bool) -> float:
+  def calc_pedal_command(accel: float, long_active: bool, car_velocity) -> float:
     if not long_active: return 0.
 
     if self.CP.carFingerprint in (CAR.BOLT_EUV, CAR.BOLT_CC):
@@ -72,9 +72,9 @@ class CarController:
       accGain = 0.1429  # This value is the result of testing by several users.
       # DesiredLateralAccel and ActualLateralAccel values were compared and tuned using plotjuggler, and tuned to almost match.
       # In the old Bolt L mode equipped with a comma pedal, the intensity of acceleration and deceleration states were different, so they were tuned separately.
-      DecelZero = interp(Car_velocity, [0., 3, 10, 15, 30], [0, 0.185, 0.245, 0.25, 0.280])
-      AccelZero = interp(Car_velocity, [0., 3, 10, 15, 30], [0, 0.130, 0.185, 0.215, 0.280])
-      ZeroRatio = interp(accel, [-3.5, 2], [1.0, 0.0])
+      DecelZero = interp(car_velocity, [0., 3, 10, 15, 30], [0.08, 0.185, 0.245, 0.25, 0.280])
+      AccelZero = interp(car_velocity, [0., 3, 10, 15, 30], [0.08, 0.130, 0.185, 0.215, 0.280])
+      ZeroRatio = interp(accel, [-3.5, 2.0], [1.0, 0.0])
       zero = DecelZero * ZeroRatio + AccelZero * (1 - ZeroRatio)
       pedal_gas = clip((zero + accel * accGain), 0.0, 1.0)
       return pedal_gas
@@ -144,6 +144,13 @@ class CarController:
         can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.POWERTRAIN, CS.buttons_counter, CruiseButtons.RES_ACCEL))
 
       # Gas/regen, brakes, and UI commands - all at 25Hz
+      #regen paddle
+      if CC.longActive and actuators.accel < -1.5:
+        can_sends.append(gmcan.create_regen_paddle_command(self.packer_pt, CanBus.POWERTRAIN))
+        actuators.regenPaddle = True  # for icon
+      else:
+        actuators.regenPaddle = False  # for icon
+
       if self.frame % 4 == 0:
         stopping = actuators.longControlState == LongCtrlState.stopping
         at_full_stop = CC.longActive and CS.out.standstill
