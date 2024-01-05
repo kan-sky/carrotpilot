@@ -255,6 +255,7 @@ static bool gm_tx_hook(CANPacket_t *to_send) {
 #endif
 
   // BUTTONS: used for resume spamming and cruise cancellation with stock longitudinal
+  // trying to allow resume button even at Volt
   if ((addr == 0x1E1) && gm_force_ascm) {
     int button = (GET_BYTE(to_send, 5) >> 4) & 0x7U;
 
