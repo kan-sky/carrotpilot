@@ -63,11 +63,11 @@ RxCheck gm_rx_checks[] = {
 
 const uint16_t GM_PARAM_HW_CAM = 1;
 const uint16_t GM_PARAM_HW_CAM_LONG = 2;
-const uint16_t GM_PARAM_CC_LONG = 4;
-const uint16_t GM_PARAM_HW_ASCM_LONG = 8;
-const uint16_t GM_PARAM_NO_ACC = 16;
+const uint16_t GM_PARAM_HW_SDGM = 4;
+const uint16_t GM_PARAM_CC_LONG = 8;
+const uint16_t GM_PARAM_HW_ASCM_LONG = 16;
 const uint16_t GM_PARAM_NO_CAMERA = 32;
-const uint16_t GM_PARAM_HW_SDGM = 64;
+const uint16_t GM_PARAM_NO_ACC = 64;
 const uint16_t GM_PARAM_PEDAL_LONG = 128;
 
 enum {
@@ -86,7 +86,6 @@ bool gm_pedal_long = false;
 bool gm_cc_long = false;
 bool gm_skip_relay_check = false;
 bool gm_force_ascm = false;
-bool brake_pressed_x = false;
 
 static void handle_gm_wheel_buttons(CANPacket_t *to_push) {
   int button = (GET_BYTE(to_push, 5) & 0x70U) >> 4;
@@ -137,11 +136,11 @@ static void gm_rx_hook(CANPacket_t *to_push) {
     // Reference for brake pressed signals:
     // https://github.com/commaai/openpilot/blob/master/selfdrive/car/gm/carstate.py
     if ((addr == 0xBE) && (gm_hw == GM_ASCM)) {
-      brake_pressed_x = GET_BYTE(to_push, 1) >= 8U;
+      brake_pressed = GET_BYTE(to_push, 1) >= 8U;
     }
 
     if ((addr == 0xC9) && ((gm_hw == GM_CAM) || (gm_hw == GM_SDGM))) {
-      brake_pressed_x = GET_BIT(to_push, 40U) != 0U;
+      brake_pressed = GET_BIT(to_push, 40U) != 0U;
     }
 
     if (addr == 0xC9) {
