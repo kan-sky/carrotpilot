@@ -70,6 +70,7 @@ class XState(Enum):
   e2eCruise = 2
   e2eStop = 3
   e2ePrepare = 4
+  e2eStopped = 5
 
   def __str__(self):
     return self.name
@@ -657,7 +658,7 @@ class LongitudinalMpc:
 
     if self.stopSignCount * DT_MDL > 0.0:
       self.trafficState = TrafficState.red
-    elif self.startSignCount * DT_MDL > 0.3:
+    elif self.startSignCount * DT_MDL > 0.2:
       self.trafficState = TrafficState.green
     else:
       self.trafficState = TrafficState.off
