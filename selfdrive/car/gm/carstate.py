@@ -32,7 +32,7 @@ class CarState(CarStateBase):
     # GAP_DIST
     self.distance_button_pressed = False
 
-    # use cluster speed & vCluratio
+    # use cluster speed & vCluRatio
     self.use_cluster_speed = True
     self.buttons_counter = 0
 

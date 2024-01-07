@@ -144,7 +144,6 @@ class CarController:
         can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.POWERTRAIN, CS.buttons_counter, CruiseButtons.RES_ACCEL))
 
       # Gas/regen, brakes, and UI commands - all at 25Hz
-
       if self.frame % 4 == 0:
         stopping = actuators.longControlState == LongCtrlState.stopping
         at_full_stop = CC.longActive and CS.out.standstill

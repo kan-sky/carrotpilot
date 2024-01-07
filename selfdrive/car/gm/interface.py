@@ -188,7 +188,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.83
       ret.steerRatio = 15.8
       ret.centerToFront = ret.wheelbase * 0.4  # wild guess
-    
+
     elif candidate == CAR.HOLDEN_ASTRA:
       ret.mass = 1363.
       ret.wheelbase = 2.662
