@@ -233,7 +233,8 @@ def gen_long_ocp():
   x0 = np.zeros(X_DIM)
   ocp.constraints.x0 = x0
   #ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, get_T_FOLLOW(), LEAD_DANGER_FACTOR, COMFORT_BRAKE, STOP_DISTANCE])
-  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, T_FOLLOW, LEAD_DANGER_FACTOR, COMFORT_BRAKE, STOP_DISTANCE])
+  #ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, T_FOLLOW, LEAD_DANGER_FACTOR, COMFORT_BRAKE, STOP_DISTANCE])
+  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, lead_t_follow, LEAD_DANGER_FACTOR, comfort_brake, stop_distance])
 
   # We put all constraint cost weights to 0 and only set them at runtime
   cost_weights = np.zeros(CONSTR_DIM)
@@ -298,6 +299,7 @@ class LongitudinalMpc:
     self.mySafeModeFactor = 0.8
     self.myEcoModeFactor = 0.8
     self.mySafeFactor = 1.0
+    self.stopping_count = 0
 
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.reset()
@@ -655,7 +657,7 @@ class LongitudinalMpc:
 
     if self.stopSignCount * DT_MDL > 0.0:
       self.trafficState = TrafficState.red
-    elif self.startSignCount * DT_MDL > 0.15:
+    elif self.startSignCount * DT_MDL > 0.3:
       self.trafficState = TrafficState.green
     else:
       self.trafficState = TrafficState.off
@@ -679,7 +681,18 @@ class LongitudinalMpc:
     self.check_model_stopping(v, v_ego, x[-1], y)
     
 
-    if self.xState == XState.e2eStop:
+    if self.xState == XState.e2eStopped:
+      if carstate.gasPressed:
+        self.xState = XState.e2ePrepare
+      elif radar_detected and (radarstate.leadOne.dRel - stop_x) < 2.0:
+        self.xState = XState.lead
+      elif self.stopping_count == 0:
+        if self.trafficState == TrafficState.green:
+          self.xState = XState.e2ePrepare
+      self.stopping_count = max(0, self.stopping_count - 1)
+      v_cruise = 0
+    elif self.xState == XState.e2eStop:
+      self.stopping_count = 0
       if carstate.gasPressed:
         self.xState = XState.e2ePrepare
       elif radar_detected and (radarstate.leadOne.dRel - stop_x) < 2.0:
@@ -695,7 +708,9 @@ class LongitudinalMpc:
             self.stopDist = stop_dist
           stop_x = 0
           self.fakeCruiseDistance = 0 if self.stopDist > 10.0 else 10.0
-          v_cruise = 0 if v_ego < 0.5 else v_cruise
+          if v_ego < 0.1:
+            self.stopping_count = 0.5 / DT_MDL
+            self.xState = XState.e2eStopped
     elif self.xState == XState.e2ePrepare:
       if self.status:
         self.xState = XState.lead
@@ -714,7 +729,7 @@ class LongitudinalMpc:
       else:
         self.xState = XState.e2eCruise
 
-    if self.trafficState in [TrafficState.off, TrafficState.green] or self.xState not in [XState.e2eStop]:
+    if self.trafficState in [TrafficState.off, TrafficState.green] or self.xState not in [XState.e2eStop, XState.e2eStopped]:
       stop_x = 1000.0
 
     mode = 'blended' if self.xState in [XState.e2ePrepare] else 'acc'

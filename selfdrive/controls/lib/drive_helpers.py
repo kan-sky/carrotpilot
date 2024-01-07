@@ -65,6 +65,8 @@ class VCruiseHelper:
     # ajouatom
     self.brake_pressed_count = 0
     self.gas_pressed_count = 0
+    self.gas_pressed_count_prev = 0
+    self.gas_pressed_value = 0
     self.softHoldActive = 0
     self.button_cnt = 0
     self.long_pressed = False
@@ -86,6 +88,7 @@ class VCruiseHelper:
     self.frame = 0
     self._log_timer = 0
     self.debugText = ""
+    self.debugTextNoo = ""
     self.debugText2 = ""
     self._first = True
     self.activeAPM = 0
@@ -430,9 +433,15 @@ class VCruiseHelper:
     if CS.gasPressed:
       self.gas_pressed_count = 1 if self.gas_pressed_count < 0 else self.gas_pressed_count + 1
       self.softHoldActive = 0
+      if CS.gas > self.gas_pressed_value:
+        self.gas_pressed_value = CS.gas
+      self.gas_pressed_count_prev = self.gas_pressed_count
     else:
       gas_tok = True if 0 < self.gas_pressed_count < 60 else False
       self.gas_pressed_count = -1 if self.gas_pressed_count > 0 else self.gas_pressed_count - 1
+      if self.gas_pressed_count < -1:
+        self.gas_pressed_max = 0
+        self.gas_pressed_count_prev = 0
 
     if controls.enabled or CS.brakePressed or CS.gasPressed:
       self.cruiseActiveReady = 0
@@ -547,8 +556,11 @@ class VCruiseHelper:
         self.cruiseActivate = -1
       elif self.v_ego_kph_set > self.autoResumeFromGasSpeed > 0:
         if self.cruiseActivate <= 0:
-          v_cruise_kph = self.v_ego_kph_set
-          self._add_log("Cruise Activate from Speed")          
+          if self.gas_pressed_value > 0.6 or self.gas_pressed_count_prev > 3.0 / DT_CTRL:
+            self._add_log("Cruise Activate from Speed(prev. speed)")          
+          else:
+            v_cruise_kph = self.v_ego_kph_set
+            self._add_log("Cruise Activate from Speed(cur. speed)")
         self.cruiseActivate = 1
     elif self.brake_pressed_count == -1 and self.softHoldActive == 0:
       if self.autoResumeFromGasSpeed < self.v_ego_kph_set and self.autoResumeFromBrakeReleaseTrafficSign:
@@ -750,7 +762,7 @@ class VCruiseHelper:
       roadcate = roadLimitSpeed.roadcate
       if roadcate > 7 and (distanceToRoadEdgeLeft + distanceToRoadEdgeRight) > 5.5:
         roadcate = 5
-      turn_dist = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [100, 100, 80, 50])
+      turn_dist = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [100, 100, 60, 30])
       turn_speed = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [self.autoTurnControlSpeedTurn*2, self.autoTurnControlSpeedTurn*2, self.autoTurnControlSpeedTurn*1.5, self.autoTurnControlSpeedTurn])
       laneChange_dist = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [300, 280, 200, 160])
       laneChange_speed = interp(roadLimitSpeed.roadcate, [0, 1, 2, 7], [120, 100, self.autoTurnControlSpeedLaneChange*1.5, self.autoTurnControlSpeedLaneChange])
@@ -781,6 +793,10 @@ class VCruiseHelper:
       else:
         nav_turn = False
         nav_direction = 0
+
+      self.debugTextNoo = "N{:.0f}[{}],T{}[{}],{:.0f}{:.0f}/{:.0f}{:.0f}".format(
+        nav_distance, direction, nav_direction, nav_turn,
+        laneChange_dist, laneChange_speed, turn_dist, turn_speed)
 
       blinkerExtState = self.rightBlinkerExtCount + self.rightBlinkerExtCount
       if nav_direction == 1 and nav_turn: # 왼쪽차선변경은 위험하니 턴인경우만 하자, 하지만 지금은 안함.

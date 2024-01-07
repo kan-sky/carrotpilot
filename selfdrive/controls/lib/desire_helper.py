@@ -94,7 +94,7 @@ class DesireHelper:
     leftBlinker = carstate.leftBlinker or leftBlinkerExt > 0
     rightBlinker = carstate.rightBlinker or rightBlinkerExt > 0
     one_blinker = leftBlinker != rightBlinker
-    below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
+    below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN if blinkerExtMode in [0,2] else v_ego < 5. * CV.KPH_TO_MS  ## carrot, when auto turn...
 
     # Calculate left and right lane widths for the blindspot path
     self.lane_width_left = 0
@@ -125,7 +125,7 @@ class DesireHelper:
     if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
-    elif one_blinker and below_lane_change_speed and self.turn_desires and blinkerExtMode in [0,2]:
+    elif one_blinker and ((below_lane_change_speed and self.turn_desires and blinkerExtMode in [0]) or blinkerExtMode == 2):
       self.turn_direction = TurnDirection.turnLeft if leftBlinker else TurnDirection.turnRight
       # Set the "turn_completed" flag to prevent lane changes after completing a turn
       self.turn_completed = True
