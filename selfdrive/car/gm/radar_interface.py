@@ -5,6 +5,7 @@ from openpilot.common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.gm.values import DBC, CanBus
 from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
+from openpilot.common.params import Params
 
 RADAR_HEADER_MSG = 1120
 SLOT_1_MSG = RADAR_HEADER_MSG + 1
@@ -16,6 +17,10 @@ LAST_RADAR_MSG = RADAR_HEADER_MSG + NUM_SLOTS
 
 
 def create_radar_can_parser(car_fingerprint):
+  enable_radar_tracks = Params().get_bool("EnableRadarTracks")
+  # 레이더트랙만 이용하고 싶은경우
+  if enable_radar_tracks:
+    return None
   # C1A-ARS3-A by Continental
   radar_targets = list(range(SLOT_1_MSG, SLOT_1_MSG + NUM_SLOTS))
   signals = list(zip(['FLRRNumValidTargets',
