@@ -134,7 +134,7 @@ class Controls:
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
     passive = self.params.get_bool("Passive") or not openpilot_enabled_toggle
 
-    # screen recording
+    #kans: screen recording
     self.readParamCount = 0
     self.start_record = False
     self.stop_record = False
@@ -236,7 +236,7 @@ class Controls:
 
     self.carrotCruiseActivate = 0 #carrot
 
-  # screen recording
+  #kans: screen recording
   def update_params(self):
     self.readParamCount += 1
     if self.readParamCount == 10:
@@ -266,7 +266,7 @@ class Controls:
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
 
-    # screen recording
+    #kans: screen recording
     self.update_params()
 
     self.events.clear()
@@ -497,7 +497,7 @@ class Controls:
     if self.sm['frogpilotLongitudinalPlan'].greenLight:
       self.events.add(FrogPilotEventName.greenLight)
 
-    # events for screen recording
+    #kans: screen recording
     if self.start_sound:
       print("start_sound=", self.start_sound)
       self.events.add(EventName.startingRecord)
